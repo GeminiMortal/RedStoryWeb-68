@@ -57,11 +57,6 @@
         "type": "String"
       },
       {
-        "name": "order",
-        "title": "排序",
-        "type": "Number"
-      },
-      {
         "name": "createdAt",
         "title": "创建时间",
         "type": "Date",
