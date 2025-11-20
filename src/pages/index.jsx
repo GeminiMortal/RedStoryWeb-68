@@ -47,8 +47,8 @@ export default function Index(props) {
           // 将数据库字段映射为前端所需格式
           const mappedStories = result.records.map(record => ({
             id: record._id,
-            title: record.title,
-            content: record.content,
+            title: record.title || '未命名故事',
+            content: record.content || '',
             image: record.image,
             date: record.date,
             location: record.location,
@@ -224,7 +224,7 @@ export default function Index(props) {
                         </h2>
                         
                         <p className="text-lg text-gray-200 leading-relaxed mb-6">
-                          {story.content.substring(0, 150)}...
+                          {story.content && story.content.length > 150 ? story.content.substring(0, 150) + '...' : story.content || '暂无内容'}
                         </p>
                         
                         <div className="flex items-center justify-between">

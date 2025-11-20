@@ -40,8 +40,8 @@ export default function AdminPage(props) {
           // 将数据库字段映射为前端所需格式
           const mappedStories = result.records.map(record => ({
             id: record._id,
-            title: record.title,
-            content: record.content,
+            title: record.title || '未命名故事',
+            content: record.content || '',
             image: record.image,
             date: record.date,
             location: record.location,
@@ -94,7 +94,7 @@ export default function AdminPage(props) {
 
   // 过滤和搜索故事
   const filteredStories = stories.filter(story => {
-    const matchesSearch = story.title.toLowerCase().includes(searchTerm.toLowerCase()) || story.content.toLowerCase().includes(searchTerm.toLowerCase()) || story.author.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = story.title.toLowerCase().includes(searchTerm.toLowerCase()) || story.content && story.content.toLowerCase().includes(searchTerm.toLowerCase()) || story.author && story.author.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || story.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -260,7 +260,9 @@ export default function AdminPage(props) {
                           {story.image && <img src={story.image} alt={story.title} className="w-12 h-12 rounded-lg object-cover" />}
                           <div>
                             <div className="font-medium text-white">{story.title}</div>
-                            <div className="text-sm text-gray-400 line-clamp-1">{story.content.substring(0, 50)}...</div>
+                            <div className="text-sm text-gray-400 line-clamp-1">
+                              {story.content && story.content.length > 50 ? story.content.substring(0, 50) + '...' : story.content || '暂无内容'}
+                            </div>
                           </div>
                         </div>
                       </td>
