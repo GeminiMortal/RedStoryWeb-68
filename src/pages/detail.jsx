@@ -5,6 +5,7 @@ import { Button } from '@/components/ui';
 // @ts-ignore;
 import { ArrowLeft, Edit, Trash2, Share2, Heart, Clock, Calendar, MapPin, User, Eye, BookOpen } from 'lucide-react';
 
+// @ts-ignore;
 import { PageHeader, BottomNav } from '@/components/Navigation';
 export default function DetailPage(props) {
   const {
@@ -13,11 +14,18 @@ export default function DetailPage(props) {
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const storyId = props.page.dataset.params.id;
+
+  // 修正参数访问方式
+  const storyId = $w.page.dataset.params?.id;
 
   // 加载故事详情
   useEffect(() => {
     const loadStory = async () => {
+      if (!storyId) {
+        setError('故事ID不能为空');
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
         const tcb = await $w.cloud.getCloudInstance();
@@ -37,6 +45,9 @@ export default function DetailPage(props) {
     };
     if (storyId) {
       loadStory();
+    } else {
+      setLoading(false);
+      setError('未提供故事ID');
     }
   }, [storyId]);
   const navigateTo = $w.utils.navigateTo;
@@ -47,6 +58,7 @@ export default function DetailPage(props) {
     });
   };
   const goToEdit = () => {
+    if (!storyId) return;
     navigateTo({
       pageId: 'edit',
       params: {
