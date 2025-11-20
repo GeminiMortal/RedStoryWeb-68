@@ -29,51 +29,43 @@ export default function AdminPage(props) {
         methodName: 'wedaGetRecordsV2',
         params: {
           select: {
-            $master: true // 返回所有字段
+            $master: true
           },
           orderBy: [{
-            createdAt: 'desc' // 按创建时间降序排列
+            createdAt: 'desc'
           }],
           getCount: true,
-          pageSize: 100 // 获取最多100条记录
+          pageSize: 100
         }
       });
-      console.log('数据库查询结果:', result);
+      console.log('管理页面数据加载结果:', result);
       if (result.records && result.records.length > 0) {
-        // 将数据库字段映射为前端所需格式
-        const mappedStories = result.records.map(record => {
-          console.log('处理记录:', record);
-          return {
-            id: record._id,
-            title: record.title || '未命名故事',
-            content: record.content || '',
-            image: record.image || '',
-            date: record.date || '',
-            location: record.location || '',
-            author: record.author || '佚名',
-            readTime: record.read_time || '5分钟',
-            tags: Array.isArray(record.tags) ? record.tags : [],
-            status: record.status || 'draft',
-            order: record.order || 0,
-            createdAt: record.createdAt,
-            updatedAt: record.updatedAt
-          };
-        });
-        console.log('映射后的故事数据:', mappedStories);
+        const mappedStories = result.records.map(record => ({
+          id: record._id,
+          title: record.title || '未命名故事',
+          content: record.content || '',
+          image: record.image || '',
+          date: record.date || '',
+          location: record.location || '',
+          author: record.author || '佚名',
+          readTime: record.read_time || '5分钟',
+          tags: Array.isArray(record.tags) ? record.tags : [],
+          status: record.status || 'draft',
+          order: record.order || 0,
+          createdAt: record.createdAt,
+          updatedAt: record.updatedAt
+        }));
         setStories(mappedStories);
       } else {
-        console.log('没有找到故事数据');
         setStories([]);
       }
     } catch (err) {
       console.error('加载红色故事失败:', err);
-      setError(`加载失败: ${err.message || '未知错误'}`);
+      setError(`加载失���: ${err.message || '未知错误'}`);
     } finally {
       setLoading(false);
     }
   };
-
-  // 初始加载
   useEffect(() => {
     loadStories();
   }, [$w]);
@@ -94,7 +86,7 @@ export default function AdminPage(props) {
     }));
   };
 
-  // 删除故事 - 修复filter参数问题
+  // 删除故事
   const handleDelete = async storyId => {
     if (!storyId) {
       setError('故事ID无效');
@@ -120,16 +112,20 @@ export default function AdminPage(props) {
         }
       });
       console.log('删除结果:', result);
-      setStories(prev => prev.filter(story => story.id !== storyId));
-      setError(null);
-      setImageErrors(prev => {
-        const newErrors = {
-          ...prev
-        };
-        delete newErrors[storyId];
-        return newErrors;
-      });
-      alert('红色故事删除成功');
+      if (result.count > 0) {
+        setStories(prev => prev.filter(story => story.id !== storyId));
+        setError(null);
+        setImageErrors(prev => {
+          const newErrors = {
+            ...prev
+          };
+          delete newErrors[storyId];
+          return newErrors;
+        });
+        alert('红色故事删除成功');
+      } else {
+        setError('删除失败：未找到该故事');
+      }
     } catch (err) {
       console.error('删除红色故事失败:', err);
       setError(`删除失败: ${err.message || '未知错误'}`);

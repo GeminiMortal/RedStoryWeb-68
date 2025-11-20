@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Calendar, MapPin, Users, Clock, Tag, Share2, Heart, Eye, ImageOff } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Clock, Tag, Share2, Heart, Eye, ImageOff, Edit } from 'lucide-react';
 
 export default function DetailPage(props) {
   const {
@@ -32,7 +32,7 @@ export default function DetailPage(props) {
         console.log('加载故事详情，ID:', storyId);
         const result = await $w.cloud.callDataSource({
           dataSourceName: 'red_story',
-          methodName: 'wedaGetRecordV2',
+          methodName: 'wedaGetItemV2',
           params: {
             filter: {
               where: {
@@ -47,24 +47,24 @@ export default function DetailPage(props) {
           }
         });
         console.log('故事详情查询结果:', result);
-        if (result && result.record) {
-          const record = result.record;
+        if (result) {
           const storyData = {
-            id: record._id,
-            title: record.title || '未命名故事',
-            content: record.content || '',
-            image: record.image || '',
-            date: record.date || '',
-            location: record.location || '',
-            author: record.author || '佚名',
-            readTime: record.read_time || '5分钟',
-            tags: Array.isArray(record.tags) ? record.tags : [],
-            status: record.status || 'draft',
-            createdAt: record.createdAt,
-            updatedAt: record.updatedAt
+            id: result._id,
+            title: result.title || '未命名故事',
+            content: result.content || '',
+            image: result.image || '',
+            date: result.date || '',
+            location: result.location || '',
+            author: result.author || '佚名',
+            readTime: result.read_time || '5分钟',
+            tags: Array.isArray(result.tags) ? result.tags : [],
+            status: result.status || 'draft',
+            order: result.order || 0,
+            createdAt: result.createdAt,
+            updatedAt: result.updatedAt
           };
           setStory(storyData);
-          setImageError(false); // 重置图片错误状态
+          setImageError(false);
         } else {
           setError('未找到该红色故事');
         }
@@ -77,28 +77,6 @@ export default function DetailPage(props) {
     };
     loadStory();
   }, [storyId, $w]);
-
-  // 导航函数
-  const goBack = () => {
-    $w.utils.navigateBack();
-  };
-  const navigateToAdmin = () => {
-    $w.utils.navigateTo({
-      pageId: 'admin',
-      params: {}
-    });
-  };
-
-  // 格式化日期
-  const formatDate = dateString => {
-    if (!dateString) return '未知时间';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
 
   // 处理图片加载错误
   const handleImageError = () => {
@@ -124,7 +102,6 @@ export default function DetailPage(props) {
         console.log('分享失败:', err);
       }
     } else {
-      // 复制链接到剪贴板
       navigator.clipboard.writeText(window.location.href).then(() => {
         alert('链接已复制到剪贴板');
       });
@@ -134,6 +111,40 @@ export default function DetailPage(props) {
   // 点赞功能
   const handleLike = () => {
     setLiked(!liked);
+  };
+
+  // 导航函数
+  const goBack = () => {
+    $w.utils.navigateBack();
+  };
+  const navigateToAdmin = () => {
+    $w.utils.navigateTo({
+      pageId: 'admin',
+      params: {}
+    });
+  };
+  const navigateToEdit = () => {
+    if (!storyId) {
+      setError('故事ID无效，无法编辑');
+      return;
+    }
+    $w.utils.navigateTo({
+      pageId: 'edit',
+      params: {
+        id: storyId
+      }
+    });
+  };
+
+  // 格式化日期
+  const formatDate = dateString => {
+    if (!dateString) return '未知时间';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
 
   // 加载状态
@@ -185,15 +196,21 @@ export default function DetailPage(props) {
       
       {/* 顶部导航 */}
       <header className="relative z-10 bg-black/50 backdrop-blur-sm border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <Button onClick={goBack} variant="ghost" className="text-gray-300 hover:text-white">
             <ArrowLeft className="w-5 h-5 mr-2" />
             返回
           </Button>
           <h1 className="text-xl font-bold text-red-600">红色故事详情</h1>
-          <Button onClick={navigateToAdmin} variant="ghost" className="text-gray-300 hover:text-white">
-            管理
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={navigateToEdit} variant="ghost" className="text-blue-400 hover:text-blue-300">
+              <Edit className="w-4 h-4 mr-1" />
+              编辑
+            </Button>
+            <Button onClick={navigateToAdmin} variant="ghost" className="text-gray-300 hover:text-white">
+              管理
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -279,6 +296,10 @@ export default function DetailPage(props) {
           <Button onClick={handleLike} variant="outline" className={`border-gray-600 ${liked ? 'text-red-400 bg-red-900/20' : 'text-gray-300'} hover:bg-gray-800`}>
             <Heart className={`w-4 h-4 mr-2 ${liked ? 'fill-current' : ''}`} />
             {liked ? '已收藏' : '收藏'}
+          </Button>
+          <Button onClick={navigateToEdit} className="bg-red-600 hover:bg-red-700 text-white">
+            <Edit className="w-4 h-4 mr-2" />
+            编辑故事
           </Button>
         </div>
 
