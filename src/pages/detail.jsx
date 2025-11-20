@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Calendar, MapPin, Users, Clock, Share2, Heart, BookOpen, MessageCircle, ThumbsUp, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Clock, Share2, Heart, BookOpen, MessageCircle, ThumbsUp, Eye, Home, List } from 'lucide-react';
 
 export default function Detail(props) {
   const {
@@ -18,10 +18,13 @@ export default function Detail(props) {
   const [viewCount, setViewCount] = useState(0);
   const [relatedStories, setRelatedStories] = useState([]);
   const [showFullContent, setShowFullContent] = useState(false);
-  const [contentHeight, setContentHeight] = useState('auto');
 
   // 安全获取页面参数
   const storyId = page?.dataset?.params?.id;
+  const fromPage = page?.dataset?.params?.from;
+  const searchParams = page?.dataset?.params?.search;
+  const tagParams = page?.dataset?.params?.tag;
+  const pageParams = page?.dataset?.params?.page;
 
   // 从数据模型加载红色故事详情
   useEffect(() => {
@@ -57,8 +60,8 @@ export default function Detail(props) {
           // 将数据库字段映射为前端所需格式
           const mappedStory = {
             id: record._id,
-            title: record.title || '未命名故事',
-            content: record.content || '暂无内容',
+            title: record.title,
+            content: record.content,
             image: record.image,
             date: record.date,
             location: record.location,
@@ -121,8 +124,8 @@ export default function Detail(props) {
       if (result.records && result.records.length > 0) {
         const mappedStories = result.records.map(record => ({
           id: record._id,
-          title: record.title || '未命名故事',
-          content: record.content || '暂无内容',
+          title: record.title,
+          content: record.content,
           image: record.image,
           date: record.date,
           location: record.location,
@@ -137,20 +140,61 @@ export default function Detail(props) {
       console.error('加载相关故事失败:', err);
     }
   };
-  const goBack = () => {
-    $w.utils.navigateBack();
+
+  // 智能返回导航
+  const handleSmartBack = () => {
+    if (fromPage === 'index' || fromPage === 'admin') {
+      // 构建返回参数
+      const backParams = {};
+      if (searchParams) backParams.search = searchParams;
+      if (tagParams && tagParams !== 'all') backParams.tag = tagParams;
+      if (pageParams && pageParams !== '1') backParams.page = pageParams;
+      $w.utils.navigateTo({
+        pageId: fromPage,
+        params: backParams
+      });
+    } else {
+      // 默认返回主页
+      $w.utils.navigateTo({
+        pageId: 'index',
+        params: {}
+      });
+    }
+  };
+
+  // 返回主页
+  const goHome = () => {
+    $w.utils.navigateTo({
+      pageId: 'index',
+      params: {}
+    });
+  };
+
+  // 返回列表
+  const goToList = () => {
+    if (fromPage === 'index' || fromPage === 'admin') {
+      handleSmartBack();
+    } else {
+      $w.utils.navigateTo({
+        pageId: 'index',
+        params: {}
+      });
+    }
   };
   const handleShare = () => {
+    // 构建分享URL，包含当前页面的所有参数
+    const shareUrl = `${window.location.origin}${window.location.pathname}?id=${storyId}`;
+
     // 模拟分享功能
     if (navigator.share) {
       navigator.share({
         title: story?.title,
         text: story?.content?.substring(0, 100) + '...',
-        url: window.location.href
+        url: shareUrl
       });
     } else {
       // 降级处理：复制链接到剪贴板
-      navigator.clipboard.writeText(window.location.href);
+      navigator.clipboard.writeText(shareUrl);
       alert('链接已复制到剪贴板');
     }
   };
@@ -162,7 +206,11 @@ export default function Detail(props) {
     $w.utils.navigateTo({
       pageId: 'detail',
       params: {
-        id: storyId
+        id: storyId,
+        from: fromPage || 'index',
+        search: searchParams,
+        tag: tagParams,
+        page: pageParams
       }
     });
   };
@@ -185,11 +233,6 @@ export default function Detail(props) {
     return content.substring(0, maxLength) + '...';
   };
 
-  // 切换内容显示状态
-  const toggleContent = () => {
-    setShowFullContent(!showFullContent);
-  };
-
   // 加载状态
   if (loading) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -205,9 +248,14 @@ export default function Detail(props) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-400 mb-4">{error}</h2>
-          <Button onClick={goBack} className="bg-red-600 hover:bg-red-700 text-white">
-            返回主页
-          </Button>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={handleSmartBack} className="bg-red-600 hover:bg-red-700 text-white">
+              返回上一页
+            </Button>
+            <Button onClick={goHome} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
+              返回主页
+            </Button>
+          </div>
         </div>
       </div>;
   }
@@ -217,9 +265,14 @@ export default function Detail(props) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-400 mb-4">故事未找到</h2>
-          <Button onClick={goBack} className="bg-red-600 hover:bg-red-700 text-white">
-            返回主页
-          </Button>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={handleSmartBack} className="bg-red-600 hover:bg-red-700 text-white">
+              返回上一页
+            </Button>
+            <Button onClick={goHome} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
+              返回主页
+            </Button>
+          </div>
         </div>
       </div>;
   }
@@ -230,12 +283,23 @@ export default function Detail(props) {
       {/* 顶部导航 */}
       <header className="relative z-10 bg-black/50 backdrop-blur-sm border-b border-gray-800 sticky top-0">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Button onClick={goBack} variant="ghost" className="text-gray-300 hover:text-white">
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            返回
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button onClick={handleSmartBack} variant="ghost" className="text-gray-300 hover:text-white">
+              <ArrowLeft className="w-5 h-5 mr-2" />
+              返回
+            </Button>
+            {fromPage && <span className="text-sm text-gray-400">
+                来自: {fromPage === 'index' ? '主页' : fromPage === 'admin' ? '管理后台' : '未知页面'}
+              </span>}
+          </div>
           <h1 className="text-xl font-bold text-red-600">红色故事详情</h1>
           <div className="flex gap-2">
+            <Button onClick={goHome} variant="ghost" className="text-gray-300 hover:text-white">
+              <Home className="w-5 h-5" />
+            </Button>
+            <Button onClick={goToList} variant="ghost" className="text-gray-300 hover:text-white">
+              <List className="w-5 h-5" />
+            </Button>
             <Button onClick={handleShare} variant="ghost" className="text-gray-300 hover:text-white">
               <Share2 className="w-5 h-5" />
             </Button>
@@ -307,30 +371,18 @@ export default function Detail(props) {
                 </span>)}
             </div>}
 
-          {/* 内容展示 - 优化版本 */}
+          {/* 内容展示 */}
           <div className="prose prose-invert max-w-none">
-            <div className="text-gray-200 leading-relaxed">
-              {showFullContent ? <div className="space-y-4">
-                  {story.content.split('\n\n').map((paragraph, index) => <p key={index} className="text-lg leading-relaxed mb-4 text-justify">
-                      {paragraph}
-                    </p>)}
-                </div> : <div className="space-y-4">
-                  <p className="text-lg leading-relaxed text-justify">
-                    {getContentPreview(story.content, 300)}
-                  </p>
-                  {story.content && story.content.length > 300 && <div className="text-center">
-                      <Button onClick={toggleContent} variant="outline" className="border-red-600 text-red-400 hover:bg-red-900/20 mt-4">
-                        {showFullContent ? <>
-                            <ChevronUp className="w-4 h-4 mr-2" />
-                            收起内容
-                          </> : <>
-                            <ChevronDown className="w-4 h-4 mr-2" />
-                            展开全文
-                          </>}
-                      </Button>
-                    </div>}
-                </div>}
-            </div>
+            {showFullContent ? story.content.split('\n\n').map((paragraph, index) => <p key={index} className="text-gray-200 leading-relaxed mb-6 text-lg">
+                  {paragraph}
+                </p>) : <div>
+                <p className="text-gray-200 leading-relaxed mb-6 text-lg">
+                  {getContentPreview(story.content, 300)}
+                </p>
+                {story.content && story.content.length > 300 && <Button onClick={() => setShowFullContent(true)} variant="outline" className="border-red-600 text-red-400 hover:bg-red-900/20">
+                    阅读全文
+                  </Button>}
+              </div>}
           </div>
 
           {/* 互动区域 */}
@@ -358,13 +410,11 @@ export default function Detail(props) {
               相关故事推荐
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {relatedStories.map(relatedStory => <div key={relatedStory.id} onClick={() => navigateToStory(relatedStory.id)} className="bg-gray-900/50 rounded-xl p-6 border border-gray-700 hover:border-red-600/50 transition-all cursor-pointer hover:shadow-lg hover:transform hover:scale-[1.02]">
+              {relatedStories.map(relatedStory => <div key={relatedStory.id} onClick={() => navigateToStory(relatedStory.id)} className="bg-gray-900/50 rounded-xl p-6 border border-gray-700 hover:border-red-600/50 transition-all cursor-pointer hover:shadow-lg">
                   <div className="flex gap-4">
-                    {relatedStory.image ? <img src={relatedStory.image} alt={relatedStory.title} className="w-20 h-20 rounded-lg object-cover flex-shrink-0" /> : <div className="w-20 h-20 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0">
-                        <BookOpen className="w-8 h-8 text-gray-600" />
-                      </div>}
+                    {relatedStory.image && <img src={relatedStory.image} alt={relatedStory.title} className="w-20 h-20 rounded-lg object-cover flex-shrink-0" />}
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2 hover:text-red-400 transition-colors">
+                      <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
                         {relatedStory.title}
                       </h3>
                       <p className="text-sm text-gray-400 line-clamp-2 mb-3">
