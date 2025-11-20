@@ -7,6 +7,8 @@ import { ArrowLeft, Save, Upload, Tag, MapPin, Clock, User, BookOpen } from 'luc
 
 // @ts-ignore;
 import { Sidebar } from '@/components/Sidebar';
+// @ts-ignore;
+import { MobileBottomNav } from '@/components/MobileBottomNav';
 export default function UploadPage(props) {
   const {
     $w
@@ -89,37 +91,39 @@ export default function UploadPage(props) {
       params: {}
     });
   };
-  return <div className="min-h-screen bg-gray-900 text-white flex">
+  return <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
       <Sidebar currentPage="upload" navigateTo={navigateTo} />
       
-      <div className="flex-1 ml-64">
-        <header className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
-          <div className="max-w-7xl mx-auto px-6 py-4">
+      {/* 移动端返回栏 */}
+      <div className="md:hidden bg-gray-800/90 backdrop-blur-sm border-b border-gray-700 px-4 py-3 flex items-center">
+        <button onClick={goBack} className="flex items-center text-gray-300 hover:text-white">
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          返回
+        </button>
+      </div>
+
+      <div className="flex-1 transition-all duration-300 ease-in-out">
+        <header className="hidden md:block bg-gray-800/90 backdrop-blur-sm border-b border-gray-700">
+          <div className="max-w-4xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <button onClick={goBack} className="flex items-center text-gray-300 hover:text-white">
-                  <ArrowLeft className="w-5 h-5 mr-2" />
-                  返回
-                </button>
-              </div>
               <h1 className="text-2xl font-bold text-white">创建新故事</h1>
             </div>
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-6 py-8">
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 p-6">
+        <main className="max-w-4xl mx-auto p-4 md:p-8 pb-24 md:pb-8">
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 p-6 shadow-2xl animate-fade-in">
             <div className="space-y-6">
               {/* 标题 */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   <BookOpen className="w-4 h-4 inline mr-1" />
-                  标题
+                  标题 *
                 </label>
                 <Input value={story.title} onChange={e => setStory({
                 ...story,
                 title: e.target.value
-              })} placeholder="请输入故事标题" className="bg-gray-700 border-gray-600 text-white" />
+              })} placeholder="请输入故事标题" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
 
               {/* 作者 */}
@@ -131,7 +135,7 @@ export default function UploadPage(props) {
                 <Input value={story.author} onChange={e => setStory({
                 ...story,
                 author: e.target.value
-              })} placeholder="请输入作者姓名" className="bg-gray-700 border-gray-600 text-white" />
+              })} placeholder="请输入作者姓名" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
 
               {/* 地点 */}
@@ -143,7 +147,7 @@ export default function UploadPage(props) {
                 <Input value={story.location} onChange={e => setStory({
                 ...story,
                 location: e.target.value
-              })} placeholder="请输入故事发生地点" className="bg-gray-700 border-gray-600 text-white" />
+              })} placeholder="请输入故事发生地点" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
 
               {/* 阅读时间 */}
@@ -155,7 +159,7 @@ export default function UploadPage(props) {
                 <Input value={story.read_time} onChange={e => setStory({
                 ...story,
                 read_time: e.target.value
-              })} placeholder="例如：5分钟阅读" className="bg-gray-700 border-gray-600 text-white" />
+              })} placeholder="例如：5分钟阅读" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
 
               {/* 标签 */}
@@ -165,13 +169,13 @@ export default function UploadPage(props) {
                   标签
                 </label>
                 <div className="flex gap-2 mb-2">
-                  <Input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleAddTag()} placeholder="添加标签" className="bg-gray-700 border-gray-600 text-white" />
-                  <Button onClick={handleAddTag} className="bg-red-600 hover:bg-red-700">
+                  <Input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleAddTag()} placeholder="添加标签" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+                  <Button onClick={handleAddTag} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all">
                     添加
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {story.tags.map((tag, index) => <span key={index} className="px-3 py-1 bg-red-900/30 text-red-300 text-sm rounded-full border border-red-800/50">
+                  {story.tags.map((tag, index) => <span key={index} className="px-3 py-1 bg-red-900/30 text-red-300 text-sm rounded-full border border-red-800/50 animate-fade-in">
                       {tag}
                       <button onClick={() => handleRemoveTag(tag)} className="ml-2 text-red-400 hover:text-red-300">
                         ×
@@ -189,25 +193,25 @@ export default function UploadPage(props) {
                 <Input value={story.image} onChange={e => setStory({
                 ...story,
                 image: e.target.value
-              })} placeholder="请输入图片URL" className="bg-gray-700 border-gray-600 text-white" />
+              })} placeholder="请输入图片URL" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
 
               {/* 内容 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">故事内容</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">故事内容 *</label>
                 <Textarea value={story.content} onChange={e => setStory({
                 ...story,
                 content: e.target.value
-              })} placeholder="请输入故事内容..." rows={10} className="bg-gray-700 border-gray-600 text-white resize-none" />
+              })} placeholder="请输入故事内容..." rows={10} className="bg-gray-700/50 border-gray-600 text-white resize-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
 
               {/* 操作按钮 */}
               <div className="flex gap-3 pt-4 border-t border-gray-700">
-                <Button onClick={handleSave} disabled={loading} className="bg-red-600 hover:bg-red-700">
+                <Button onClick={handleSave} disabled={loading} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-red-500/25 transition-all duration-300">
                   <Save className="w-4 h-4 mr-2" />
                   {loading ? '保存中...' : '保存草稿'}
                 </Button>
-                <Button onClick={goBack} variant="outline" className="border-gray-600 text-gray-300">
+                <Button onClick={goBack} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white transition-all">
                   取消
                 </Button>
               </div>
@@ -215,5 +219,7 @@ export default function UploadPage(props) {
           </div>
         </main>
       </div>
+
+      <MobileBottomNav currentPage="upload" navigateTo={navigateTo} />
     </div>;
 }
