@@ -1,17 +1,18 @@
 // @ts-ignore;
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { BookOpen, Calendar, MapPin, Clock, Search, Filter, Plus, Eye, ArrowRight, Star, Heart, Share2, Menu, X, Settings, AlertCircle } from 'lucide-react';
+import { BookOpen, Calendar, MapPin, Clock, Search, Filter, Plus, Eye, ArrowRight, Star, Heart, Share2, Menu, X, Settings, AlertCircle, ChevronLeft, ChevronRight, Play, Pause, User } from 'lucide-react';
 
 // @ts-ignore;
 import { PageHeader, BottomNav, QuickNav, BreadcrumbNav } from '@/components/Navigation';
 export default function HomePage(props) {
   const {
-    $w } =
-  props;
+    $w
+  } = props;
   const [stories, setStories] = useState([]);
+  const [featuredStories, setFeaturedStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -19,7 +20,10 @@ export default function HomePage(props) {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
   const storiesPerPage = 9;
+  const carouselRef = useRef(null);
 
   // 加载故事列表
   useEffect(() => {
@@ -34,15 +38,18 @@ export default function HomePage(props) {
 
         // 查询已发布的故事
         const result = await db.collection('red_story').where({
-          status: 'published' }).
-        orderBy('createdAt', 'desc').get();
+          status: 'published'
+        }).orderBy('createdAt', 'desc').get();
         console.log('首页数据加载结果:', result);
         if (result && result.data) {
           setStories(result.data);
+          // 选择前5个故事作为精选
+          setFeaturedStories(result.data.slice(0, 5));
           const totalPagesCount = Math.ceil(result.data.length / storiesPerPage);
           setTotalPages(totalPagesCount);
         } else {
           setStories([]);
+          setFeaturedStories([]);
           setTotalPages(1);
         }
       } catch (err) {
@@ -55,20 +62,43 @@ export default function HomePage(props) {
     loadStories();
   }, []);
 
+  // 轮播自动播放
+  useEffect(() => {
+    if (!isPlaying || featuredStories.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % featuredStories.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [isPlaying, featuredStories.length]);
+
   // 处理搜索
-  const handleSearch = (e) => {
+  const handleSearch = e => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
   };
 
   // 处理筛选
-  const handleFilter = (tag) => {
+  const handleFilter = tag => {
     setFilterTag(tag);
     setCurrentPage(1);
   };
 
+  // 轮播控制
+  const nextSlide = () => {
+    setCurrentSlide(prev => (prev + 1) % featuredStories.length);
+  };
+  const prevSlide = () => {
+    setCurrentSlide(prev => (prev - 1 + featuredStories.length) % featuredStories.length);
+  };
+  const goToSlide = index => {
+    setCurrentSlide(index);
+  };
+  const togglePlay = () => {
+    setIsPlaying(!isPlaying);
+  };
+
   // 过滤故事
-  const filteredStories = stories.filter((story) => {
+  const filteredStories = stories.filter(story => {
     const matchesSearch = story.title.toLowerCase().includes(searchTerm.toLowerCase()) || story.content.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterTag === 'all' || story.tags && story.tags.includes(filterTag);
     return matchesSearch && matchesFilter;
@@ -78,40 +108,40 @@ export default function HomePage(props) {
   const paginatedStories = filteredStories.slice((currentPage - 1) * storiesPerPage, currentPage * storiesPerPage);
 
   // 获取所有标签
-  const allTags = [...new Set(stories.flatMap((story) => story.tags || []))];
+  const allTags = [...new Set(stories.flatMap(story => story.tags || []))];
 
   // 导航函数
   const navigateTo = $w.utils.navigateTo;
-  const goToDetail = (storyId) => {
+  const goToDetail = storyId => {
     navigateTo({
       pageId: 'detail',
       params: {
-        id: storyId } });
-
-
+        id: storyId
+      }
+    });
   };
   const goToAdmin = () => {
     navigateTo({
       pageId: 'admin',
-      params: {} });
-
+      params: {}
+    });
   };
   const goToUpload = () => {
     navigateTo({
       pageId: 'upload',
-      params: {} });
-
+      params: {}
+    });
   };
 
   // 格式化日期
-  const formatDate = (timestamp) => {
+  const formatDate = timestamp => {
     if (!timestamp) return '未知时间';
     const date = new Date(timestamp);
     return date.toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit' });
-
+      day: '2-digit'
+    });
   };
 
   // 面包屑导航
@@ -120,9 +150,9 @@ export default function HomePage(props) {
     href: true,
     onClick: () => navigateTo({
       pageId: 'index',
-      params: {} }) }];
-
-
+      params: {}
+    })
+  }];
 
   // 加载状态
   if (loading) {
@@ -142,7 +172,8 @@ export default function HomePage(props) {
       label: '菜单',
       icon: Menu,
       onClick: () => setMobileMenuOpen(!mobileMenuOpen),
-      className: 'text-gray-300 hover:text-white' }]} />
+      className: 'text-gray-300 hover:text-white'
+    }]} />
 
 
       {/* 移动端菜单 */}
@@ -159,8 +190,8 @@ export default function HomePage(props) {
                 <Button onClick={() => {
               navigateTo({
                 pageId: 'index',
-                params: {} });
-
+                params: {}
+              });
               setMobileMenuOpen(false);
             }} variant="ghost" className="w-full justify-start text-gray-300 hover:text-white">
                   <BookOpen className="w-5 h-5 mr-3" />
@@ -198,22 +229,106 @@ export default function HomePage(props) {
             </Button>
           </div>}
 
-        {/* 英雄区域 */}
-        <section className="mb-12">
-          <div className="bg-gradient-to-r from-red-900/30 to-red-800/30 rounded-2xl p-8 md:p-12 border border-red-800/30">
-            <div className="max-w-3xl">
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                传承红色记忆
-                <span className="block text-2xl md:text-3xl text-red-400 mt-2">铭记革命历史</span>
-              </h1>
-              <p className="text-lg text-gray-300 mb-6">
-                在这里，我们记录着那些感人至深的红色故事，传承着革命先辈的崇高精神。
-                每一个故事都是一段历史的见证，每一份记忆都是民族精神的瑰宝。
-              </p>
-              <QuickNav navigateTo={navigateTo} className="flex-wrap gap-3" />
+        {/* 轮播区域 */}
+        {featuredStories.length > 0 && <section className="mb-12">
+            <div className="relative rounded-2xl overflow-hidden" ref={carouselRef}>
+              {/* 轮播内容 */}
+              <div className="relative h-96 md:h-[500px]">
+                {featuredStories.map((story, index) => <div key={story._id} className={`absolute inset-0 transition-opacity duration-500 ${index === currentSlide ? 'opacity-100' : 'opacity-0'}`}>
+                    <div className="relative h-full">
+                      {/* 背景图片 */}
+                      {story.image ? <img src={story.image} alt={story.title} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gradient-to-br from-red-900/50 to-gray-800 flex items-center justify-center">
+                          <BookOpen className="w-24 h-24 text-red-400 opacity-50" />
+                        </div>}
+                      
+                      {/* 渐变遮罩 */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                      
+                      {/* 内容区域 */}
+                      <div className="absolute bottom-0 left-0 right-0 p-8 md:p-12">
+                        <div className="max-w-4xl">
+                          <div className="flex items-center gap-2 mb-4">
+                            <span className="px-3 py-1 bg-red-600 text-white text-sm font-medium rounded-full">精选故事</span>
+                            <span className="px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-sm rounded-full">
+                              {story.read_time || '5分钟阅读'}
+                            </span>
+                          </div>
+                          
+                          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3 line-clamp-2">
+                            {story.title}
+                          </h2>
+                          
+                          <p className="text-gray-200 text-lg mb-4 line-clamp-3">
+                            {story.content.substring(0, 150)}...
+                          </p>
+                          
+                          <div className="flex items-center gap-4 mb-6">
+                            <span className="text-gray-300 flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              {formatDate(story.createdAt)}
+                            </span>
+                            <span className="text-gray-300 flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              {story.location || '未知地点'}
+                            </span>
+                            <span className="text-gray-300 flex items-center gap-1">
+                              <User className="w-4 h-4" />
+                              {story.author || '佚名'}
+                            </span>
+                          </div>
+                          
+                          <div className="flex gap-3">
+                            <Button onClick={() => goToDetail(story._id)} className="bg-red-600 hover:bg-red-700 text-white px-6 py-3">
+                              <Eye className="w-5 h-5 mr-2" />
+                              阅读全文
+                            </Button>
+                            <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
+                              <Share2 className="w-5 h-5 mr-2" />
+                              分享
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>)}
+              </div>
+
+              {/* 导航按钮 */}
+              <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-colors z-10">
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-colors z-10">
+                <ChevronRight className="w-6 h-6" />
+              </button>
+
+              {/* 播放控制 */}
+              <button onClick={togglePlay} className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors z-10">
+                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+              </button>
+
+              {/* 指示器 */}
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                {featuredStories.map((_, index) => <button key={index} onClick={() => goToSlide(index)} className={`w-2 h-2 rounded-full transition-all ${index === currentSlide ? 'w-8 bg-red-600' : 'bg-white/50 hover:bg-white/70'}`} />)}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>}
+
+        {/* 英雄区域 - 如果没有精选故事 */}
+        {featuredStories.length === 0 && <section className="mb-12">
+            <div className="bg-gradient-to-r from-red-900/30 to-red-800/30 rounded-2xl p-8 md:p-12 border border-red-800/30">
+              <div className="max-w-3xl">
+                <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                  传承红色记忆
+                  <span className="block text-2xl md:text-3xl text-red-400 mt-2">铭记革命历史</span>
+                </h1>
+                <p className="text-lg text-gray-300 mb-6">
+                  在这里，我们记录着那些感人至深的红色故事，传承着革命先辈的崇高精神。
+                  每一个故事都是一段历史的见证，每一份记忆都是民族精神的瑰宝。
+                </p>
+                <QuickNav navigateTo={navigateTo} className="flex-wrap gap-3" />
+              </div>
+            </div>
+          </section>}
 
         {/* 搜索和筛选 */}
         <section className="mb-8">
@@ -230,7 +345,7 @@ export default function HomePage(props) {
                 <button onClick={() => handleFilter('all')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filterTag === 'all' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>
                   全部
                 </button>
-                {allTags.map((tag) => <button key={tag} onClick={() => handleFilter(tag)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filterTag === tag ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>
+                {allTags.map(tag => <button key={tag} onClick={() => handleFilter(tag)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filterTag === tag ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>
                     {tag}
                   </button>)}
               </div>
@@ -240,41 +355,41 @@ export default function HomePage(props) {
 
         {/* 故事统计 */}
         <section className="mb-8">
-          
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-sm">红色故事</p>
+                  <p className="text-3xl font-bold text-white">{stories.length}</p>
+                </div>
+                <div className="w-12 h-12 bg-red-600/20 rounded-lg flex items-center justify-center">
+                  <BookOpen className="w-6 h-6 text-red-400" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-sm">精选标签</p>
+                  <p className="text-3xl font-bold text-white">{allTags.length}</p>
+                </div>
+                <div className="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center">
+                  <Filter className="w-6 h-6 text-blue-400" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400 text-sm">搜索结果</p>
+                  <p className="text-3xl font-bold text-white">{filteredStories.length}</p>
+                </div>
+                <div className="w-12 h-12 bg-green-600/20 rounded-lg flex items-center justify-center">
+                  <Search className="w-6 h-6 text-green-400" />
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* 故事列表 */}
@@ -297,7 +412,7 @@ export default function HomePage(props) {
                   上传第一个故事
                 </Button>}
             </div> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {paginatedStories.map((story) => <div key={story._id} className="bg-gray-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-700 hover:border-red-600/50 transition-all duration-300 group">
+              {paginatedStories.map(story => <div key={story._id} className="bg-gray-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-700 hover:border-red-600/50 transition-all duration-300 group">
                   {/* 故事图片 */}
                   <div className="relative h-48 overflow-hidden">
                     {story.image ? <img src={story.image} alt={story.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /> : <div className="w-full h-full bg-gradient-to-br from-red-900/30 to-gray-800 flex items-center justify-center">
@@ -363,8 +478,8 @@ export default function HomePage(props) {
                 上一页
               </Button>
               {Array.from({
-            length: totalPages },
-          (_, i) => i + 1).map((page) => <button key={page} onClick={() => setCurrentPage(page)} className={`px-3 py-1 text-sm rounded-md transition-colors ${currentPage === page ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
+            length: totalPages
+          }, (_, i) => i + 1).map(page => <button key={page} onClick={() => setCurrentPage(page)} className={`px-3 py-1 text-sm rounded-md transition-colors ${currentPage === page ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
                   {page}
                 </button>)}
               <Button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} variant="outline" className="border-gray-600 text-gray-300">
