@@ -178,7 +178,7 @@ export default function EditPage(props) {
       // 处理标签 - 确保返回数组类型
       const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
 
-      // 生成数字类型的时间戳
+      // 生成当前时间戳（数字格式）
       const currentTimestamp = Date.now();
       console.log('开始更新故事数据...');
       const result = await $w.cloud.callDataSource({
@@ -211,7 +211,7 @@ export default function EditPage(props) {
             // Array
             status: formData.status,
             // String
-            updatedAt: currentTimestamp // Number - Unix时间戳
+            updatedAt: currentTimestamp // Number (Unix时间戳)
           }
         }
       });

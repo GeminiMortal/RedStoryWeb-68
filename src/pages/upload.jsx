@@ -114,7 +114,7 @@ export default function UploadPage(props) {
       // 处理标签 - 确保返回数组类型
       const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
 
-      // 生成数字类型的时间戳
+      // 生成当前时间戳（数字格式）
       const currentTimestamp = Date.now();
 
       // 保存到数据模型 - 确保数据类型匹配
@@ -145,8 +145,8 @@ export default function UploadPage(props) {
             order: 0,
             // Number
             createdAt: currentTimestamp,
-            // Number - Unix时间戳
-            updatedAt: currentTimestamp // Number - Unix时间戳
+            // Number (Unix时间戳)
+            updatedAt: currentTimestamp // Number (Unix时间戳)
           }
         }
       });
