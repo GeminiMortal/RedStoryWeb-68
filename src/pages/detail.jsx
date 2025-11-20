@@ -13,7 +13,9 @@ export default function Detail(props) {
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isLiked, setIsLiked] = useState(false);
-  const storyId = page.dataset.params.id;
+
+  // 安全获取页面参数
+  const storyId = page?.dataset?.params?.id;
 
   // 模拟故事数据
   const storiesData = [{
@@ -66,6 +68,12 @@ export default function Detail(props) {
         setLoading(false);
       }, 500);
     };
+
+    // 如果没有storyId，直接设置为加载完成
+    if (!storyId) {
+      setLoading(false);
+      return;
+    }
     loadStory();
   }, [storyId]);
   const goBack = () => {
@@ -132,7 +140,7 @@ export default function Detail(props) {
       {/* 主要内容 */}
       <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
         {/* 头图 */}
-        <div className="mb-8 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="mb-8 rounded-2xl overflow-hidden shadow-2xl relative">
           <img src={story.image} alt={story.title} className="w-full h-64 md:h-96 object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
         </div>
