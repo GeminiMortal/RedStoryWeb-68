@@ -77,7 +77,7 @@ export default function AdminPage(props) {
     loadStories();
   }, [$w]);
 
-  // 删除故事
+  // 删除故事 - 修复filter参数问题
   const handleDelete = async storyId => {
     if (!storyId) {
       setError('故事ID无效');
@@ -93,7 +93,13 @@ export default function AdminPage(props) {
         dataSourceName: 'red_story',
         methodName: 'wedaDeleteV2',
         params: {
-          _id: storyId
+          filter: {
+            where: {
+              _id: {
+                $eq: storyId
+              }
+            }
+          }
         }
       });
       console.log('删除结果:', result);
