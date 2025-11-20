@@ -1,0 +1,66 @@
+
+  {
+    "name": "red_story",
+    "title": "红色故事",
+    "schemas": [
+      {
+        "name": "story_id",
+        "title": "故事ID",
+        "type": "String"
+      },
+      {
+        "name": "title",
+        "title": "故事标题",
+        "type": "String"
+      },
+      {
+        "name": "content",
+        "title": "故事内容",
+        "type": "MultiLineString"
+      },
+      {
+        "name": "image",
+        "title": "配图",
+        "type": "Image"
+      },
+      {
+        "name": "date",
+        "title": "时间时期",
+        "type": "String"
+      },
+      {
+        "name": "location",
+        "title": "发生地点",
+        "type": "String"
+      },
+      {
+        "name": "author",
+        "title": "作者",
+        "type": "String"
+      },
+      {
+        "name": "read_time",
+        "title": "阅读时间",
+        "type": "String"
+      },
+      {
+        "name": "tags",
+        "title": "标签",
+        "type": "Array",
+        "items": {
+          "type": "String"
+        }
+      },
+      {
+        "name": "status",
+        "title": "状态",
+        "type": "String"
+      },
+      {
+        "name": "order",
+        "title": "排序",
+        "type": "Number"
+      }
+    ]
+  }
+  
