@@ -102,8 +102,13 @@ export default function IndexPage(props) {
     return matchesSearch && matchesTag;
   });
 
-  // 导航函数
+  // 导航函数 - 确保正确传递故事ID
   const navigateToDetail = storyId => {
+    console.log('跳转到详情页，故事ID:', storyId); // 调试日志
+    if (!storyId) {
+      console.error('故事ID为空，无法跳转');
+      return;
+    }
     $w.utils.navigateTo({
       pageId: 'detail',
       params: {
