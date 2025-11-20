@@ -3,39 +3,36 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Calendar, MapPin, Users, Clock, Share2, Heart, BookOpen, MessageCircle, ThumbsUp, Eye } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Clock, Tag, Share2, Heart, Eye, ImageOff } from 'lucide-react';
 
-export default function Detail(props) {
+export default function DetailPage(props) {
   const {
-    $w,
-    page
+    $w
   } = props;
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [viewCount, setViewCount] = useState(0);
-  const [relatedStories, setRelatedStories] = useState([]);
-  const [showFullContent, setShowFullContent] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [liked, setLiked] = useState(false);
 
-  // 安全获取页面参数
-  const storyId = page?.dataset?.params?.id;
+  // 从URL参数获取故事ID
+  const storyId = props.$w.page.dataset.params.id;
 
-  // 从数据模型加载红色故事详情
+  // 从数据模型加载故事详情
   useEffect(() => {
+    if (!storyId) {
+      setError('未提供故事ID');
+      setLoading(false);
+      return;
+    }
     const loadStory = async () => {
-      if (!storyId) {
-        setError('缺少故事ID参数');
-        setLoading(false);
-        return;
-      }
       try {
         setLoading(true);
         setError(null);
+        console.log('加载故事详情，ID:', storyId);
         const result = await $w.cloud.callDataSource({
           dataSourceName: 'red_story',
-          methodName: 'wedaGetRecordsV2',
+          methodName: 'wedaGetRecordV2',
           params: {
             filter: {
               where: {
@@ -45,44 +42,35 @@ export default function Detail(props) {
               }
             },
             select: {
-              $master: true // 返回所有字段
-            },
-            getCount: true,
-            pageSize: 1 // 只获取一条记录
+              $master: true
+            }
           }
         });
-        if (result.records && result.records.length > 0) {
-          const record = result.records[0];
-          // 将数据库字段映射为前端所需格式
-          const mappedStory = {
+        console.log('故事详情查询结果:', result);
+        if (result && result.record) {
+          const record = result.record;
+          const storyData = {
             id: record._id,
-            title: record.title,
-            content: record.content,
-            image: record.image,
-            date: record.date,
-            location: record.location,
-            author: record.author,
-            readTime: record.read_time,
-            tags: record.tags || [],
-            status: record.status,
-            order: record.order,
+            title: record.title || '未命名故事',
+            content: record.content || '',
+            image: record.image || '',
+            date: record.date || '',
+            location: record.location || '',
+            author: record.author || '佚名',
+            readTime: record.read_time || '5分钟',
+            tags: Array.isArray(record.tags) ? record.tags : [],
+            status: record.status || 'draft',
             createdAt: record.createdAt,
             updatedAt: record.updatedAt
           };
-          setStory(mappedStory);
-
-          // 模拟浏览量和点赞数
-          setViewCount(Math.floor(Math.random() * 1000) + 100);
-          setLikeCount(Math.floor(Math.random() * 200) + 20);
-
-          // 加载相关故事
-          loadRelatedStories(mappedStory.tags, mappedStory.id);
+          setStory(storyData);
+          setImageError(false); // 重置图片错误状态
         } else {
-          setError('未找到指定的红色故事');
+          setError('未找到该红色故事');
         }
       } catch (err) {
-        console.error('加载红色故事详情失败:', err);
-        setError('加载红色故事详情失败，请稍后重试');
+        console.error('加载故事详情失败:', err);
+        setError(`加载失败: ${err.message || '未知错误'}`);
       } finally {
         setLoading(false);
       }
@@ -90,79 +78,14 @@ export default function Detail(props) {
     loadStory();
   }, [storyId, $w]);
 
-  // 加载相关故事
-  const loadRelatedStories = async (tags, currentStoryId) => {
-    if (!tags || tags.length === 0) return;
-    try {
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'red_story',
-        methodName: 'wedaGetRecordsV2',
-        params: {
-          filter: {
-            where: {
-              _id: {
-                $ne: currentStoryId // 排除当前故事
-              },
-              status: {
-                $eq: 'published' // 只显示已发布的故事
-              }
-            }
-          },
-          select: {
-            $master: true
-          },
-          orderBy: [{
-            createdAt: 'desc'
-          }],
-          pageSize: 4 // 最多4个相关故事
-        }
-      });
-      if (result.records && result.records.length > 0) {
-        const mappedStories = result.records.map(record => ({
-          id: record._id,
-          title: record.title,
-          content: record.content,
-          image: record.image,
-          date: record.date,
-          location: record.location,
-          author: record.author,
-          readTime: record.read_time,
-          tags: record.tags || [],
-          createdAt: record.createdAt
-        }));
-        setRelatedStories(mappedStories);
-      }
-    } catch (err) {
-      console.error('加载相关故事失败:', err);
-    }
-  };
+  // 导航函数
   const goBack = () => {
     $w.utils.navigateBack();
   };
-  const handleShare = () => {
-    // 模拟分享功能
-    if (navigator.share) {
-      navigator.share({
-        title: story?.title,
-        text: story?.content?.substring(0, 100) + '...',
-        url: window.location.href
-      });
-    } else {
-      // 降级处理：复制链接到剪贴板
-      navigator.clipboard.writeText(window.location.href);
-      alert('链接已复制到剪贴板');
-    }
-  };
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
-  };
-  const navigateToStory = storyId => {
+  const navigateToAdmin = () => {
     $w.utils.navigateTo({
-      pageId: 'detail',
-      params: {
-        id: storyId
-      }
+      pageId: 'admin',
+      params: {}
     });
   };
 
@@ -177,11 +100,40 @@ export default function Detail(props) {
     });
   };
 
-  // 截取内容预览
-  const getContentPreview = (content, maxLength = 150) => {
-    if (!content) return '暂无内容';
-    if (content.length <= maxLength) return content;
-    return content.substring(0, maxLength) + '...';
+  // 处理图片加载错误
+  const handleImageError = () => {
+    console.log('图片加载失败:', story?.image);
+    setImageError(true);
+  };
+
+  // 处理图片加载成功
+  const handleImageLoad = () => {
+    setImageError(false);
+  };
+
+  // 分享功能
+  const handleShare = async () => {
+    if (navigator.share && story) {
+      try {
+        await navigator.share({
+          title: story.title,
+          text: story.content.substring(0, 100) + '...',
+          url: window.location.href
+        });
+      } catch (err) {
+        console.log('分享失败:', err);
+      }
+    } else {
+      // 复制链接到剪贴板
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        alert('链接已复制到剪贴板');
+      });
+    }
+  };
+
+  // 点赞功能
+  const handleLike = () => {
+    setLiked(!liked);
   };
 
   // 加载状态
@@ -189,7 +141,7 @@ export default function Detail(props) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-400">加载红色故事详情中...</p>
+          <p className="text-gray-400">加载故事详情中...</p>
         </div>
       </div>;
   }
@@ -197,22 +149,32 @@ export default function Detail(props) {
   // 错误状态
   if (error) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md">
+          <div className="text-red-500 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
           <h2 className="text-2xl font-bold text-gray-400 mb-4">{error}</h2>
-          <Button onClick={goBack} className="bg-red-600 hover:bg-red-700 text-white">
-            返回主页
-          </Button>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={goBack} className="bg-red-600 hover:bg-red-700 text-white">
+              返回
+            </Button>
+            <Button onClick={() => window.location.reload()} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
+              重新加载
+            </Button>
+          </div>
         </div>
       </div>;
   }
 
-  // 无数据状态
+  // 故事不存在
   if (!story) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-400 mb-4">故事未找到</h2>
+          <h2 className="text-2xl font-bold text-gray-400 mb-4">故事不存在</h2>
           <Button onClick={goBack} className="bg-red-600 hover:bg-red-700 text-white">
-            返回主页
+            返回
           </Button>
         </div>
       </div>;
@@ -222,144 +184,109 @@ export default function Detail(props) {
       <div className="absolute inset-0 bg-gradient-to-br from-red-900/20 via-gray-900 to-gray-900"></div>
       
       {/* 顶部导航 */}
-      <header className="relative z-10 bg-black/50 backdrop-blur-sm border-b border-gray-800 sticky top-0">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <header className="relative z-10 bg-black/50 backdrop-blur-sm border-b border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <Button onClick={goBack} variant="ghost" className="text-gray-300 hover:text-white">
             <ArrowLeft className="w-5 h-5 mr-2" />
             返回
           </Button>
           <h1 className="text-xl font-bold text-red-600">红色故事详情</h1>
-          <div className="flex gap-2">
-            <Button onClick={handleShare} variant="ghost" className="text-gray-300 hover:text-white">
-              <Share2 className="w-5 h-5" />
-            </Button>
-            <Button onClick={handleLike} variant="ghost" className={`${isLiked ? 'text-red-600' : 'text-gray-300'} hover:text-red-600`}>
-              <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-            </Button>
-          </div>
+          <Button onClick={navigateToAdmin} variant="ghost" className="text-gray-300 hover:text-white">
+            管理
+          </Button>
         </div>
       </header>
 
       {/* 主要内容 */}
       <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
-        {/* 头图区域 */}
-        <div className="mb-8 rounded-2xl overflow-hidden shadow-2xl relative">
-          {story.image ? <img src={story.image} alt={story.title} className="w-full h-64 md:h-96 object-cover" /> : <div className="w-full h-64 md:h-96 bg-gradient-to-br from-red-900/30 to-gray-800/30 flex items-center justify-center">
-              <div className="text-center text-gray-400">
-                <BookOpen className="w-16 h-16 mx-auto mb-4" />
-                <p>暂无配图</p>
+        {/* 故事标题 */}
+        <h1 className="text-4xl font-bold text-white mb-6 text-center">{story.title}</h1>
+
+        {/* 故事图片 */}
+        <div className="mb-8">
+          {story.image && !imageError ? <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+              <img src={story.image} alt={story.title} onLoad={handleImageLoad} onError={handleImageError} className="w-full h-96 object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+            </div> : <div className="w-full h-96 bg-gradient-to-br from-red-900/30 to-gray-800/30 rounded-2xl flex items-center justify-center border border-gray-700">
+              <div className="text-center">
+                <ImageOff className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400">{imageError ? '图片加载失败' : '暂无图片'}</p>
               </div>
             </div>}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-          
-          {/* 标题覆盖在图片上 */}
-          <div className="absolute bottom-0 left-0 right-0 p-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 drop-shadow-lg">
-              {story.title}
-            </h1>
-            
-            {/* 统计信息 */}
-            <div className="flex items-center gap-6 text-sm text-gray-200">
-              <span className="flex items-center gap-1">
-                <Eye className="w-4 h-4" />
-                {viewCount} 阅读
-              </span>
-              <span className="flex items-center gap-1">
-                <ThumbsUp className="w-4 h-4" />
-                {likeCount} 点赞
-              </span>
+        </div>
+
+        {/* 故事元信息 */}
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <Users className="w-5 h-5 text-red-400" />
+              <div>
+                <div className="text-sm text-gray-400">作者</div>
+                <div className="font-medium text-white">{story.author}</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <Calendar className="w-5 h-5 text-red-400" />
+              <div>
+                <div className="text-sm text-gray-400">时间</div>
+                <div className="font-medium text-white">{story.date || '未知'}</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <MapPin className="w-5 h-5 text-red-400" />
+              <div>
+                <div className="text-sm text-gray-400">地点</div>
+                <div className="font-medium text-white">{story.location || '未知'}</div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <Clock className="w-5 h-5 text-red-400" />
+              <div>
+                <div className="text-sm text-gray-400">阅读时长</div>
+                <div className="font-medium text-white">{story.readTime}</div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 文章信息卡片 */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-700 mb-8">
-          {/* 元信息 */}
-          <div className="flex flex-wrap items-center gap-4 mb-6 text-sm text-gray-300">
-            {story.date && <span className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                {story.date}
-              </span>}
-            {story.location && <span className="flex items-center gap-1">
-                <MapPin className="w-4 h-4" />
-                {story.location}
-              </span>}
-            <span className="flex items-center gap-1">
-              <Users className="w-4 h-4" />
-              {story.author || '佚名'}
-            </span>
-            {story.readTime && <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                {story.readTime}
-              </span>}
-          </div>
-
-          {/* 标签 */}
-          {story.tags && story.tags.length > 0 && <div className="flex flex-wrap gap-2 mb-6">
-              {story.tags.map((tag, index) => <span key={index} className="px-3 py-1 bg-red-900/30 text-red-300 rounded-full text-sm border border-red-800/30">
+        {/* 标签 */}
+        {story.tags && story.tags.length > 0 && <div className="mb-8">
+            <div className="flex flex-wrap gap-2 justify-center">
+              {story.tags.map((tag, index) => <span key={index} className="px-3 py-1 bg-red-900/50 text-red-300 rounded-full text-sm backdrop-blur-sm">
+                  <Tag className="w-3 h-3 inline mr-1" />
                   {tag}
                 </span>)}
-            </div>}
-
-          {/* 内容展示 */}
-          <div className="prose prose-invert max-w-none">
-            {showFullContent ? story.content.split('\n\n').map((paragraph, index) => <p key={index} className="text-gray-200 leading-relaxed mb-6 text-lg">
-                  {paragraph}
-                </p>) : <div>
-                <p className="text-gray-200 leading-relaxed mb-6 text-lg">
-                  {getContentPreview(story.content, 300)}
-                </p>
-                {story.content && story.content.length > 300 && <Button onClick={() => setShowFullContent(true)} variant="outline" className="border-red-600 text-red-400 hover:bg-red-900/20">
-                    阅读全文
-                  </Button>}
-              </div>}
-          </div>
-
-          {/* 互动区域 */}
-          <div className="flex items-center justify-between mt-12 pt-8 border-t border-gray-700">
-            <div className="text-sm text-gray-400">
-              革命精神永垂不朽 · 红色基因代代相传
             </div>
-            <div className="flex gap-3">
-              <Button onClick={handleShare} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
-                <Share2 className="w-4 h-4 mr-2" />
-                分享
-              </Button>
-              <Button onClick={handleLike} className={`${isLiked ? 'bg-red-600' : 'bg-gray-700'} hover:bg-red-700 text-white`}>
-                <Heart className={`w-4 h-4 mr-2 ${isLiked ? 'fill-current' : ''}`} />
-                {isLiked ? '已收藏' : '收藏'} ({likeCount})
-              </Button>
-            </div>
+          </div>}
+
+        {/* 故事内容 */}
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 mb-8 border border-gray-700">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+            <div className="w-1 h-8 bg-red-600 mr-4"></div>
+            故事详情
+          </h2>
+          <div className="prose prose-invert max-w-none text-gray-300 leading-relaxed">
+            <p className="whitespace-pre-wrap">{story.content}</p>
           </div>
         </div>
 
-        {/* 相关故事推荐 */}
-        {relatedStories.length > 0 && <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-700">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-              <BookOpen className="w-6 h-6 text-red-600" />
-              相关故事推荐
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {relatedStories.map(relatedStory => <div key={relatedStory.id} onClick={() => navigateToStory(relatedStory.id)} className="bg-gray-900/50 rounded-xl p-6 border border-gray-700 hover:border-red-600/50 transition-all cursor-pointer hover:shadow-lg">
-                  <div className="flex gap-4">
-                    {relatedStory.image && <img src={relatedStory.image} alt={relatedStory.title} className="w-20 h-20 rounded-lg object-cover flex-shrink-0" />}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
-                        {relatedStory.title}
-                      </h3>
-                      <p className="text-sm text-gray-400 line-clamp-2 mb-3">
-                        {getContentPreview(relatedStory.content, 80)}
-                      </p>
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
-                        {relatedStory.date && <span>{relatedStory.date}</span>}
-                        {relatedStory.location && <span>·</span>}
-                        {relatedStory.location && <span>{relatedStory.location}</span>}
-                      </div>
-                    </div>
-                  </div>
-                </div>)}
-            </div>
-          </div>}
+        {/* 操作按钮 */}
+        <div className="flex justify-center gap-4">
+          <Button onClick={handleShare} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
+            <Share2 className="w-4 h-4 mr-2" />
+            分享
+          </Button>
+          <Button onClick={handleLike} variant="outline" className={`border-gray-600 ${liked ? 'text-red-400 bg-red-900/20' : 'text-gray-300'} hover:bg-gray-800`}>
+            <Heart className={`w-4 h-4 mr-2 ${liked ? 'fill-current' : ''}`} />
+            {liked ? '已收藏' : '收藏'}
+          </Button>
+        </div>
+
+        {/* 底部信息 */}
+        <div className="mt-12 text-center text-sm text-gray-500">
+          <p>发布时间：{formatDate(story.createdAt)}</p>
+          <p className="mt-2">让红色基因代代相传，让革命精神永放光芒</p>
+        </div>
       </main>
     </div>;
 }

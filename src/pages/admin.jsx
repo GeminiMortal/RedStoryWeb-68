@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Trash2, Edit, Eye, Plus, Search, Filter, Calendar, MapPin, Tag, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit, Eye, Plus, Search, Filter, Calendar, MapPin, Tag, Clock, AlertCircle, RefreshCw, ImageOff } from 'lucide-react';
 
 export default function AdminPage(props) {
   const {
@@ -16,6 +16,7 @@ export default function AdminPage(props) {
   const [filterStatus, setFilterStatus] = useState('all');
   const [deletingId, setDeletingId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [imageErrors, setImageErrors] = useState({});
 
   // 从数据模型加载红色故事
   const loadStories = async () => {
@@ -77,6 +78,22 @@ export default function AdminPage(props) {
     loadStories();
   }, [$w]);
 
+  // 处理图片加载错误
+  const handleImageError = storyId => {
+    setImageErrors(prev => ({
+      ...prev,
+      [storyId]: true
+    }));
+  };
+
+  // 处理图片加载成功
+  const handleImageLoad = storyId => {
+    setImageErrors(prev => ({
+      ...prev,
+      [storyId]: false
+    }));
+  };
+
   // 删除故事 - 修复filter参数问题
   const handleDelete = async storyId => {
     if (!storyId) {
@@ -89,6 +106,16 @@ export default function AdminPage(props) {
     setDeletingId(storyId);
     try {
       console.log('开始删除故事，ID:', storyId);
+
+      // 先获取要删除的故事信息，检查是否有图片
+      const storyToDelete = stories.find(s => s.id === storyId);
+      if (storyToDelete && storyToDelete.image) {
+        console.log('该故事包含图片，图片URL:', storyToDelete.image);
+        // 这里可以添加删除云存储图片的逻辑
+        // 注意：需要云函数来处理云存储文件的删除
+      }
+
+      // 删除数据库记录
       const result = await $w.cloud.callDataSource({
         dataSourceName: 'red_story',
         methodName: 'wedaDeleteV2',
@@ -107,6 +134,15 @@ export default function AdminPage(props) {
       // 从本地状态中移除删除的故事
       setStories(prev => prev.filter(story => story.id !== storyId));
       setError(null);
+
+      // 清除图片错误记录
+      setImageErrors(prev => {
+        const newErrors = {
+          ...prev
+        };
+        delete newErrors[storyId];
+        return newErrors;
+      });
       alert('红色故事删除成功');
     } catch (err) {
       console.error('删除红色故事失败:', err);
@@ -126,7 +162,7 @@ export default function AdminPage(props) {
 
   // 过滤和搜索故事
   const filteredStories = stories.filter(story => {
-    const matchesSearch = story.title.toLowerCase().includes(searchTerm.toLowerCase()) || story.content && story.content.toLowerCase().includes(searchTerm.toLowerCase()) || story.author && story.author.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = story.title.toLowerCase().includes(searchTerm.toLowerCase()) || story.content.toLowerCase().includes(searchTerm.toLowerCase()) || story.author.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || story.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -158,7 +194,6 @@ export default function AdminPage(props) {
       setError('故事ID无效，无法编辑');
       return;
     }
-    // 可以扩展编辑功能
     alert('编辑功能待实现');
   };
 
@@ -292,6 +327,7 @@ export default function AdminPage(props) {
             <span>总计: {stories.length} 个故事</span>
             <span>已发布: {stories.filter(s => s.status === 'published').length} 个</span>
             <span>草稿: {stories.filter(s => s.status === 'draft').length} 个</span>
+            <span>含图片: {stories.filter(s => s.image && s.image.trim() !== '').length} 个</span>
           </div>
         </div>
 
@@ -309,7 +345,7 @@ export default function AdminPage(props) {
               <table className="w-full">
                 <thead className="border-b border-gray-700">
                   <tr className="text-left text-gray-300 text-sm">
-                    <th className="px-6 py-4 font-medium">标题</th>
+                    <th className="px-6 py-4 font-medium">图片/标题</th>
                     <th className="px-6 py-4 font-medium">作者</th>
                     <th className="px-6 py-4 font-medium">时间地点</th>
                     <th className="px-6 py-4 font-medium">状态</th>
@@ -321,7 +357,9 @@ export default function AdminPage(props) {
                   {filteredStories.map(story => <tr key={story.id} className="hover:bg-gray-800/30 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          {story.image && <img src={story.image} alt={story.title} className="w-12 h-12 rounded-lg object-cover" />}
+                          {story.image && !imageErrors[story.id] ? <img src={story.image} alt={story.title} onLoad={() => handleImageLoad(story.id)} onError={() => handleImageError(story.id)} className="w-12 h-12 rounded-lg object-cover" /> : <div className="w-12 h-12 rounded-lg bg-gray-700 flex items-center justify-center">
+                              <ImageOff className="w-6 h-6 text-gray-500" />
+                            </div>}
                           <div>
                             <div className="font-medium text-white">{story.title}</div>
                             <div className="text-sm text-gray-400 line-clamp-1">
