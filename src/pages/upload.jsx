@@ -1,402 +1,220 @@
 // @ts-ignore;
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 // @ts-ignore;
-import { Button } from '@/components/ui';
+import { Button, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, useToast } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Upload, Image, Calendar, MapPin, Clock, Tag, User, AlertCircle, CheckCircle, Save, Eye, Edit3 } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Upload } from 'lucide-react';
 
 // @ts-ignore;
-import { PageHeader, BreadcrumbNav } from '@/components/Navigation';
+import { PageHeader, BottomNav } from '@/components/Navigation';
 export default function UploadPage(props) {
   const {
     $w
   } = props;
-  const [formData, setFormData] = useState({
+  const [story, setStory] = useState({
     title: '',
     content: '',
-    image: '',
-    date: '',
-    location: '',
     author: '',
-    read_time: '',
+    location: '',
     tags: [],
-    status: 'published',
-    order: 0
+    read_time: '5分钟',
+    image: '',
+    status: 'pending' // 草稿状态默认为待审核
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
-  const [saveMode, setSaveMode] = useState('publish'); // 'draft' 或 'publish'
-  const [tagInput, setTagInput] = useState('');
-  const [imagePreview, setImagePreview] = useState(null);
-
-  // 导航函数
+  const [saving, setSaving] = useState(false);
+  const [newTag, setNewTag] = useState('');
+  const {
+    toast
+  } = useToast();
   const navigateTo = $w.utils.navigateTo;
-  const goBack = () => {
-    $w.utils.navigateBack();
-  };
-  const goToAdmin = () => {
-    navigateTo({
-      pageId: 'admin',
-      params: {}
-    });
-  };
-
-  // 处理表单输入变化
-  const handleInputChange = e => {
-    const {
-      name,
-      value,
-      type,
-      files
-    } = e.target;
-    if (type === 'file') {
-      const file = files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = e => {
-          setImagePreview(e.target.result);
-          setFormData(prev => ({
-            ...prev,
-            image: e.target.result
-          }));
-        };
-        reader.readAsDataURL(file);
-      }
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+  const handleSubmit = async e => {
+    e.preventDefault();
+    if (!story.title.trim()) {
+      toast({
+        title: '标题不能为空',
+        description: '请输入故事标题',
+        variant: 'destructive'
+      });
+      return;
     }
-    // 清除错误信息
-    if (error) {
-      setError(null);
+    if (!story.content.trim()) {
+      toast({
+        title: '内容不能为空',
+        description: '请输入故事内容',
+        variant: 'destructive'
+      });
+      return;
+    }
+    try {
+      setSaving(true);
+      const tcb = await $w.cloud.getCloudInstance();
+      const db = tcb.database();
+
+      // 修改为写入 red_story_draft 数据模型
+      const storyData = {
+        ...story,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      await db.collection('red_story_draft').add(storyData);
+      toast({
+        title: '提交成功',
+        description: '故事已提交到草稿箱，等待审核'
+      });
+
+      // 清空表单
+      setStory({
+        title: '',
+        content: '',
+        author: '',
+        location: '',
+        tags: [],
+        read_time: '5分钟',
+        image: '',
+        status: 'pending'
+      });
+
+      // 返回首页
+      navigateTo({
+        pageId: 'index',
+        params: {}
+      });
+    } catch (err) {
+      console.error('保存失败:', err);
+      toast({
+        title: '保存失败',
+        description: err.message || '请稍后重试',
+        variant: 'destructive'
+      });
+    } finally {
+      setSaving(false);
     }
   };
-
-  // 处理标签输入
-  const handleTagInput = e => {
-    setTagInput(e.target.value);
+  const handleChange = (field, value) => {
+    setStory(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
-
-  // 添加标签
   const addTag = () => {
-    const tag = tagInput.trim();
-    if (tag && !formData.tags.includes(tag)) {
-      setFormData(prev => ({
+    if (newTag.trim() && !story.tags.includes(newTag.trim())) {
+      setStory(prev => ({
         ...prev,
-        tags: [...prev.tags, tag]
+        tags: [...prev.tags, newTag.trim()]
       }));
-      setTagInput('');
+      setNewTag('');
     }
   };
-
-  // 移除标签
   const removeTag = tagToRemove => {
-    setFormData(prev => ({
+    setStory(prev => ({
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
   };
-
-  // 处理标签输入的键盘事件
-  const handleTagKeyPress = e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addTag();
-    }
-  };
-
-  // 处理保存模式切换
-  const handleSaveModeChange = mode => {
-    setSaveMode(mode);
-    setFormData(prev => ({
-      ...prev,
-      status: mode === 'draft' ? 'draft' : 'published'
-    }));
-  };
-
-  // 处理表单提交
-  const handleSubmit = async e => {
-    e.preventDefault();
-
-    // 验证必填字段
-    if (!formData.title.trim()) {
-      setError('请输入故事标题');
-      return;
-    }
-    if (!formData.content.trim()) {
-      setError('请输入故事内容');
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      console.log(`开始保存为${saveMode === 'draft' ? '草稿' : '正式发布'}...`);
-
-      // 使用云开发实例直接调用数据库
-      const tcb = await $w.cloud.getCloudInstance();
-      const db = tcb.database();
-
-      // 准备数据
-      const storyData = {
-        ...formData,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        is_draft: saveMode === 'draft',
-        draft_version: saveMode === 'draft' ? 1 : 0
-      };
-
-      // 根据保存模式选择存储的数据模型
-      const collectionName = saveMode === 'draft' ? 'red_story_draft' : 'red_story';
-
-      // 保存数据
-      const result = await db.collection(collectionName).add(storyData);
-      console.log('保存结果:', result);
-
-      // 显示成功提示
-      setSuccess(true);
-
-      // 延迟跳转
-      setTimeout(() => {
-        if (saveMode === 'draft') {
-          navigateTo({
-            pageId: 'admin',
-            params: {}
-          });
-        } else {
-          navigateTo({
-            pageId: 'admin',
-            params: {}
-          });
-        }
-      }, 2000);
-    } catch (err) {
-      console.error('保存失败:', err);
-      setError(`保存失败: ${err.message || '未知错误'}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 面包屑导航
-  const breadcrumbs = [{
-    label: '首页',
-    href: true,
-    onClick: () => navigateTo({
+  const goBack = () => {
+    navigateTo({
       pageId: 'index',
       params: {}
-    })
-  }, {
-    label: '上传红色故事'
-  }];
-
-  // 成功状态
-  if (success) {
-    return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="text-center">
-          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">
-            {saveMode === 'draft' ? '草稿保存成功！' : '发布成功！'}
-          </h2>
-          <p className="text-gray-400 mb-4">
-            {saveMode === 'draft' ? '您的草稿已保存，可在管理后台继续编辑' : '您的红色故事已成功发布'}
-          </p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
-        </div>
-      </div>;
-  }
+    });
+  };
   return <div className="min-h-screen bg-gray-900 text-white">
-      {/* 背景装饰 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-red-900/20 via-gray-900 to-gray-900"></div>
+      <PageHeader title="上传红色故事" showBack={true} onBack={goBack} />
       
-      {/* 顶部导航 */}
-      <PageHeader title="上传红色故事" showBack={true} backAction={goBack} breadcrumbs={breadcrumbs} />
-
-      {/* 主要内容 */}
-      <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
-        {/* 错误提示 */}
-        {error && <div className="bg-red-900/50 border border-red-600 text-red-200 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-4 h-4" />
-              <span>{error}</span>
-            </div>
-            <Button onClick={() => setError(null)} variant="ghost" size="sm" className="text-red-300 hover:text-red-100">
-              ×
-            </Button>
-          </div>}
-
-        {/* 保存模式选择 */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 mb-6 border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-4">保存模式选择</h3>
-          <div className="flex gap-4">
-            <button onClick={() => handleSaveModeChange('draft')} className={`flex-1 p-4 rounded-lg border-2 transition-all ${saveMode === 'draft' ? 'border-yellow-600 bg-yellow-900/20' : 'border-gray-600 hover:border-gray-500'}`}>
-              <div className="text-center">
-                <Edit3 className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
-                <h4 className="font-semibold text-white mb-1">保存为草稿</h4>
-                <p className="text-sm text-gray-400">内容不会立即发布，可在管理后台继续编辑</p>
-              </div>
-            </button>
-            <button onClick={() => handleSaveModeChange('publish')} className={`flex-1 p-4 rounded-lg border-2 transition-all ${saveMode === 'publish' ? 'border-green-600 bg-green-900/20' : 'border-gray-600 hover:border-gray-500'}`}>
-              <div className="text-center">
-                <Eye className="w-8 h-8 mx-auto mb-2 text-green-400" />
-                <h4 className="font-semibold text-white mb-1">正式发布</h4>
-                <p className="text-sm text-gray-400">内容将立即发布，所有用户可见</p>
-              </div>
-            </button>
+      <main className="max-w-4xl mx-auto px-4 py-8 pb-24">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 标题 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">故事标题 *</label>
+            <Input value={story.title} onChange={e => handleChange('title', e.target.value)} placeholder="请输入故事标题" className="bg-gray-800 border-gray-700 text-white placeholder-gray-500" required />
           </div>
-        </div>
 
-        {/* 上传表单 */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-700">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 故事标题 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                故事标题 *
-              </label>
-              <input type="text" name="title" value={formData.title} onChange={handleInputChange} placeholder="请输入红色故事标题" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" required />
+          {/* 作者 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">作者</label>
+            <Input value={story.author} onChange={e => handleChange('author', e.target.value)} placeholder="请输入作者姓名" className="bg-gray-800 border-gray-700 text-white placeholder-gray-500" />
+          </div>
+
+          {/* 地点 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">故事地点</label>
+            <Input value={story.location} onChange={e => handleChange('location', e.target.value)} placeholder="请输入故事发生地点" className="bg-gray-800 border-gray-700 text-white placeholder-gray-500" />
+          </div>
+
+          {/* 阅读时间 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">阅读时长</label>
+            <Select value={story.read_time} onValueChange={value => handleChange('read_time', value)}>
+              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectValue placeholder="选择阅读时长" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="3分钟">3分钟</SelectItem>
+                <SelectItem value="5分钟">5分钟</SelectItem>
+                <SelectItem value="10分钟">10分钟</SelectItem>
+                <SelectItem value="15分钟">15分钟</SelectItem>
+                <SelectItem value="20分钟">20分钟</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* 标签 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">标签</label>
+            <div className="flex gap-2 mb-2">
+              <Input value={newTag} onChange={e => setNewTag(e.target.value)} placeholder="添加标签" className="bg-gray-800 border-gray-700 text-white placeholder-gray-500" onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addTag())} />
+              <Button type="button" onClick={addTag} variant="outline" className="border-gray-600 text-gray-300">
+                <Plus className="w-4 h-4" />
+              </Button>
             </div>
-
-            {/* 故事内容 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                故事内容 *
-              </label>
-              <textarea name="content" value={formData.content} onChange={handleInputChange} placeholder="请详细描述红色故事的内容..." rows={8} className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none" required />
+            <div className="flex flex-wrap gap-2">
+              {story.tags.map((tag, index) => <span key={index} className="inline-flex items-center gap-1 px-3 py-1 bg-red-900/30 text-red-300 text-sm rounded-full border border-red-800/50">
+                  {tag}
+                  <button type="button" onClick={() => removeTag(tag)} className="text-red-400 hover:text-red-300">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>)}
             </div>
+          </div>
 
-            {/* 配图上传 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                故事配图
-              </label>
-              <div className="flex items-center gap-4">
-                <input type="file" accept="image/*" onChange={handleInputChange} className="hidden" id="image-upload" />
-                <label htmlFor="image-upload" className="cursor-pointer bg-gray-900/50 border border-gray-700 rounded-lg px-4 py-3 text-gray-300 hover:bg-gray-800/50 transition-colors">
-                  <Upload className="w-5 h-5 inline-block mr-2" />
-                  选择图���
-                </label>
-                {imagePreview && <div className="relative">
-                    <img src={imagePreview} alt="预览" className="w-20 h-20 object-cover rounded-lg border border-gray-700" />
-                    <button type="button" onClick={() => {
-                  setImagePreview(null);
-                  setFormData(prev => ({
-                    ...prev,
-                    image: ''
-                  }));
-                }} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
-                      ×
-                    </button>
-                  </div>}
-              </div>
-            </div>
+          {/* 图片URL */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">故事图片URL</label>
+            <Input value={story.image} onChange={e => handleChange('image', e.target.value)} placeholder="请输入图片URL" className="bg-gray-800 border-gray-700 text-white placeholder-gray-500" />
+            {story.image && <img src={story.image} alt="预览" className="mt-2 rounded-lg max-h-48 object-cover" />}
+          </div>
 
-            {/* 故事信息 */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* 故事内容 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">故事内容 *</label>
+            <Textarea value={story.content} onChange={e => handleChange('content', e.target.value)} placeholder="请输入故事内容..." className="bg-gray-800 border-gray-700 text-white placeholder-gray-500 min-h-[300px]" required />
+          </div>
+
+          {/* 状态提示 */}
+          <div className="bg-blue-900/20 border border-blue-600/50 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Upload className="w-5 h-5 text-blue-400 mt-0.5" />
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  <Calendar className="w-4 h-4 inline-block mr-1" />
-                  时间时期
-                </label>
-                <input type="text" name="date" value={formData.date} onChange={handleInputChange} placeholder="如：1949年10月1日" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  <MapPin className="w-4 h-4 inline-block mr-1" />
-                  发生地点
-                </label>
-                <input type="text" name="location" value={formData.location} onChange={handleInputChange} placeholder="如：北京天安门" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  <User className="w-4 h-4 inline-block mr-1" />
-                  作者
-                </label>
-                <input type="text" name="author" value={formData.author} onChange={handleInputChange} placeholder="请输入作者姓名" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  <Clock className="w-4 h-4 inline-block mr-1" />
-                  阅读时间
-                </label>
-                <input type="text" name="read_time" value={formData.read_time} onChange={handleInputChange} placeholder="如：5分钟" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
+                <h3 className="text-sm font-medium text-blue-300">草稿状态</h3>
+                <p className="text-sm text-blue-200 mt-1">
+                  您的故事将先保存到草稿箱，经过审核后才会正式发布。
+                </p>
               </div>
             </div>
+          </div>
 
-            {/* 标签 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                <Tag className="w-4 h-4 inline-block mr-1" />
-                标签
-              </label>
-              <div className="flex gap-2 mb-2">
-                <input type="text" value={tagInput} onChange={handleTagInput} onKeyPress={e => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  const tag = tagInput.trim();
-                  if (tag && !formData.tags.includes(tag)) {
-                    setFormData(prev => ({
-                      ...prev,
-                      tags: [...prev.tags, tag]
-                    }));
-                    setTagInput('');
-                  }
-                }
-              }} placeholder="输入标签后按回车添加" className="flex-1 px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
-                <button type="button" onClick={() => {
-                const tag = tagInput.trim();
-                if (tag && !formData.tags.includes(tag)) {
-                  setFormData(prev => ({
-                    ...prev,
-                    tags: [...prev.tags, tag]
-                  }));
-                  setTagInput('');
-                }
-              }} className="px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                  添加
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {formData.tags.map((tag, index) => <span key={index} className="px-3 py-1 bg-red-900/30 text-red-300 text-sm rounded-full border border-red-800/50 flex items-center gap-1">
-                    {tag}
-                    <button type="button" onClick={() => {
-                  setFormData(prev => ({
-                    ...prev,
-                    tags: prev.tags.filter(t => t !== tag)
-                  }));
-                }} className="ml-1 text-red-400 hover:text-red-300">
-                      ×
-                    </button>
-                  </span>)}
-              </div>
-            </div>
-
-            {/* 排序 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                排序权重
-              </label>
-              <input type="number" name="order" value={formData.order} onChange={handleInputChange} placeholder="数字越大越靠前" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
-            </div>
-
-            {/* 提交按钮 */}
-            <div className="pt-6 border-t border-gray-700">
-              <div className="flex gap-4">
-                <Button type="submit" disabled={loading} className={`flex-1 ${saveMode === 'draft' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-red-600 hover:bg-red-700'} text-white`}>
-                  {loading ? '保存中...' : saveMode === 'draft' ? '保存草稿' : '正式发布'}
-                </Button>
-                <Button type="button" onClick={goBack} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
-                  取消
-                </Button>
-              </div>
-            </div>
-          </form>
-        </div>
+          {/* 操作按钮 */}
+          <div className="flex gap-3 pt-6 border-t border-gray-700">
+            <Button type="button" onClick={goBack} variant="outline" className="border-gray-600 text-gray-300">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              取消
+            </Button>
+            <Button type="submit" disabled={saving} className="bg-red-600 hover:bg-red-700">
+              {saving ? '提交中...' : <><Save className="w-4 h-4 mr-2" />提交草稿</>}
+            </Button>
+          </div>
+        </form>
       </main>
+      
+      <BottomNav currentPage="upload" navigateTo={navigateTo} />
     </div>;
 }

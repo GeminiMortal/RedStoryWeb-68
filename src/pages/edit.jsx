@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, useToast } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Save, Plus, X, Upload, Eye } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, Upload, Eye, Send, FileText } from 'lucide-react';
 
 // @ts-ignore;
 import { PageHeader, BottomNav } from '@/components/Navigation';
@@ -23,7 +23,9 @@ export default function EditPage(props) {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [newTag, setNewTag] = useState('');
+  const [dataSource, setDataSource] = useState(''); // 记录数据来源：draft 或 main
   const {
     toast
   } = useToast();
@@ -32,7 +34,7 @@ export default function EditPage(props) {
   const storyId = $w.page.dataset.params?.id;
   const navigateTo = $w.utils.navigateTo;
 
-  // 自动加载故事数据
+  // 加载故事数据（优先草稿库，回退主库）
   useEffect(() => {
     if (storyId) {
       loadStory();
@@ -45,18 +47,47 @@ export default function EditPage(props) {
       setLoading(true);
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
-      const result = await db.collection('red_story').doc(storyId).get();
-      if (result && result.data) {
+
+      // 1. 优先查询草稿库
+      const draftResult = await db.collection('red_story_draft').where({
+        _id: storyId
+      }).get();
+      if (draftResult && draftResult.data && draftResult.data.length > 0) {
+        // 找到草稿数据
+        const draftData = draftResult.data[0];
         setStory({
-          title: result.data.title || '',
-          content: result.data.content || '',
-          author: result.data.author || '',
-          location: result.data.location || '',
-          tags: result.data.tags || [],
-          read_time: result.data.read_time || '5分钟',
-          image: result.data.image || '',
-          status: result.data.status || 'draft'
+          title: draftData.title || '',
+          content: draftData.content || '',
+          author: draftData.author || '',
+          location: draftData.location || '',
+          tags: draftData.tags || [],
+          read_time: draftData.read_time || '5分钟',
+          image: draftData.image || '',
+          status: draftData.status || 'draft'
         });
+        setDataSource('draft');
+      } else {
+        // 2. 草稿不存在，查询主库
+        const mainResult = await db.collection('red_story').doc(storyId).get();
+        if (mainResult && mainResult.data) {
+          setStory({
+            title: mainResult.data.title || '',
+            content: mainResult.data.content || '',
+            author: mainResult.data.author || '',
+            location: mainResult.data.location || '',
+            tags: mainResult.data.tags || [],
+            read_time: mainResult.data.read_time || '5分钟',
+            image: mainResult.data.image || '',
+            status: mainResult.data.status || 'published'
+          });
+          setDataSource('main');
+        } else {
+          toast({
+            title: '故事不存在',
+            description: '未找到对应的故事数据',
+            variant: 'destructive'
+          });
+        }
       }
     } catch (err) {
       console.error('加载故事失败:', err);
@@ -69,24 +100,10 @@ export default function EditPage(props) {
       setLoading(false);
     }
   };
-  const handleSubmit = async e => {
-    e.preventDefault();
-    if (!story.title.trim()) {
-      toast({
-        title: '标题不能为空',
-        description: '请输入故事标题',
-        variant: 'destructive'
-      });
-      return;
-    }
-    if (!story.content.trim()) {
-      toast({
-        title: '内容不能为空',
-        description: '请输入故事内容',
-        variant: 'destructive'
-      });
-      return;
-    }
+
+  // 保存草稿
+  const handleSaveDraft = async () => {
+    if (!validateForm()) return;
     try {
       setSaving(true);
       const tcb = await $w.cloud.getCloudInstance();
@@ -95,40 +112,104 @@ export default function EditPage(props) {
         ...story,
         updatedAt: Date.now()
       };
-      if (storyId) {
-        // 更新现有故事
-        await db.collection('red_story').doc(storyId).update(storyData);
-        toast({
-          title: '更新成功',
-          description: '故事已更新'
-        });
-      } else {
-        // 创建新故事
-        await db.collection('red_story').add({
+      if (dataSource === 'main') {
+        // 主库数据首次保存为草稿
+        await db.collection('red_story_draft').add({
           ...storyData,
           createdAt: Date.now()
         });
-        toast({
-          title: '创建成功',
-          description: '新故事已创建'
-        });
+      } else {
+        // 更新现有草稿
+        await db.collection('red_story_draft').doc(storyId).update(storyData);
       }
-
-      // 返回管理页面
+      toast({
+        title: '草稿保存成功',
+        description: '故事已保存到草稿箱'
+      });
       navigateTo({
         pageId: 'admin',
         params: {}
       });
     } catch (err) {
-      console.error('保存失败:', err);
+      console.error('保存草稿失败:', err);
       toast({
-        title: '保存失败',
+        title: '保存草稿失败',
         description: err.message || '请稍后重试',
         variant: 'destructive'
       });
     } finally {
       setSaving(false);
     }
+  };
+
+  // 发布故事
+  const handlePublish = async () => {
+    if (!validateForm()) return;
+    try {
+      setPublishing(true);
+      const tcb = await $w.cloud.getCloudInstance();
+      const db = tcb.database();
+      const storyData = {
+        ...story,
+        status: 'published',
+        updatedAt: Date.now()
+      };
+      if (storyId && dataSource === 'main') {
+        // 更新主库现有故事
+        await db.collection('red_story').doc(storyId).update(storyData);
+      } else {
+        // 新建或从草稿发布
+        await db.collection('red_story').add({
+          ...storyData,
+          createdAt: Date.now()
+        });
+      }
+
+      // 删除对应草稿（如果存在）
+      if (dataSource === 'draft' || storyId) {
+        try {
+          await db.collection('red_story_draft').doc(storyId).remove();
+        } catch (e) {
+          console.log('草稿删除失败或不存在:', e);
+        }
+      }
+      toast({
+        title: '发布成功',
+        description: '故事已正式发布'
+      });
+      navigateTo({
+        pageId: 'admin',
+        params: {}
+      });
+    } catch (err) {
+      console.error('发布失败:', err);
+      toast({
+        title: '发布失败',
+        description: err.message || '请稍后重试',
+        variant: 'destructive'
+      });
+    } finally {
+      setPublishing(false);
+    }
+  };
+  const validateForm = () => {
+    if (!story.title.trim()) {
+      toast({
+        title: '标题不能为空',
+        description: '请输入故事标题',
+        variant: 'destructive'
+      });
+      return false;
+    }
+    if (!story.content.trim()) {
+      toast({
+        title: '内容不能为空',
+        description: '请输入故事内容',
+        variant: 'destructive'
+      });
+      return false;
+    }
+    return true;
   };
   const handleChange = (field, value) => {
     setStory(prev => ({
@@ -169,7 +250,17 @@ export default function EditPage(props) {
       <PageHeader title={storyId ? '编辑红色故事' : '创建红色故事'} showBack={true} onBack={goBack} />
       
       <main className="max-w-4xl mx-auto px-4 py-8 pb-24">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* 数据来源提示 */}
+        {storyId && <div className={`mb-4 p-3 rounded-lg text-sm ${dataSource === 'draft' ? 'bg-blue-900/20 border border-blue-600/50' : 'bg-green-900/20 border border-green-600/50'}`}>
+            <div className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              <span>
+                {dataSource === 'draft' ? '正在编辑草稿版本' : '正在编辑已发布版本'}
+              </span>
+            </div>
+          </div>}
+
+        <form onSubmit={e => e.preventDefault()} className="space-y-6">
           {/* 标题 */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">故事标题 *</label>
@@ -257,13 +348,16 @@ export default function EditPage(props) {
               <ArrowLeft className="w-4 h-4 mr-2" />
               取消
             </Button>
-            <Button type="submit" disabled={saving} className="bg-red-600 hover:bg-red-700">
-              {saving ? '保存中...' : <><Save className="w-4 h-4 mr-2" />保存</>}
+            
+            <Button type="button" onClick={handleSaveDraft} disabled={saving || publishing} variant="outline" className="border-blue-600 text-blue-300">
+              <FileText className="w-4 h-4 mr-2" />
+              {saving ? '保存中...' : '保存草稿'}
             </Button>
-            {storyId && <Button type="button" variant="outline" className="border-gray-600 text-gray-300">
-                <Eye className="w-4 h-4 mr-2" />
-                预览
-              </Button>}
+
+            <Button type="button" onClick={handlePublish} disabled={saving || publishing} className="bg-red-600 hover:bg-red-700">
+              <Send className="w-4 h-4 mr-2" />
+              {publishing ? '发布中...' : '发布'}
+            </Button>
           </div>
         </form>
       </main>

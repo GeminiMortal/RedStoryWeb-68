@@ -15,10 +15,10 @@ export default function DetailPage(props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 修正参数访问方式
+  // 从 URL 参数获取故事 ID
   const storyId = $w.page.dataset.params?.id;
 
-  // 加载故事详情
+  // 仅从 red_story 主库加载已发布故事
   useEffect(() => {
     const loadStory = async () => {
       if (!storyId) {
@@ -30,9 +30,16 @@ export default function DetailPage(props) {
         setLoading(true);
         const tcb = await $w.cloud.getCloudInstance();
         const db = tcb.database();
+
+        // 仅查询 red_story 主库
         const result = await db.collection('red_story').doc(storyId).get();
         if (result && result.data) {
-          setStory(result.data);
+          // 确保只显示已发布的内容
+          if (result.data.status === 'published') {
+            setStory(result.data);
+          } else {
+            setError('该故事尚未发布或已被下架');
+          }
         } else {
           setError('故事不存在');
         }
