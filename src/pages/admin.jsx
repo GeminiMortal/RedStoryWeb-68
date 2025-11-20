@@ -106,16 +106,6 @@ export default function AdminPage(props) {
     setDeletingId(storyId);
     try {
       console.log('开始删除故事，ID:', storyId);
-
-      // 先获取要删除的故事信息，检查是否有图片
-      const storyToDelete = stories.find(s => s.id === storyId);
-      if (storyToDelete && storyToDelete.image) {
-        console.log('该故事包含图片，图片URL:', storyToDelete.image);
-        // 这里可以添加删除云存储图片的逻辑
-        // 注意：需要云函数来处理云存储文件的删除
-      }
-
-      // 删除数据库记录
       const result = await $w.cloud.callDataSource({
         dataSourceName: 'red_story',
         methodName: 'wedaDeleteV2',
@@ -130,12 +120,8 @@ export default function AdminPage(props) {
         }
       });
       console.log('删除结果:', result);
-
-      // 从本地状态中移除删除的故事
       setStories(prev => prev.filter(story => story.id !== storyId));
       setError(null);
-
-      // 清除图片错误记录
       setImageErrors(prev => {
         const newErrors = {
           ...prev
@@ -194,7 +180,12 @@ export default function AdminPage(props) {
       setError('故事ID无效，无法编辑');
       return;
     }
-    alert('编辑功能待实现');
+    $w.utils.navigateTo({
+      pageId: 'edit',
+      params: {
+        id: storyId
+      }
+    });
   };
 
   // 格式化日期
@@ -392,7 +383,7 @@ export default function AdminPage(props) {
                           <Button onClick={() => navigateToDetail(story.id)} variant="ghost" size="sm" className="text-gray-300 hover:text-white" title="查看详情">
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button onClick={() => navigateToEdit(story.id)} variant="ghost" size="sm" className="text-gray-300 hover:text-white" title="编辑">
+                          <Button onClick={() => navigateToEdit(story.id)} variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300" title="编辑">
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button onClick={() => handleDelete(story.id)} disabled={deletingId === story.id} variant="ghost" size="sm" className="text-red-400 hover:text-red-300" title="删除">

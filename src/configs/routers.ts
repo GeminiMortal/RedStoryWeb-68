@@ -2,6 +2,7 @@ import INDEX from '../pages/index.jsx';
 import UPLOAD from '../pages/upload.jsx';
 import ADMIN from '../pages/admin.jsx';
 import DETAIL from '../pages/detail.jsx';
+import EDIT from '../pages/edit.jsx';
 export const routers = [{
   id: "index",
   component: INDEX
@@ -14,4 +15,7 @@ export const routers = [{
 }, {
   id: "detail",
   component: DETAIL
+}, {
+  id: "edit",
+  component: EDIT
 }]
