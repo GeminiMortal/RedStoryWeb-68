@@ -14,6 +14,7 @@ export default function HomePage(props) {
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const navigateTo = $w.utils.navigateTo;
   useEffect(() => {
     loadStories();
@@ -42,7 +43,7 @@ export default function HomePage(props) {
   return <div className="min-h-screen bg-gray-900 text-white flex">
       <Sidebar currentPage="index" navigateTo={navigateTo} />
       
-      <div className="flex-1 ml-64">
+      <div className="flex-1 transition-all duration-300 ease-in-out">
         {/* 头部 */}
         <header className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
           <div className="max-w-7xl mx-auto px-6 py-4">

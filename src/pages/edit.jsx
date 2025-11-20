@@ -177,7 +177,7 @@ export default function EditPage(props) {
   if (loading) {
     return <div className="min-h-screen bg-gray-900 text-white flex">
         <Sidebar currentPage="edit" navigateTo={navigateTo} />
-        <div className="flex-1 ml-64 flex items-center justify-center">
+        <div className="flex-1 transition-all duration-300 ease-in-out flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
             <p className="text-gray-400">加载编辑内容中...</p>
@@ -188,7 +188,7 @@ export default function EditPage(props) {
   if (error) {
     return <div className="min-h-screen bg-gray-900 text-white flex">
         <Sidebar currentPage="edit" navigateTo={navigateTo} />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 transition-all duration-300 ease-in-out">
           <header className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
             <div className="max-w-7xl mx-auto px-6 py-4">
               <div className="flex items-center">
@@ -216,7 +216,7 @@ export default function EditPage(props) {
   return <div className="min-h-screen bg-gray-900 text-white flex">
       <Sidebar currentPage="edit" navigateTo={navigateTo} />
       
-      <div className="flex-1 ml-64">
+      <div className="flex-1 transition-all duration-300 ease-in-out">
         <header className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
@@ -233,22 +233,31 @@ export default function EditPage(props) {
         <main className="max-w-7xl mx-auto px-6 py-8">
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 p-6">
             <div className="space-y-6">
+              {/* 标题 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">标题</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <BookOpen className="w-4 h-4 inline mr-1" />
+                  标题
+                </label>
                 <Input value={story.title} onChange={e => setStory({
                 ...story,
                 title: e.target.value
               })} placeholder="请输入故事标题" className="bg-gray-700 border-gray-600 text-white" />
               </div>
 
+              {/* 作者 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">作者</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <User className="w-4 h-4 inline mr-1" />
+                  作者
+                </label>
                 <Input value={story.author} onChange={e => setStory({
                 ...story,
                 author: e.target.value
               })} placeholder="请输入作者姓名" className="bg-gray-700 border-gray-600 text-white" />
               </div>
 
+              {/* 地点 */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   <MapPin className="w-4 h-4 inline mr-1" />
@@ -260,6 +269,7 @@ export default function EditPage(props) {
               })} placeholder="请输入故事发生地点" className="bg-gray-700 border-gray-600 text-white" />
               </div>
 
+              {/* 阅读时间 */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   <Clock className="w-4 h-4 inline mr-1" />
@@ -271,6 +281,7 @@ export default function EditPage(props) {
               })} placeholder="例如：5分钟阅读" className="bg-gray-700 border-gray-600 text-white" />
               </div>
 
+              {/* 标签 */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   <Tag className="w-4 h-4 inline mr-1" />
@@ -292,6 +303,7 @@ export default function EditPage(props) {
                 </div>
               </div>
 
+              {/* 图片URL */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   <Upload className="w-4 h-4 inline mr-1" />
@@ -303,6 +315,7 @@ export default function EditPage(props) {
               })} placeholder="请输入图片URL" className="bg-gray-700 border-gray-600 text-white" />
               </div>
 
+              {/* 内容 */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">故事内容</label>
                 <Textarea value={story.content} onChange={e => setStory({
@@ -311,6 +324,7 @@ export default function EditPage(props) {
               })} placeholder="请输入故事内容..." rows={10} className="bg-gray-700 border-gray-600 text-white resize-none" />
               </div>
 
+              {/* 操作按钮 */}
               <div className="flex gap-3 pt-4 border-t border-gray-700">
                 <Button onClick={handleSave} disabled={saving} variant="outline" className="border-gray-600 text-gray-300">
                   <Save className="w-4 h-4 mr-2" />

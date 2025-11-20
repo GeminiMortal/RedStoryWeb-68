@@ -127,18 +127,34 @@ export default function AdminPage(props) {
   if (loading) {
     return <div className="min-h-screen bg-gray-900 text-white flex">
         <Sidebar currentPage="admin" navigateTo={navigateTo} />
-        <div className="flex-1 ml-64 p-8">
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-            <p className="text-gray-400">加载数据中...</p>
-          </div>
+        <div className="flex-1 transition-all duration-300 ease-in-out">
+          <header className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
+            <div className="max-w-7xl mx-auto px-6 py-4">
+              <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-bold text-white">故事管理</h1>
+                <Button onClick={() => navigateTo({
+                pageId: 'upload',
+                params: {}
+              })} className="bg-red-600 hover:bg-red-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  新建故事
+                </Button>
+              </div>
+            </div>
+          </header>
+          <main className="max-w-7xl mx-auto px-6 py-8">
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+              <p className="text-gray-400">加载数据中...</p>
+            </div>
+          </main>
         </div>
       </div>;
   }
   return <div className="min-h-screen bg-gray-900 text-white flex">
       <Sidebar currentPage="admin" navigateTo={navigateTo} />
       
-      <div className="flex-1 ml-64">
+      <div className="flex-1 transition-all duration-300 ease-in-out">
         <header className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex justify-between items-center">

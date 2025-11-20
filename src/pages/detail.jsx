@@ -75,7 +75,7 @@ export default function DetailPage(props) {
   if (loading) {
     return <div className="min-h-screen bg-gray-900 text-white flex">
         <Sidebar currentPage="detail" navigateTo={navigateTo} />
-        <div className="flex-1 ml-64 flex items-center justify-center">
+        <div className="flex-1 transition-all duration-300 ease-in-out flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
             <p className="text-gray-400">加载故事中...</p>
@@ -86,7 +86,7 @@ export default function DetailPage(props) {
   if (error || !story) {
     return <div className="min-h-screen bg-gray-900 text-white flex">
         <Sidebar currentPage="detail" navigateTo={navigateTo} />
-        <div className="flex-1 ml-64">
+        <div className="flex-1 transition-all duration-300 ease-in-out">
           <header className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
             <div className="max-w-7xl mx-auto px-6 py-4">
               <div className="flex items-center">
@@ -114,7 +114,7 @@ export default function DetailPage(props) {
   return <div className="min-h-screen bg-gray-900 text-white flex">
       <Sidebar currentPage="detail" navigateTo={navigateTo} />
       
-      <div className="flex-1 ml-64">
+      <div className="flex-1 transition-all duration-300 ease-in-out">
         <header className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
