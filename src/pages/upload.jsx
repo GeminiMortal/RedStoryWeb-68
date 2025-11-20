@@ -111,10 +111,10 @@ export default function UploadPage(props) {
         console.log('图片URL:', imageUrl);
       }
 
-      // 处理标签
+      // 处理标签 - 确保返回数组类型
       const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
 
-      // 保存到数据模型
+      // 保存到数据模型 - 确保数据类型匹配
       console.log('开始保存故事数据...');
       const result = await $w.cloud.callDataSource({
         dataSourceName: 'red_story',
@@ -122,17 +122,28 @@ export default function UploadPage(props) {
         params: {
           data: {
             title: formData.title.trim(),
+            // String
             content: formData.content.trim(),
+            // Text
             author: formData.author.trim() || '佚名',
+            // String
             date: formData.date,
+            // Date
             location: formData.location.trim(),
+            // String
             image: imageUrl,
+            // Image
             read_time: formData.readTime,
+            // String
             tags: tagsArray,
+            // Array
             status: formData.status,
+            // String
             order: 0,
+            // Number
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            // DateTime
+            updatedAt: new Date().toISOString() // DateTime
           }
         }
       });

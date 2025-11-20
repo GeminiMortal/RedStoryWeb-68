@@ -27,6 +27,7 @@ export default function EditPage(props) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [deleteImageConfirm, setDeleteImageConfirm] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // 从URL参数获取故事ID
   const storyId = props.$w.page.dataset.params.id;
@@ -35,6 +36,7 @@ export default function EditPage(props) {
   useEffect(() => {
     if (!storyId) {
       setError('未提供故事ID');
+      setLoading(false);
       return;
     }
     const loadStory = async () => {
@@ -173,6 +175,7 @@ export default function EditPage(props) {
         // 图片被删除
         imageUrl = '';
       }
+      // 处理标签 - 确保返回数组类型
       const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
       console.log('开始更新故事数据...');
       const result = await $w.cloud.callDataSource({
@@ -188,15 +191,24 @@ export default function EditPage(props) {
           },
           data: {
             title: formData.title.trim(),
+            // String
             content: formData.content.trim(),
+            // Text
             author: formData.author.trim(),
+            // String
             date: formData.date,
+            // Date
             location: formData.location.trim(),
+            // String
             image: imageUrl,
+            // Image
             read_time: formData.readTime,
+            // String
             tags: tagsArray,
+            // Array
             status: formData.status,
-            updatedAt: new Date().toISOString()
+            // String
+            updatedAt: new Date().toISOString() // DateTime
           }
         }
       });
@@ -228,8 +240,7 @@ export default function EditPage(props) {
   };
 
   // 加载状态
-  const [loading, setLoading] = useState(true);
-  if (loading && !formData.title) {
+  if (loading) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
