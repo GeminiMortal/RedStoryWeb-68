@@ -9,8 +9,8 @@ import { BookOpen, Calendar, MapPin, Clock, Search, Filter, Plus, Eye, ArrowRigh
 import { PageHeader, BottomNav, QuickNav, BreadcrumbNav } from '@/components/Navigation';
 export default function HomePage(props) {
   const {
-    $w
-  } = props;
+    $w } =
+  props;
   const [stories, setStories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -34,8 +34,8 @@ export default function HomePage(props) {
 
         // 查询已发布的故事
         const result = await db.collection('red_story').where({
-          status: 'published'
-        }).orderBy('createdAt', 'desc').get();
+          status: 'published' }).
+        orderBy('createdAt', 'desc').get();
         console.log('首页数据加载结果:', result);
         if (result && result.data) {
           setStories(result.data);
@@ -56,19 +56,19 @@ export default function HomePage(props) {
   }, []);
 
   // 处理搜索
-  const handleSearch = e => {
+  const handleSearch = (e) => {
     setSearchTerm(e.target.value);
     setCurrentPage(1);
   };
 
   // 处理筛选
-  const handleFilter = tag => {
+  const handleFilter = (tag) => {
     setFilterTag(tag);
     setCurrentPage(1);
   };
 
   // 过滤故事
-  const filteredStories = stories.filter(story => {
+  const filteredStories = stories.filter((story) => {
     const matchesSearch = story.title.toLowerCase().includes(searchTerm.toLowerCase()) || story.content.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterTag === 'all' || story.tags && story.tags.includes(filterTag);
     return matchesSearch && matchesFilter;
@@ -78,40 +78,40 @@ export default function HomePage(props) {
   const paginatedStories = filteredStories.slice((currentPage - 1) * storiesPerPage, currentPage * storiesPerPage);
 
   // 获取所有标签
-  const allTags = [...new Set(stories.flatMap(story => story.tags || []))];
+  const allTags = [...new Set(stories.flatMap((story) => story.tags || []))];
 
   // 导航函数
   const navigateTo = $w.utils.navigateTo;
-  const goToDetail = storyId => {
+  const goToDetail = (storyId) => {
     navigateTo({
       pageId: 'detail',
       params: {
-        id: storyId
-      }
-    });
+        id: storyId } });
+
+
   };
   const goToAdmin = () => {
     navigateTo({
       pageId: 'admin',
-      params: {}
-    });
+      params: {} });
+
   };
   const goToUpload = () => {
     navigateTo({
       pageId: 'upload',
-      params: {}
-    });
+      params: {} });
+
   };
 
   // 格式化日期
-  const formatDate = timestamp => {
+  const formatDate = (timestamp) => {
     if (!timestamp) return '未知时间';
     const date = new Date(timestamp);
     return date.toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit'
-    });
+      day: '2-digit' });
+
   };
 
   // 面包屑导航
@@ -120,9 +120,9 @@ export default function HomePage(props) {
     href: true,
     onClick: () => navigateTo({
       pageId: 'index',
-      params: {}
-    })
-  }];
+      params: {} }) }];
+
+
 
   // 加载状态
   if (loading) {
@@ -142,8 +142,8 @@ export default function HomePage(props) {
       label: '菜单',
       icon: Menu,
       onClick: () => setMobileMenuOpen(!mobileMenuOpen),
-      className: 'text-gray-300 hover:text-white'
-    }]} />
+      className: 'text-gray-300 hover:text-white' }]} />
+
 
       {/* 移动端菜单 */}
       {mobileMenuOpen && <div className="fixed inset-0 bg-black/50 z-50 lg:hidden">
@@ -159,8 +159,8 @@ export default function HomePage(props) {
                 <Button onClick={() => {
               navigateTo({
                 pageId: 'index',
-                params: {}
-              });
+                params: {} });
+
               setMobileMenuOpen(false);
             }} variant="ghost" className="w-full justify-start text-gray-300 hover:text-white">
                   <BookOpen className="w-5 h-5 mr-3" />
@@ -230,7 +230,7 @@ export default function HomePage(props) {
                 <button onClick={() => handleFilter('all')} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filterTag === 'all' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>
                   全部
                 </button>
-                {allTags.map(tag => <button key={tag} onClick={() => handleFilter(tag)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filterTag === tag ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>
+                {allTags.map((tag) => <button key={tag} onClick={() => handleFilter(tag)} className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${filterTag === tag ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}>
                     {tag}
                   </button>)}
               </div>
@@ -241,17 +241,17 @@ export default function HomePage(props) {
         {/* 故事统计 */}
         <section className="mb-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">红色故事</p>
-                  <p className="text-3xl font-bold text-white">{stories.length}</p>
-                </div>
-                <div className="w-12 h-12 bg-red-600/20 rounded-lg flex items-center justify-center">
-                  <BookOpen className="w-6 h-6 text-red-400" />
-                </div>
-              </div>
-            </div>
+            
+
+
+
+
+
+
+
+
+
+
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700">
               <div className="flex items-center justify-between">
                 <div>
@@ -297,7 +297,7 @@ export default function HomePage(props) {
                   上传第一个故事
                 </Button>}
             </div> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {paginatedStories.map(story => <div key={story._id} className="bg-gray-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-700 hover:border-red-600/50 transition-all duration-300 group">
+              {paginatedStories.map((story) => <div key={story._id} className="bg-gray-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-700 hover:border-red-600/50 transition-all duration-300 group">
                   {/* 故事图片 */}
                   <div className="relative h-48 overflow-hidden">
                     {story.image ? <img src={story.image} alt={story.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /> : <div className="w-full h-full bg-gradient-to-br from-red-900/30 to-gray-800 flex items-center justify-center">
@@ -363,8 +363,8 @@ export default function HomePage(props) {
                 上一页
               </Button>
               {Array.from({
-            length: totalPages
-          }, (_, i) => i + 1).map(page => <button key={page} onClick={() => setCurrentPage(page)} className={`px-3 py-1 text-sm rounded-md transition-colors ${currentPage === page ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
+            length: totalPages },
+          (_, i) => i + 1).map((page) => <button key={page} onClick={() => setCurrentPage(page)} className={`px-3 py-1 text-sm rounded-md transition-colors ${currentPage === page ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
                   {page}
                 </button>)}
               <Button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} variant="outline" className="border-gray-600 text-gray-300">
