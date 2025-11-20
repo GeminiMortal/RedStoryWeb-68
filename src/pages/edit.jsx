@@ -5,6 +5,7 @@ import { Button, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigg
 // @ts-ignore;
 import { ArrowLeft, Save, Plus, X, Upload, Eye } from 'lucide-react';
 
+// @ts-ignore;
 import { PageHeader, BottomNav } from '@/components/Navigation';
 export default function EditPage(props) {
   const {
@@ -26,7 +27,9 @@ export default function EditPage(props) {
   const {
     toast
   } = useToast();
-  const storyId = props.page.dataset.params.id;
+
+  // 修正参数访问方式
+  const storyId = $w.page.dataset.params?.id;
   const navigateTo = $w.utils.navigateTo;
 
   // 自动加载故事数据
