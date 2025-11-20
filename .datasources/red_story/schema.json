@@ -60,6 +60,18 @@
         "name": "order",
         "title": "排序",
         "type": "Number"
+      },
+      {
+        "name": "createdAt",
+        "title": "创建时间",
+        "type": "Date",
+        "format": "timestamp-ms"
+      },
+      {
+        "name": "updatedAt",
+        "title": "更新时间",
+        "type": "Date",
+        "format": "timestamp-ms"
       }
     ]
   }
