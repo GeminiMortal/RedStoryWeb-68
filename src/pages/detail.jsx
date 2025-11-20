@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Calendar, MapPin, Clock, Tag, User, Edit, Trash2, Share2, Heart, AlertCircle, BookOpen, ExternalLink, MessageCircle, Plus } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Clock, Tag, User, Share2, Heart, AlertCircle, BookOpen, ExternalLink, Plus } from 'lucide-react';
 
 // @ts-ignore;
 import { PageHeader, BreadcrumbNav, safeNavigate } from '@/components/Navigation';
@@ -14,8 +14,6 @@ export default function DetailPage(props) {
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
   const [relatedStories, setRelatedStories] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -91,44 +89,10 @@ export default function DetailPage(props) {
     loadStory();
   }, [storyId]);
 
-  // 删除故事
-  const handleDelete = async () => {
-    setDeleting(true);
-    try {
-      console.log('删除故事，ID:', storyId);
-
-      // 使用云开发实例直接调用数据库
-      const tcb = await $w.cloud.getCloudInstance();
-      const db = tcb.database();
-
-      // 删除数据
-      const result = await db.collection('red_story').doc(storyId).remove();
-      console.log('删除结果:', result);
-      $w.utils.navigateTo({
-        pageId: 'admin',
-        params: {}
-      });
-    } catch (err) {
-      console.error('删除故事失败:', err);
-      setError(`删除失败: ${err.message || '未知错误'}`);
-    } finally {
-      setDeleting(false);
-      setDeleteConfirm(false);
-    }
-  };
-
   // 导航函数
   const navigateTo = $w.utils.navigateTo;
   const goBack = () => {
     $w.utils.navigateBack();
-  };
-  const goToEdit = () => {
-    navigateTo({
-      pageId: 'edit',
-      params: {
-        id: storyId
-      }
-    });
   };
   const goToAdmin = () => {
     navigateTo({
@@ -273,22 +237,7 @@ export default function DetailPage(props) {
       <div className="absolute inset-0 bg-gradient-to-br from-red-900/20 via-gray-900 to-gray-900"></div>
       
       {/* 顶部导航 */}
-      <PageHeader title={story.title} showBack={true} backAction={goBack} breadcrumbs={breadcrumbs} actions={isAdmin ? [{
-      label: '编辑',
-      icon: Edit,
-      onClick: goToEdit,
-      className: 'text-gray-300 hover:text-white'
-    }, {
-      label: '删除',
-      icon: Trash2,
-      onClick: () => setDeleteConfirm(true),
-      className: 'text-red-400 hover:text-red-300'
-    }, {
-      label: '管理',
-      icon: BookOpen,
-      onClick: goToAdmin,
-      className: 'text-gray-300 hover:text-white'
-    }] : [{
+      <PageHeader title={story.title} showBack={true} backAction={goBack} breadcrumbs={breadcrumbs} actions={[{
       label: '管理',
       icon: BookOpen,
       onClick: goToAdmin,
@@ -387,7 +336,7 @@ export default function DetailPage(props) {
               </div>
             </div>
 
-            {/* 操作按钮 */}
+            {/* 操作按钮 - 移除编辑按钮，仅保留分享和收藏 */}
             <div className="mt-8 pt-6 border-t border-gray-700">
               <div className="flex flex-wrap gap-3">
                 <Button onClick={handleShare} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
@@ -398,10 +347,6 @@ export default function DetailPage(props) {
                   <Heart className={`w-4 h-4 mr-2 ${isFavorited() ? 'fill-current' : ''}`} />
                   {isFavorited() ? '已收藏' : '收藏'}
                 </Button>
-                {isAdmin && <Button onClick={goToEdit} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
-                    <Edit className="w-4 h-4 mr-2" />
-                    编辑
-                  </Button>}
                 <Button onClick={() => navigateTo({
                 pageId: 'index',
                 params: {}
@@ -409,10 +354,6 @@ export default function DetailPage(props) {
                   <BookOpen className="w-4 h-4 mr-2" />
                   更多故事
                 </Button>
-                {isAdmin && <Button onClick={goToUpload} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
-                    <Plus className="w-4 h-4 mr-2" />
-                    上传故事
-                  </Button>}
               </div>
             </div>
           </div>
@@ -464,29 +405,9 @@ export default function DetailPage(props) {
                 <BookOpen className="w-4 h-4 mr-2" />
                 浏览更多
               </Button>
-              {isAdmin && <Button onClick={goToUpload} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
-                  <Plus className="w-4 h-4 mr-2" />
-                  上传故事
-                </Button>}
             </div>
           </div>
         </div>
       </main>
-
-      {/* 删除确认对话框 */}
-      {deleteConfirm && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-sm mx-4">
-            <h3 className="text-lg font-medium text-white mb-4">确认删除红色故事？</h3>
-            <p className="text-gray-400 mb-6">删除后故事将无法恢复，确定要删除吗？</p>
-            <div className="flex gap-3 justify-end">
-              <Button onClick={() => setDeleteConfirm(false)} variant="outline" className="border-gray-600 text-gray-300">
-                取消
-              </Button>
-              <Button onClick={handleDelete} disabled={deleting} className="bg-red-600 hover:bg-red-700 text-white">
-                {deleting ? '删除中...' : '确认删除'}
-              </Button>
-            </div>
-          </div>
-        </div>}
     </div>;
 }
