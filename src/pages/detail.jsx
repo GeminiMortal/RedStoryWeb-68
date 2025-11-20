@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Calendar, MapPin, Users, Clock, Share2, Heart, BookOpen, MessageCircle, ThumbsUp, Eye } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Clock, Share2, Heart, BookOpen, MessageCircle, ThumbsUp, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function Detail(props) {
   const {
@@ -18,6 +18,7 @@ export default function Detail(props) {
   const [viewCount, setViewCount] = useState(0);
   const [relatedStories, setRelatedStories] = useState([]);
   const [showFullContent, setShowFullContent] = useState(false);
+  const [contentHeight, setContentHeight] = useState('auto');
 
   // 安全获取页面参数
   const storyId = page?.dataset?.params?.id;
@@ -56,8 +57,8 @@ export default function Detail(props) {
           // 将数据库字段映射为前端所需格式
           const mappedStory = {
             id: record._id,
-            title: record.title,
-            content: record.content,
+            title: record.title || '未命名故事',
+            content: record.content || '暂无内容',
             image: record.image,
             date: record.date,
             location: record.location,
@@ -120,8 +121,8 @@ export default function Detail(props) {
       if (result.records && result.records.length > 0) {
         const mappedStories = result.records.map(record => ({
           id: record._id,
-          title: record.title,
-          content: record.content,
+          title: record.title || '未命名故事',
+          content: record.content || '暂无内容',
           image: record.image,
           date: record.date,
           location: record.location,
@@ -182,6 +183,11 @@ export default function Detail(props) {
     if (!content) return '暂无内容';
     if (content.length <= maxLength) return content;
     return content.substring(0, maxLength) + '...';
+  };
+
+  // 切换内容显示状态
+  const toggleContent = () => {
+    setShowFullContent(!showFullContent);
   };
 
   // 加载状态
@@ -301,18 +307,30 @@ export default function Detail(props) {
                 </span>)}
             </div>}
 
-          {/* 内容展示 */}
+          {/* 内容展示 - 优化版本 */}
           <div className="prose prose-invert max-w-none">
-            {showFullContent ? story.content.split('\n\n').map((paragraph, index) => <p key={index} className="text-gray-200 leading-relaxed mb-6 text-lg">
-                  {paragraph}
-                </p>) : <div>
-                <p className="text-gray-200 leading-relaxed mb-6 text-lg">
-                  {getContentPreview(story.content, 300)}
-                </p>
-                {story.content && story.content.length > 300 && <Button onClick={() => setShowFullContent(true)} variant="outline" className="border-red-600 text-red-400 hover:bg-red-900/20">
-                    阅读全文
-                  </Button>}
-              </div>}
+            <div className="text-gray-200 leading-relaxed">
+              {showFullContent ? <div className="space-y-4">
+                  {story.content.split('\n\n').map((paragraph, index) => <p key={index} className="text-lg leading-relaxed mb-4 text-justify">
+                      {paragraph}
+                    </p>)}
+                </div> : <div className="space-y-4">
+                  <p className="text-lg leading-relaxed text-justify">
+                    {getContentPreview(story.content, 300)}
+                  </p>
+                  {story.content && story.content.length > 300 && <div className="text-center">
+                      <Button onClick={toggleContent} variant="outline" className="border-red-600 text-red-400 hover:bg-red-900/20 mt-4">
+                        {showFullContent ? <>
+                            <ChevronUp className="w-4 h-4 mr-2" />
+                            收起内容
+                          </> : <>
+                            <ChevronDown className="w-4 h-4 mr-2" />
+                            展开全文
+                          </>}
+                      </Button>
+                    </div>}
+                </div>}
+            </div>
           </div>
 
           {/* 互动区域 */}
@@ -340,11 +358,13 @@ export default function Detail(props) {
               相关故事推荐
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {relatedStories.map(relatedStory => <div key={relatedStory.id} onClick={() => navigateToStory(relatedStory.id)} className="bg-gray-900/50 rounded-xl p-6 border border-gray-700 hover:border-red-600/50 transition-all cursor-pointer hover:shadow-lg">
+              {relatedStories.map(relatedStory => <div key={relatedStory.id} onClick={() => navigateToStory(relatedStory.id)} className="bg-gray-900/50 rounded-xl p-6 border border-gray-700 hover:border-red-600/50 transition-all cursor-pointer hover:shadow-lg hover:transform hover:scale-[1.02]">
                   <div className="flex gap-4">
-                    {relatedStory.image && <img src={relatedStory.image} alt={relatedStory.title} className="w-20 h-20 rounded-lg object-cover flex-shrink-0" />}
+                    {relatedStory.image ? <img src={relatedStory.image} alt={relatedStory.title} className="w-20 h-20 rounded-lg object-cover flex-shrink-0" /> : <div className="w-20 h-20 rounded-lg bg-gray-800 flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="w-8 h-8 text-gray-600" />
+                      </div>}
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
+                      <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2 hover:text-red-400 transition-colors">
                         {relatedStory.title}
                       </h3>
                       <p className="text-sm text-gray-400 line-clamp-2 mb-3">
