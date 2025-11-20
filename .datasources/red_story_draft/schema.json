@@ -57,6 +57,11 @@
         "type": "String"
       },
       {
+        "name": "order",
+        "title": "排序",
+        "type": "Number"
+      },
+      {
         "name": "is_draft",
         "title": "是否为草稿",
         "type": "Boolean"
@@ -70,17 +75,6 @@
         "name": "original_id",
         "title": "原始故事ID",
         "type": "String"
-      },
-      {
-        "name": "draftOwner",
-        "title": "草稿所有者",
-        "type": "String"
-      },
-      {
-        "name": "lastSavedAt",
-        "title": "最后保存时间",
-        "type": "Date",
-        "format": "timestamp-ms"
       },
       {
         "name": "createdAt",

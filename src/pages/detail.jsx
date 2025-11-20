@@ -15,8 +15,9 @@ export default function DetailPage(props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 从 URL 参数获取故事 ID
-  const storyId = $w.page.dataset.params?.id;
+  // 修正参数访问方式 - 直接使用 params.id
+  const storyId = $w.page.dataset.params.id;
+  const navigateTo = $w.utils.navigateTo;
 
   // 仅从 red_story 主库加载已发布故事
   useEffect(() => {
@@ -57,7 +58,6 @@ export default function DetailPage(props) {
       setError('未提供故事ID');
     }
   }, [storyId]);
-  const navigateTo = $w.utils.navigateTo;
   const goBack = () => {
     navigateTo({
       pageId: 'index',
