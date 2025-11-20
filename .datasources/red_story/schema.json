@@ -4,6 +4,11 @@
     "title": "红色故事",
     "schemas": [
       {
+        "name": "story_id",
+        "title": "故事ID",
+        "type": "String"
+      },
+      {
         "name": "title",
         "title": "故事标题",
         "type": "String"
