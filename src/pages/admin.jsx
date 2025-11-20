@@ -45,25 +45,17 @@ export default function AdminPage(props) {
       try {
         setLoading(true);
         console.log('加载管理页面数据...');
-        const result = await $w.cloud.callDataSource({
-          dataSourceName: 'red_story',
-          methodName: 'wedaListV2',
-          params: {
-            filter: {
-              where: {},
-              orderBy: [{
-                createdAt: 'desc'
-              }]
-            },
-            select: {
-              $master: true
-            }
-          }
-        });
+
+        // 使用云开发实例直接调用数据库
+        const tcb = await $w.cloud.getCloudInstance();
+        const db = tcb.database();
+
+        // 查询数据
+        const result = await db.collection('red_story').orderBy('createdAt', 'desc').get();
         console.log('管理页面数据加载结果:', result);
-        if (result && result.records) {
-          setStories(result.records);
-          const totalPagesCount = Math.ceil(result.records.length / storiesPerPage);
+        if (result && result.data) {
+          setStories(result.data);
+          const totalPagesCount = Math.ceil(result.data.length / storiesPerPage);
           setTotalPages(totalPagesCount);
         } else {
           setStories([]);
@@ -106,19 +98,13 @@ export default function AdminPage(props) {
     setDeleting(true);
     try {
       console.log('删除故事，ID:', storyId);
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'red_story',
-        methodName: 'wedaDeleteV2',
-        params: {
-          filter: {
-            where: {
-              _id: {
-                $eq: storyId
-              }
-            }
-          }
-        }
-      });
+
+      // 使用云开发实例直接调用数据库
+      const tcb = await $w.cloud.getCloudInstance();
+      const db = tcb.database();
+
+      // 删除数据
+      const result = await db.collection('red_story').doc(storyId).remove();
       console.log('删除结果:', result);
       setStories(stories.filter(story => story._id !== storyId));
       setDeleteConfirm(null);
