@@ -13,28 +13,28 @@ export default function Index(props) {
   const [stories, setStories] = useState([{
     id: 1,
     title: "井冈山精神",
-    content: "井冈山精神是中国共产党在井冈山革命斗争中形成的伟大革命精神，它体现了坚定信念、艰苦奋斗、实事求是、敢闯新路、依靠群众、勇于胜利的丰富内涵。这种精神是中国革命精神的源头，是激励中国人民不断前进的强大精神力量。",
+    content: "井冈山精神是中国共产党在井冈山革命斗争中形成的伟大革命精神，它体现了坚定信念、艰苦奋斗、实事求是、敢闯新路、依靠群众、勇于胜利的丰富内涵。这种精神是中国革命精神的源头，是激励中国人民不断前进的强大精神力量。井冈山精神的核心是：坚定不移的革命信念，坚持党的绝对领导，密切联系人民群众的思想作风，一切从实际出发的思想路线，艰苦奋斗的作风。井冈山精神是中国共产党创造的一种革命精神，诞生于土地革命时期的井冈山根据地，是中华民族精神的有机组成部分。",
     image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop",
     date: "1927-1930",
     location: "江西井冈山"
   }, {
     id: 2,
     title: "长征精神",
-    content: "长征精神是中国共产党人和红军将士用生命和热血铸就的伟大革命精神，它体现了把全国人民和中华民族的根本利益看得高于一切，坚定革命的理想和信念，坚信正义事业必然胜利的精神；就是为了救国救民，不怕任何艰难险阻，不惜付出一切牺牲的精神。",
+    content: "长征精神是中国共产党人和红军将士用生命和热血铸就的伟大革命精神，它体现了把全国人民和中华民族的根本利益看得高于一切，坚定革命的理想和信念，坚信正义事业必然胜利的精神；就是为了救国救民，不怕任何艰难险阻，不惜付出一切牺牲的精神；就是坚持独立自主、实事求是，一切从实际出发的精神；就是顾全大局、严守纪律、紧密团结的精神；就是紧紧依靠人民群众，同人民群众生死相依、患难与共、艰苦奋斗的精神。长征精神是中国共产党人革命精神的集中体现，是中华民族精神的升华。",
     image: "https://images.unsplash.com/photo-1579532585305-4bf9442b3d5b?w=800&h=600&fit=crop",
     date: "1934-1936",
     location: "瑞金-延安"
   }, {
     id: 3,
     title: "延安精神",
-    content: "延安精神是中国共产党在延安时期培育的伟大革命精神，它体现了坚定正确的政治方向，解放思想、实事求是的思想路线，全心全意为人民服务的根本宗旨，自力更生、艰苦奋斗的创业精神。延安精神是中国共产党的传家宝，是中华民族宝贵的精神财富。",
+    content: "延安精神是中国共产党在延安时期培育的伟大革命精神，它体现了坚定正确的政治方向，解放思想、实事求是的思想路线，全心全意为人民服务的根本宗旨，自力更生、艰苦奋斗的创业精神。延安精神是中国共产党的传家宝，是中华民族宝贵的精神财富。延安精神的主要内容是：坚定正确的政治方向，解放思想、实事求是的思想路线，全心全意为人民服务的根本宗旨，自力更生、艰苦奋斗的创业精神。延安精神是马克思主义中国化的重要成果，是中华民族精神的升华。",
     image: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop",
     date: "1935-1948",
     location: "陕西延安"
   }, {
     id: 4,
     title: "西柏坡精神",
-    content: "西柏坡精神是中国共产党在西柏坡时期形成的伟大革命精神，它体现了敢于斗争、敢于胜利的开拓进取精神，依靠群众和团结统一的民主精神，戒骄戒躁的谦虚精神，艰苦奋斗的创业精神。西柏坡精神是中国共产党人宝贵的精神财富。",
+    content: "西柏坡精神是中国共产党在西柏坡时期形成的伟大革命精神，它体现了敢于斗争、敢于胜利的开拓进取精神，依靠群众和团结统一的民主精神，戒骄戒躁的谦虚精神，艰苦奋斗的创业精神。西柏坡精神是中国共产党人宝贵的精神财富，是中华民族精神的重要组成部分。西柏坡精神的核心是：两个务必——务必使同志们继续地保持谦虚、谨慎、不骄、不躁的作风，务必使同志们继续地保持艰苦奋斗的作风。这种精神对于中国共产党执政具有重要意义。",
     image: "https://images.unsplash.com/photo-1579532585305-4bf9442b3d5b?w=800&h=600&fit=crop",
     date: "1948-1949",
     location: "河北西柏坡"
@@ -64,6 +64,14 @@ export default function Index(props) {
     $w.utils.navigateTo({
       pageId: 'admin',
       params: {}
+    });
+  };
+  const navigateToDetail = storyId => {
+    $w.utils.navigateTo({
+      pageId: 'detail',
+      params: {
+        id: storyId
+      }
     });
   };
   return <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
@@ -111,12 +119,18 @@ export default function Index(props) {
                         </h2>
                         
                         <p className="text-lg text-gray-200 leading-relaxed mb-6">
-                          {story.content}
+                          {story.content.substring(0, 150)}...
                         </p>
                         
-                        <div className="flex items-center gap-2 text-sm text-gray-300">
-                          <Users className="w-4 h-4" />
-                          <span>革命先辈用鲜血和生命铸就的精神丰碑</span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm text-gray-300">
+                            <Users className="w-4 h-4" />
+                            <span>革命先辈用鲜血和生命铸就的精神丰碑</span>
+                          </div>
+                          
+                          <Button onClick={() => navigateToDetail(story.id)} className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-full transition-all hover:scale-105">
+                            查看详情
+                          </Button>
                         </div>
                       </div>
                     </div>
