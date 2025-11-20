@@ -1,9 +1,9 @@
 // @ts-ignore;
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Shield, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Shield, AlertCircle, CheckCircle } from 'lucide-react';
 
 // @ts-ignore;
 import { PageHeader, BreadcrumbNav } from '@/components/Navigation';
@@ -20,6 +20,24 @@ export default function LoginPage(props) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
+  // 检查是否已登录
+  useEffect(() => {
+    const checkLoginStatus = () => {
+      const isLoggedIn = localStorage.getItem('adminLoggedIn');
+      if (isLoggedIn === 'true') {
+        console.log('已登录，跳转到管理页面');
+        setTimeout(() => {
+          $w.utils.navigateTo({
+            pageId: 'admin',
+            params: {}
+          });
+        }, 100);
+      }
+    };
+    checkLoginStatus();
+  }, [$w]);
 
   // 处理表单输入变化
   const handleInputChange = e => {
@@ -58,13 +76,18 @@ export default function LoginPage(props) {
 
       // 验证用户名和密码
       if (formData.username === 'admin' && formData.password === 'admin') {
-        // 登录成功，保存登录状态到localStorage
+        // 登录成功
+        setSuccess(true);
         localStorage.setItem('adminLoggedIn', 'true');
         console.log('登录成功，跳转到管理页面');
-        $w.utils.navigateTo({
-          pageId: 'admin',
-          params: {}
-        });
+
+        // 延迟跳转，显示成功状态
+        setTimeout(() => {
+          $w.utils.navigateTo({
+            pageId: 'admin',
+            params: {}
+          });
+        }, 1500);
       } else {
         // 登录失败
         setError('用户名或密码错误，请重试');
@@ -104,6 +127,18 @@ export default function LoginPage(props) {
   }, {
     label: '管理员登录'
   }];
+
+  // 登录成功状态
+  if (success) {
+    return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-2">登录成功！</h2>
+          <p className="text-gray-400 mb-4">正在跳转到管理页面...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
+        </div>
+      </div>;
+  }
   return <div className="min-h-screen bg-gray-900 text-white">
       {/* 背景装饰 */}
       <div className="absolute inset-0 bg-gradient-to-br from-red-900/20 via-gray-900 to-gray-900"></div>
@@ -117,7 +152,7 @@ export default function LoginPage(props) {
         <div className="bg-yellow-900/30 border border-yellow-600 text-yellow-200 px-4 py-3 rounded-lg mb-6">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4" />
-            <span className="text-sm">管理员登录 - 请确保您有权限访问此页面</span>
+            <span>管理员登录 - 请确保您有权限访问此页面</span>
           </div>
         </div>
 

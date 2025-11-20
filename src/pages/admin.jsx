@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Plus, Edit, Trash2, Eye, Search, Filter, AlertCircle, LogOut, Shield } from 'lucide-react';
+import { ArrowLeft, Plus, Edit, Trash2, Eye, Search, Filter, AlertCircle, LogOut, Shield, CheckCircle } from 'lucide-react';
 
 // @ts-ignore;
 import { PageHeader, BreadcrumbNav, safeNavigate } from '@/components/Navigation';
@@ -20,29 +20,48 @@ export default function AdminPage(props) {
   const [totalPages, setTotalPages] = useState(1);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const storiesPerPage = 10;
 
-  // 检查登录状态
+  // 检查登录状态 - 优化版本
   useEffect(() => {
-    const checkAuthStatus = () => {
-      const isLoggedIn = localStorage.getItem('adminLoggedIn');
-      if (!isLoggedIn || isLoggedIn !== 'true') {
+    const checkAuthStatus = async () => {
+      try {
+        setCheckingAuth(true);
+
+        // 从localStorage获取登录状态
+        const isLoggedIn = localStorage.getItem('adminLoggedIn');
+
+        // 如果已登录，直接加载数据
+        if (isLoggedIn === 'true') {
+          setAuthChecked(true);
+          setCheckingAuth(false);
+          return true;
+        }
+
+        // 如果未登录，跳转到登录页
         console.log('未登录，跳转到登录页面');
-        $w.utils.navigateTo({
-          pageId: 'login',
-          params: {}
-        });
+        setTimeout(() => {
+          $w.utils.navigateTo({
+            pageId: 'login',
+            params: {}
+          });
+        }, 100);
+        return false;
+      } catch (err) {
+        console.error('权限检查失败:', err);
+        setError('权限检查失败，请重新登录');
+        setCheckingAuth(false);
         return false;
       }
-      return true;
     };
+    checkAuthStatus();
+  }, [$w]);
 
-    // 检查登录状态，如果未登录则不继续执行
-    if (!checkAuthStatus()) {
-      return;
-    }
-
-    // 加载故事列表
+  // 加载故事列表 - 只在权限检查通过后执行
+  useEffect(() => {
+    if (!authChecked) return;
     const loadStories = async () => {
       try {
         setLoading(true);
@@ -71,7 +90,7 @@ export default function AdminPage(props) {
       }
     };
     loadStories();
-  }, [$w]);
+  }, [authChecked]);
 
   // 处理搜索
   const handleSearch = e => {
@@ -207,6 +226,16 @@ export default function AdminPage(props) {
     label: '管理后台'
   }];
 
+  // 权限检查中状态
+  if (checkingAuth) {
+    return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+          <p className="text-gray-400">正在检查权限...</p>
+        </div>
+      </div>;
+  }
+
   // 加载状态
   if (loading) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -241,6 +270,14 @@ export default function AdminPage(props) {
             </Button>
           </div>}
 
+        {/* 欢迎信息 */}
+        <div className="bg-green-900/30 border border-green-600 text-green-200 px-4 py-3 rounded-lg mb-6">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            <span>欢迎回来！您已成功登录管理后台</span>
+          </div>
+        </div>
+
         {/* 操作栏 */}
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 mb-6 border border-gray-700">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
@@ -274,112 +311,43 @@ export default function AdminPage(props) {
           </div>
         </div>
 
-        {/* 统计信息 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">总故事数</p>
-                <p className="text-2xl font-bold text-white">{stories.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center">
-                <Filter className="w-6 h-6 text-blue-400" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">已发布</p>
-                <p className="text-2xl font-bold text-green-400">{stories.filter(s => s.status === 'published').length}</p>
-              </div>
-              <div className="w-12 h-12 bg-green-600/20 rounded-lg flex items-center justify-center">
-                <Eye className="w-6 h-6 text-green-400" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">草稿</p>
-                <p className="text-2xl font-bold text-yellow-400">{stories.filter(s => s.status === 'draft').length}</p>
-              </div>
-              <div className="w-12 h-12 bg-yellow-600/20 rounded-lg flex items-center justify-center">
-                <Edit className="w-6 h-6 text-yellow-400" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm">筛选结果</p>
-                <p className="text-2xl font-bold text-red-400">{filteredStories.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-red-600/20 rounded-lg flex items-center justify-center">
-                <Search className="w-6 h-6 text-red-400" />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* 故事列表 */}
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 overflow-hidden">
-          {paginatedStories.length === 0 ? <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Filter className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-xl font-medium text-gray-300 mb-2">暂无红色故事</h3>
-              <p className="text-gray-500 mb-6">
-                {searchTerm || filterStatus !== 'all' ? '没有找到符合筛选条件的故事' : '还没有上传任何红色故事'}
-              </p>
-              {!searchTerm && filterStatus === 'all' && <Button onClick={goToUpload} className="bg-red-600 hover:bg-red-700 text-white">
-                  <Plus className="w-5 h-5 mr-2" />
-                  上传第一个故事
-                </Button>}
+          {paginatedStories.length === 0 ? <div className="text-center py-12">
+              <Shield className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+              <p className="text-gray-400">暂无故事数据</p>
             </div> : <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-900/50 border-b border-gray-700">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">故事信息</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">作者</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">状态</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">创建时间</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">操作</th>
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">标题</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">作者</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">状态</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">创建时间</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  {paginatedStories.map(story => <tr key={story._id} className="hover:bg-gray-700/30 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-4">
-                          {story.image && <img src={story.image} alt={story.title} className="w-16 h-16 object-cover rounded-lg" />}
-                          <div>
-                            <h3 className="text-sm font-medium text-white mb-1 line-clamp-1">{story.title}</h3>
-                            <p className="text-xs text-gray-400 line-clamp-2">{story.content.substring(0, 100)}...</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-300">{story.author || '佚名'}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full border ${getStatusBadgeClass(story.status)}`}>
+                  {paginatedStories.map(story => <tr key={story._id} className="hover:bg-gray-700/30">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">{story.title}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{story.author}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusBadgeClass(story.status)}`}>
                           {getStatusText(story.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-gray-300">{formatDate(story.createdAt)}</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-2">
-                          <Button onClick={() => goToDetail(story._id)} variant="ghost" size="sm" className="text-gray-300 hover:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatDate(story.createdAt)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex items-center justify-end gap-2">
+                          <button onClick={() => goToDetail(story._id)} className="text-blue-400 hover:text-blue-300 p-1">
                             <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button onClick={() => goToEdit(story._id)} variant="ghost" size="sm" className="text-gray-300 hover:text-white">
+                          </button>
+                          <button onClick={() => goToEdit(story._id)} className="text-yellow-400 hover:text-yellow-300 p-1">
                             <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button onClick={() => setDeleteConfirm(story._id)} variant="ghost" size="sm" className="text-red-400 hover:text-red-300">
+                          </button>
+                          <button onClick={() => setDeleteConfirm(story._id)} className="text-red-400 hover:text-red-300 p-1">
                             <Trash2 className="w-4 h-4" />
-                          </Button>
+                          </button>
                         </div>
                       </td>
                     </tr>)}
@@ -391,31 +359,26 @@ export default function AdminPage(props) {
         {/* 分页 */}
         {totalPages > 1 && <div className="mt-6 flex items-center justify-between">
             <div className="text-sm text-gray-400">
-              显示第 {(currentPage - 1) * storiesPerPage + 1} - {Math.min(currentPage * storiesPerPage, filteredStories.length)} 条，共 {filteredStories.length} 条
+              第 {currentPage} 页 / 共 {totalPages} 页
             </div>
-            <div className="flex items-center space-x-2">
-              <Button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} variant="outline" className="border-gray-600 text-gray-300">
+            <div className="flex gap-2">
+              <button onClick={() => setCurrentPage(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="px-3 py-1 bg-gray-800 border border-gray-700 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                 上一页
-              </Button>
-              {Array.from({
-            length: totalPages
-          }, (_, i) => i + 1).map(page => <button key={page} onClick={() => setCurrentPage(page)} className={`px-3 py-1 text-sm rounded-md transition-colors ${currentPage === page ? 'bg-red-600 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
-                  {page}
-                </button>)}
-              <Button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} variant="outline" className="border-gray-600 text-gray-300">
+              </button>
+              <button onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="px-3 py-1 bg-gray-800 border border-gray-700 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                 下一页
-              </Button>
+              </button>
             </div>
           </div>}
       </main>
 
-      {/* 删除确认对话框 */}
+      {/* 删除确认弹窗 */}
       {deleteConfirm && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-sm mx-4">
-            <h3 className="text-lg font-medium text-white mb-4">确认删除红色故事？</h3>
-            <p className="text-gray-400 mb-6">删除后故事将无法恢复，确定要删除吗？</p>
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-sm mx-4">
+            <h3 className="text-lg font-medium text-white mb-2">确认删除</h3>
+            <p className="text-gray-300 mb-4">确定要删除这个故事吗？此操作不可撤销。</p>
             <div className="flex gap-3 justify-end">
-              <Button onClick={() => setDeleteConfirm(null)} variant="outline" className="border-gray-600 text-gray-300">
+              <Button onClick={() => setDeleteConfirm(null)} variant="ghost" className="text-gray-300 hover:text-white">
                 取消
               </Button>
               <Button onClick={() => handleDelete(deleteConfirm)} disabled={deleting} className="bg-red-600 hover:bg-red-700 text-white">
