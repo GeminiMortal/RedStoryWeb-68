@@ -28,8 +28,6 @@ export default function AdminPage(props) {
       setLoading(true);
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
-
-      // 仅查询 red_story 主库中已发布的内容
       const result = await db.collection('red_story').where({
         status: 'published'
       }).orderBy('createdAt', 'desc').get();
@@ -109,6 +107,7 @@ export default function AdminPage(props) {
             <p className="text-gray-400">加载故事列表中...</p>
           </div>
         </main>
+        {/* 仅保留首页和上传两个底部导航 */}
         <BottomNav currentPage="admin" navigateTo={navigateTo} />
       </div>;
   }
@@ -128,6 +127,7 @@ export default function AdminPage(props) {
             </Button>
           </div>
         </main>
+        {/* 仅保留首页和上传两个底部导航 */}
         <BottomNav currentPage="admin" navigateTo={navigateTo} />
       </div>;
   }
@@ -221,6 +221,7 @@ export default function AdminPage(props) {
           </div>}
       </main>
       
+      {/* 仅保留首页和上传两个底部导航 */}
       <BottomNav currentPage="admin" navigateTo={navigateTo} />
     </div>;
 }

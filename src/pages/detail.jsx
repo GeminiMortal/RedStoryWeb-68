@@ -15,9 +15,8 @@ export default function DetailPage(props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 修正参数访问方式 - 直接使用 params.id
-  const storyId = $w.page.dataset.params.id;
-  const navigateTo = $w.utils.navigateTo;
+  // 从 URL 参数获取故事 ID
+  const storyId = $w.page.dataset.params?.id;
 
   // 仅从 red_story 主库加载已发布故事
   useEffect(() => {
@@ -58,6 +57,7 @@ export default function DetailPage(props) {
       setError('未提供故事ID');
     }
   }, [storyId]);
+  const navigateTo = $w.utils.navigateTo;
   const goBack = () => {
     navigateTo({
       pageId: 'index',
@@ -103,6 +103,7 @@ export default function DetailPage(props) {
             </Button>
           </div>
         </main>
+        {/* 仅保留首页和上传两个底部导航 */}
         <BottomNav currentPage="detail" navigateTo={navigateTo} />
       </div>;
   }
@@ -177,6 +178,7 @@ export default function DetailPage(props) {
         </article>
       </main>
       
+      {/* 仅保留首页和上传两个底部导航 */}
       <BottomNav currentPage="detail" navigateTo={navigateTo} />
     </div>;
 }

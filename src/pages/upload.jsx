@@ -49,8 +49,6 @@ export default function UploadPage(props) {
       setSaving(true);
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
-
-      // 修改为写入 red_story_draft 数据模型
       const storyData = {
         ...story,
         createdAt: Date.now(),
@@ -61,8 +59,6 @@ export default function UploadPage(props) {
         title: '提交成功',
         description: '故事已提交到草稿箱，等待审核'
       });
-
-      // 清空表单
       setStory({
         title: '',
         content: '',
@@ -73,8 +69,6 @@ export default function UploadPage(props) {
         image: '',
         status: 'pending'
       });
-
-      // 返回首页
       navigateTo({
         pageId: 'index',
         params: {}
@@ -215,6 +209,7 @@ export default function UploadPage(props) {
         </form>
       </main>
       
+      {/* 仅保留首页和上传两个底部导航 */}
       <BottomNav currentPage="upload" navigateTo={navigateTo} />
     </div>;
 }
