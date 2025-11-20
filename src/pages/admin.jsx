@@ -1,9 +1,9 @@
 // @ts-ignore;
 import React, { useState, useEffect } from 'react';
 // @ts-ignore;
-import { Button, Card, CardContent, CardHeader, CardTitle, Badge, useToast, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
+import { Button, useToast, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
 // @ts-ignore;
-import { Plus, Edit, Trash2, Eye, Clock, Calendar, User, BookOpen, FileText, Search } from 'lucide-react';
+import { Plus, Search, BookOpen, FileText } from 'lucide-react';
 
 // @ts-ignore;
 import { Sidebar } from '@/components/Sidebar';
@@ -12,7 +12,7 @@ import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 // @ts-ignore;
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 // @ts-ignore;
-import { AnimatedCard } from '@/components/AnimatedCard';
+import { StoryCard } from '@/components/StoryCard';
 export default function AdminPage(props) {
   const {
     $w
@@ -35,12 +35,16 @@ export default function AdminPage(props) {
       setLoading(true);
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
+
+      // 加载已发布故事
       const publishedResult = await db.collection('red_story').where({
         status: 'published'
       }).orderBy('createdAt', 'desc').get();
       if (publishedResult && publishedResult.data) {
         setPublishedStories(publishedResult.data);
       }
+
+      // 加载草稿
       const draftsResult = await db.collection('red_story_draft').orderBy('lastSavedAt', 'desc').get();
       if (draftsResult && draftsResult.data) {
         setDrafts(draftsResult.data);
@@ -77,7 +81,7 @@ export default function AdminPage(props) {
         title: '删除成功',
         description: `${itemType}已删除`
       });
-      loadData();
+      loadData(); // 重新加载数据
     } catch (err) {
       console.error('删除失败:', err);
       toast({
@@ -95,44 +99,10 @@ export default function AdminPage(props) {
       }
     });
   };
-  const formatDate = timestamp => {
-    if (!timestamp) return '未知时间';
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-  const formatRelativeTime = timestamp => {
-    if (!timestamp) return '未知时间';
-    const now = new Date();
-    const past = new Date(timestamp);
-    const diffMs = now - past;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) {
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      if (diffHours === 0) {
-        const diffMinutes = Math.floor(diffMs / (1000 * 60));
-        return `${diffMinutes}分钟前`;
-      }
-      return `${diffHours}小时前`;
-    } else if (diffDays === 1) {
-      return '昨天';
-    } else if (diffDays < 7) {
-      return `${diffDays}天前`;
-    } else {
-      return formatDate(timestamp);
-    }
-  };
-  const truncateContent = (content, maxLength = 100) => {
-    if (!content) return '暂无内容';
-    return content.length > maxLength ? content.substring(0, maxLength) + '...' : content;
-  };
-  const filteredPublished = publishedStories.filter(story => story.title.toLowerCase().includes(searchTerm.toLowerCase()));
-  const filteredDrafts = drafts.filter(draft => (draft.title || '').toLowerCase().includes(searchTerm.toLowerCase()));
+
+  // 搜索过滤
+  const filteredPublished = publishedStories.filter(story => (story.title || '').toLowerCase().includes(searchTerm.toLowerCase()) || (story.content || '').toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredDrafts = drafts.filter(draft => (draft.title || '无标题草稿').toLowerCase().includes(searchTerm.toLowerCase()));
   if (loading) {
     return <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
         <Sidebar currentPage="admin" navigateTo={navigateTo} />
@@ -182,9 +152,11 @@ export default function AdminPage(props) {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 bg-gray-800 border-gray-700 max-w-md mx-auto md:mx-0">
               <TabsTrigger value="published" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-red-600 data-[state=active]:text-white transition-all">
+                <BookOpen className="w-4 h-4 mr-2" />
                 已发布 ({filteredPublished.length})
               </TabsTrigger>
               <TabsTrigger value="drafts" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-blue-600 data-[state=active]:text-white transition-all">
+                <FileText className="w-4 h-4 mr-2" />
                 草稿箱 ({filteredDrafts.length})
               </TabsTrigger>
             </TabsList>
@@ -192,138 +164,48 @@ export default function AdminPage(props) {
             <TabsContent value="published" className="mt-6">
               {filteredPublished.length === 0 ? <div className="text-center py-12 animate-fade-in">
                   <BookOpen className="w-20 h-20 text-gray-600 mx-auto mb-4 animate-bounce" />
-                  <h3 className="text-xl font-medium text-gray-400 mb-2">暂无已发布故事</h3>
-                  <p className="text-gray-500 mb-6">开始创建您的第一个红色故事吧</p>
-                  <Button onClick={() => navigateTo({
+                  <h3 className="text-xl font-medium text-gray-400 mb-2">
+                    {searchTerm ? '未找到相关故事' : '暂无已发布故事'}
+                  </h3>
+                  <p className="text-gray-500 mb-6">
+                    {searchTerm ? '尝试其他关键词' : '开始创建您的第一个红色故事吧'}
+                  </p>
+                  {!searchTerm && <Button onClick={() => navigateTo({
                 pageId: 'upload',
                 params: {}
               })} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-red-500/25 transition-all duration-300">
-                    <Plus className="w-4 h-4 mr-2" />
-                    创建故事
-                  </Button>
+                      <Plus className="w-4 h-4 mr-2" />
+                      创建故事
+                    </Button>}
                 </div> : <div className="grid gap-4">
-                  {filteredPublished.map((story, index) => <AnimatedCard key={story._id} delay={index}>
-                      <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 hover:border-red-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/10">
-                        <CardHeader className="pb-3">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <CardTitle className="text-white text-lg line-clamp-1">{story.title}</CardTitle>
-                              <div className="flex flex-wrap items-center gap-2 text-sm text-gray-400 mt-2">
-                                <span className="flex items-center gap-1">
-                                  <User className="w-3 h-3" />
-                                  {story.author || '佚名'}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3 h-3" />
-                                  {formatDate(story.createdAt)}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {story.read_time || '5分钟'}
-                                </span>
-                                <Badge variant="outline" className="border-green-600 text-green-400 text-xs">
-                                  已发布
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-gray-300 text-sm mb-4 line-clamp-2">
-                            {truncateContent(story.content)}
-                          </p>
-                          
-                          {story.tags && story.tags.length > 0 && <div className="flex flex-wrap gap-1 mb-4">
-                              {story.tags.slice(0, 3).map((tag, index) => <span key={index} className="px-2 py-1 bg-red-900/30 text-red-300 text-xs rounded-full">
-                                  {tag}
-                                </span>)}
-                            </div>}
-
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={() => handleView(story._id)} className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white transition-all">
-                              <Eye className="w-3 h-3 mr-1" />
-                              查看
-                            </Button>
-                            <Button size="sm" onClick={() => handleEdit(story._id)} className="bg-blue-600 hover:bg-blue-700 transition-all">
-                              <Edit className="w-3 h-3 mr-1" />
-                              编辑
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleDelete(story._id)} className="bg-red-600 hover:bg-red-700 transition-all">
-                              <Trash2 className="w-3 h-3 mr-1" />
-                              删除
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </AnimatedCard>)}
+                  {filteredPublished.map((story, index) => <StoryCard key={story._id} story={story} type="published" index={index} onEdit={handleEdit} onDelete={handleDelete} onView={handleView} />)}
                 </div>}
             </TabsContent>
 
             <TabsContent value="drafts" className="mt-6">
               {filteredDrafts.length === 0 ? <div className="text-center py-12 animate-fade-in">
                   <FileText className="w-20 h-20 text-gray-600 mx-auto mb-4 animate-bounce" />
-                  <h3 className="text-xl font-medium text-gray-400 mb-2">暂无草稿</h3>
-                  <p className="text-gray-500 mb-6">创建或编辑故事时会自动保存为草稿</p>
-                  <Button onClick={() => navigateTo({
+                  <h3 className="text-xl font-medium text-gray-400 mb-2">
+                    {searchTerm ? '未找到相关草稿' : '暂无草稿'}
+                  </h3>
+                  <p className="text-gray-500 mb-6">
+                    {searchTerm ? '尝试其他关键词' : '创建或编辑故事时会自动保存为草稿'}
+                  </p>
+                  {!searchTerm && <Button onClick={() => navigateTo({
                 pageId: 'upload',
                 params: {}
               })} className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg hover:shadow-blue-500/25 transition-all duration-300">
-                    <Plus className="w-4 h-4 mr-2" />
-                    创建草稿
-                  </Button>
+                      <Plus className="w-4 h-4 mr-2" />
+                      创建草稿
+                    </Button>}
                 </div> : <div className="grid gap-4">
-                  {filteredDrafts.map((draft, index) => <AnimatedCard key={draft._id} delay={index}>
-                      <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 hover:border-blue-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10">
-                        <CardHeader className="pb-3">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <CardTitle className="text-white text-lg line-clamp-1">{draft.title || '无标题草稿'}</CardTitle>
-                              <div className="flex flex-wrap items-center gap-2 text-sm text-gray-400 mt-2">
-                                <span className="flex items-center gap-1">
-                                  <User className="w-3 h-3" />
-                                  {draft.draftOwner || '未知用户'}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {formatRelativeTime(draft.lastSavedAt)}
-                                </span>
-                                <Badge variant="outline" className="border-blue-600 text-blue-400 text-xs">
-                                  草稿
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <p className="text-gray-300 text-sm mb-4 line-clamp-2">
-                            {truncateContent(draft.content)}
-                          </p>
-                          
-                          {draft.tags && draft.tags.length > 0 && <div className="flex flex-wrap gap-1 mb-4">
-                              {draft.tags.slice(0, 3).map((tag, index) => <span key={index} className="px-2 py-1 bg-blue-900/30 text-blue-300 text-xs rounded-full">
-                                  {tag}
-                                </span>)}
-                            </div>}
-
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={() => handleEdit(draft._id, true)} className="bg-blue-600 hover:bg-blue-700 transition-all">
-                              <Edit className="w-3 h-3 mr-1" />
-                              编辑
-                            </Button>
-                            <Button size="sm" variant="destructive" onClick={() => handleDelete(draft._id, true)} className="bg-red-600 hover:bg-red-700 transition-all">
-                              <Trash2 className="w-3 h-3 mr-1" />
-                              删除
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </AnimatedCard>)}
+                  {filteredDrafts.map((draft, index) => <StoryCard key={draft._id} story={draft} type="draft" index={index} onEdit={handleEdit} onDelete={handleDelete} />)}
                 </div>}
             </TabsContent>
           </Tabs>
         </main>
-
-        <MobileBottomNav currentPage="admin" navigateTo={navigateTo} />
       </div>
+
+      <MobileBottomNav currentPage="admin" navigateTo={navigateTo} />
     </div>;
 }
