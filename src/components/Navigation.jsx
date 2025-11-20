@@ -142,3 +142,30 @@ export function QuickNav({
         </Button>)}
     </div>;
 }
+
+// 安全导航函数 - 带有未保存更改确认
+export function safeNavigate(navigateTo, hasUnsavedChanges = false, callback) {
+  if (hasUnsavedChanges) {
+    if (confirm('您有未保存的更改，确定要离开吗？')) {
+      callback();
+    }
+  } else {
+    callback();
+  }
+}
+
+// 页面离开确认 Hook
+export function usePageLeaveConfirmation(hasUnsavedChanges) {
+  React.useEffect(() => {
+    const handleBeforeUnload = e => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+}

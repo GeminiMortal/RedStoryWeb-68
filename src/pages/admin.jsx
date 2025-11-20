@@ -5,6 +5,8 @@ import { Button } from '@/components/ui';
 // @ts-ignore;
 import { ArrowLeft, Plus, Edit, Trash2, Eye, Search, Filter, AlertCircle, LogOut, Shield } from 'lucide-react';
 
+// @ts-ignore;
+import { PageHeader, BreadcrumbNav, safeNavigate } from '@/components/Navigation';
 export default function AdminPage(props) {
   const {
     $w
@@ -117,17 +119,18 @@ export default function AdminPage(props) {
   };
 
   // 导航函数
+  const navigateTo = $w.utils.navigateTo;
   const goBack = () => {
     $w.utils.navigateBack();
   };
   const goToUpload = () => {
-    $w.utils.navigateTo({
+    navigateTo({
       pageId: 'upload',
       params: {}
     });
   };
   const goToEdit = storyId => {
-    $w.utils.navigateTo({
+    navigateTo({
       pageId: 'edit',
       params: {
         id: storyId
@@ -135,7 +138,7 @@ export default function AdminPage(props) {
     });
   };
   const goToDetail = storyId => {
-    $w.utils.navigateTo({
+    navigateTo({
       pageId: 'detail',
       params: {
         id: storyId
@@ -145,12 +148,14 @@ export default function AdminPage(props) {
 
   // 退出登录
   const handleLogout = () => {
-    localStorage.removeItem('adminLoggedIn');
-    console.log('退出登录，跳转到登录页面');
-    $w.utils.navigateTo({
-      pageId: 'login',
-      params: {}
-    });
+    if (confirm('确定要退出登录吗？')) {
+      localStorage.removeItem('adminLoggedIn');
+      console.log('退出登录，跳转到登录页面');
+      navigateTo({
+        pageId: 'login',
+        params: {}
+      });
+    }
   };
 
   // 格式化日期
@@ -190,6 +195,18 @@ export default function AdminPage(props) {
     }
   };
 
+  // 面包屑导航
+  const breadcrumbs = [{
+    label: '首页',
+    href: true,
+    onClick: () => navigateTo({
+      pageId: 'index',
+      params: {}
+    })
+  }, {
+    label: '管理后台'
+  }];
+
   // 加载状态
   if (loading) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
@@ -204,21 +221,12 @@ export default function AdminPage(props) {
       <div className="absolute inset-0 bg-gradient-to-br from-red-900/20 via-gray-900 to-gray-900"></div>
       
       {/* 顶部导航 */}
-      <header className="relative z-10 bg-black/50 backdrop-blur-sm border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Button onClick={goBack} variant="ghost" className="text-gray-300 hover:text-white">
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            返回主页
-          </Button>
-          <h1 className="text-2xl font-bold text-red-600">红色故事管理</h1>
-          <div className="flex items-center gap-2">
-            <Button onClick={handleLogout} variant="ghost" className="text-gray-300 hover:text-white">
-              <LogOut className="w-5 h-5 mr-2" />
-              退出
-            </Button>
-          </div>
-        </div>
-      </header>
+      <PageHeader title="红色故事管理" showBack={true} backAction={goBack} breadcrumbs={breadcrumbs} actions={[{
+      label: '退出',
+      icon: LogOut,
+      onClick: handleLogout,
+      className: 'text-gray-300 hover:text-white'
+    }]} />
 
       {/* 主要内容 */}
       <main className="relative z-10 max-w-7xl mx-auto px-4 py-8">

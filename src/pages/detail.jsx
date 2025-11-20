@@ -6,7 +6,7 @@ import { Button } from '@/components/ui';
 import { ArrowLeft, Calendar, MapPin, Clock, Tag, User, Edit, Trash2, Share2, Heart, AlertCircle, BookOpen } from 'lucide-react';
 
 // @ts-ignore;
-import { PageHeader, BreadcrumbNav } from '@/components/Navigation';
+import { PageHeader, BreadcrumbNav, safeNavigate } from '@/components/Navigation';
 export default function DetailPage(props) {
   const {
     $w

@@ -3,10 +3,12 @@ import React, { useState } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, User, Lock, AlertCircle, Eye, EyeOff, Shield } from 'lucide-react';
+import { ArrowLeft, Shield, AlertCircle } from 'lucide-react';
 
 // @ts-ignore;
 import { PageHeader, BreadcrumbNav } from '@/components/Navigation';
+// @ts-ignore;
+import { LoginForm } from '@/components/LoginForm';
 export default function LoginPage(props) {
   const {
     $w
@@ -86,6 +88,11 @@ export default function LoginPage(props) {
     setShowPassword(!showPassword);
   };
 
+  // 清除错误信息
+  const clearError = () => {
+    setError(null);
+  };
+
   // 面包屑导航
   const breadcrumbs = [{
     label: '首页',
@@ -125,49 +132,7 @@ export default function LoginPage(props) {
             <p className="text-gray-400">请输入您的管理员凭据</p>
           </div>
 
-          {/* 错误提示 */}
-          {error && <div className="bg-red-900/50 border border-red-600 text-red-200 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4" />
-                <span>{error}</span>
-              </div>
-              <Button onClick={() => setError(null)} variant="ghost" size="sm" className="text-red-300 hover:text-red-100">
-                ×
-              </Button>
-            </div>}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 用户名 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                <User className="w-4 h-4 inline mr-2" />
-                用户名
-              </label>
-              <input type="text" name="username" value={formData.username} onChange={handleInputChange} placeholder="请输入用户名" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" autoComplete="username" />
-            </div>
-
-            {/* 密码 */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                <Lock className="w-4 h-4 inline mr-2" />
-                密码
-              </label>
-              <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleInputChange} placeholder="请输入密码" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent pr-12" autoComplete="current-password" />
-                <button type="button" onClick={togglePasswordVisibility} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            {/* 提交按钮 */}
-            <Button type="submit" disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white">
-              {loading ? <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  登录中...
-                </div> : '登录'}
-            </Button>
-          </form>
+          <LoginForm formData={formData} onInputChange={handleInputChange} onSubmit={handleSubmit} showPassword={showPassword} onTogglePassword={togglePasswordVisibility} loading={loading} error={error} onClearError={clearError} />
 
           {/* 底部提示 */}
           <div className="mt-6 pt-6 border-t border-gray-700">

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui';
 import { ArrowLeft, Upload, Calendar, MapPin, Tag, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 
 // @ts-ignore;
-import { PageHeader, BreadcrumbNav } from '@/components/Navigation';
+import { PageHeader, BreadcrumbNav, safeNavigate } from '@/components/Navigation';
 export default function UploadPage(props) {
   const {
     $w

@@ -139,7 +139,7 @@ export default function HomePage(props) {
       
       {/* 顶部导航 */}
       <PageHeader title="红色记忆" showBack={false} breadcrumbs={breadcrumbs} actions={[{
-      label: '管理',
+      label: '菜单',
       icon: Menu,
       onClick: () => setMobileMenuOpen(!mobileMenuOpen),
       className: 'text-gray-300 hover:text-white'
