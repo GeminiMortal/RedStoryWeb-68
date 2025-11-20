@@ -1,9 +1,9 @@
 // @ts-ignore;
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Upload, Calendar, MapPin, Tag, Clock, AlertCircle, CheckCircle, Trash2, ImageOff, Save, X, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Upload, Image, Calendar, MapPin, Clock, Tag, User, AlertCircle, CheckCircle, Save, Eye, Edit3, RefreshCw } from 'lucide-react';
 
 // @ts-ignore;
 import { PageHeader, BreadcrumbNav } from '@/components/Navigation';
@@ -14,96 +14,32 @@ export default function EditPage(props) {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
-    author: '',
+    image: '',
     date: '',
     location: '',
-    readTime: '5分钟',
-    tags: '',
-    status: 'draft'
+    author: '',
+    read_time: '',
+    tags: [],
+    status: 'published',
+    order: 0
   });
-  const [originalImage, setOriginalImage] = useState('');
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
-  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [autoSaving, setAutoSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [deleteImageConfirm, setDeleteImageConfirm] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [lastSavedTime, setLastSavedTime] = useState(null);
-  const [draftRestored, setDraftRestored] = useState(false);
-  const autoSaveTimer = useRef(null);
-  const storyId = props.$w.page.dataset.params.id;
+  const [saveMode, setSaveMode] = useState('publish'); // 'draft' 或 'publish'
+  const [tagInput, setTagInput] = useState('');
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isDraft, setIsDraft] = useState(false);
+  const [storyId, setStoryId] = useState(null);
 
-  // 自动保存草稿
-  const autoSaveDraft = async () => {
-    if (!hasUnsavedChanges || autoSaving) return;
-    try {
-      setAutoSaving(true);
-      console.log('自动保存草稿...');
-
-      // 生成当前时间戳
-      const currentTimestamp = Date.now();
-
-      // 处理标签
-      const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-
-      // 使用云开发实例直接调用数据库
-      const tcb = await $w.cloud.getCloudInstance();
-      const db = tcb.database();
-
-      // 保存草稿
-      await db.collection('red_story').doc(storyId).update({
-        title: formData.title.trim(),
-        content: formData.content.trim(),
-        author: formData.author.trim(),
-        date: formData.date,
-        location: formData.location.trim(),
-        read_time: formData.readTime,
-        tags: tagsArray,
-        status: 'draft',
-        updatedAt: currentTimestamp
-      });
-      setLastSavedTime(new Date());
-      setHasUnsavedChanges(false);
-      console.log('草稿自动保存成功');
-    } catch (err) {
-      console.error('自动保存草稿失败:', err);
-    } finally {
-      setAutoSaving(false);
-    }
-  };
-
-  // 设置自动保存定时器
+  // 从URL参数获取故事ID
   useEffect(() => {
-    if (hasUnsavedChanges && !autoSaving) {
-      // 清除之前的定时器
-      if (autoSaveTimer.current) {
-        clearTimeout(autoSaveTimer.current);
-      }
+    const id = props.$w.page.dataset.params.id;
+    setStoryId(id);
+  }, [props.$w.page.dataset.params]);
 
-      // 设置新的定时器，3秒后自动保存
-      autoSaveTimer.current = setTimeout(() => {
-        autoSaveDraft();
-      }, 3000);
-    }
-    return () => {
-      if (autoSaveTimer.current) {
-        clearTimeout(autoSaveTimer.current);
-      }
-    };
-  }, [formData, hasUnsavedChanges, autoSaving]);
-
-  // 监听表单变化
-  useEffect(() => {
-    if (!loading && !draftRestored) {
-      setHasUnsavedChanges(true);
-    }
-  }, [formData, loading, draftRestored]);
-
-  // 加载现有故事数据
+  // 加载故事数据
   useEffect(() => {
     if (!storyId) {
       setError('未提供故事ID');
@@ -113,43 +49,44 @@ export default function EditPage(props) {
     const loadStory = async () => {
       try {
         setLoading(true);
-        console.log('加载编辑数据，故事ID:', storyId);
+        console.log('加载故事数据，ID:', storyId);
 
         // 使用云开发实例直接调用数据库
         const tcb = await $w.cloud.getCloudInstance();
         const db = tcb.database();
 
-        // 查询数据
-        const result = await db.collection('red_story').doc(storyId).get();
-        console.log('编辑页面加载结果:', result);
-        if (result && result.data) {
-          const record = result.data;
-          const loadedData = {
-            title: record.title || '',
-            content: record.content || '',
-            author: record.author || '',
-            date: record.date || '',
-            location: record.location || '',
-            readTime: record.read_time || '5分钟',
-            tags: Array.isArray(record.tags) ? record.tags.join(', ') : '',
-            status: record.status || 'draft'
-          };
-          setFormData(loadedData);
-          setOriginalImage(record.image || '');
-          setImagePreview(record.image || '');
+        // 先尝试从正式发布中查找
+        let storyResult = await db.collection('red_story').doc(storyId).get();
 
-          // 如果是草稿状态，提示用户
-          if (record.status === 'draft') {
-            setDraftRestored(true);
-            setTimeout(() => {
-              setDraftRestored(false);
-            }, 3000);
+        // 如果正式发布中没有，尝试从草稿中查找
+        if (!storyResult || !storyResult.data) {
+          storyResult = await db.collection('red_story_draft').doc(storyId).get();
+          if (storyResult && storyResult.data) {
+            setIsDraft(true);
+            setSaveMode('draft');
           }
+        }
+        console.log('故事数据加载结果:', storyResult);
+        if (storyResult && storyResult.data) {
+          const story = storyResult.data;
+          setFormData({
+            title: story.title || '',
+            content: story.content || '',
+            image: story.image || '',
+            date: story.date || '',
+            location: story.location || '',
+            author: story.author || '',
+            read_time: story.read_time || '',
+            tags: story.tags || [],
+            status: story.status || 'published',
+            order: story.order || 0
+          });
+          setImagePreview(story.image || null);
         } else {
           setError('未找到该红色故事');
         }
       } catch (err) {
-        console.error('加载故事失败:', err);
+        console.error('加载故事数据失败:', err);
         setError(`加载失败: ${err.message || '未知错误'}`);
       } finally {
         setLoading(false);
@@ -158,76 +95,98 @@ export default function EditPage(props) {
     loadStory();
   }, [storyId]);
 
+  // 导航函数
+  const navigateTo = $w.utils.navigateTo;
+  const goBack = () => {
+    $w.utils.navigateBack();
+  };
+  const goToAdmin = () => {
+    navigateTo({
+      pageId: 'admin',
+      params: {}
+    });
+  };
+
   // 处理表单输入变化
   const handleInputChange = e => {
     const {
       name,
-      value
+      value,
+      type,
+      files
     } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  // 处理图片选择
-  const handleImageChange = e => {
-    const file = e.target.files[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        setError('请选择图片文件');
-        return;
+    if (type === 'file') {
+      const file = files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          setImagePreview(e.target.result);
+          setFormData(prev => ({
+            ...prev,
+            image: e.target.result
+          }));
+        };
+        reader.readAsDataURL(file);
       }
-      if (file.size > 5 * 1024 * 1024) {
-        setError('图片文件不能超过5MB');
-        return;
-      }
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = e => {
-        setImagePreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+    // 清除错误信息
+    if (error) {
       setError(null);
     }
   };
 
-  // 删除图片
-  const handleDeleteImage = () => {
-    setDeleteImageConfirm(true);
-  };
-  const confirmDeleteImage = () => {
-    setOriginalImage('');
-    setImageFile(null);
-    setImagePreview('');
-    setDeleteImageConfirm(false);
-    setHasUnsavedChanges(true);
-  };
-  const cancelDeleteImage = () => {
-    setDeleteImageConfirm(false);
+  // 处理标签输入
+  const handleTagInput = e => {
+    setTagInput(e.target.value);
   };
 
-  // 上传图片到云存储
-  const uploadImage = async file => {
-    try {
-      const cloud = await $w.cloud.getCloudInstance();
-      const timestamp = Date.now();
-      const fileName = `red_story_${timestamp}_${file.name}`;
-      const uploadResult = await cloud.uploadFile({
-        cloudPath: `red_stories/${fileName}`,
-        filePath: file
-      });
-      console.log('图片上传成功:', uploadResult);
-      return uploadResult.fileID;
-    } catch (err) {
-      console.error('图片上传失败:', err);
-      throw new Error('图片上传失败: ' + err.message);
+  // 添加标签
+  const addTag = () => {
+    const tag = tagInput.trim();
+    if (tag && !formData.tags.includes(tag)) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tag]
+      }));
+      setTagInput('');
     }
+  };
+
+  // 移除标签
+  const removeTag = tagToRemove => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  // 处理标签输入的键盘事件
+  const handleTagKeyPress = e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTag();
+    }
+  };
+
+  // 处理保存模式切换
+  const handleSaveModeChange = mode => {
+    setSaveMode(mode);
+    setFormData(prev => ({
+      ...prev,
+      status: mode === 'draft' ? 'draft' : 'published'
+    }));
   };
 
   // 处理表单提交
   const handleSubmit = async e => {
     e.preventDefault();
+
+    // 验证必填字段
     if (!formData.title.trim()) {
       setError('请输入故事标题');
       return;
@@ -239,88 +198,46 @@ export default function EditPage(props) {
     setSaving(true);
     setError(null);
     try {
-      let imageUrl = originalImage;
-      if (imageFile) {
-        console.log('上传新图片...');
-        imageUrl = await uploadImage(imageFile);
-      } else if (!imagePreview && originalImage) {
-        // 图片被删除
-        imageUrl = '';
-      }
-      // 处理标签 - 确保返回数组类型
-      const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-
-      // 生成当前时间戳（数字格式）
-      const currentTimestamp = Date.now();
-      console.log('开始更新故事数据...');
+      console.log(`开始${saveMode === 'draft' ? '更新草稿' : '更新正式发布'}...`);
 
       // 使用云开发实例直接调用数据库
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
 
+      // 准备更新数据
+      const updateData = {
+        ...formData,
+        updatedAt: Date.now()
+      };
+
+      // 根据保存模式选择更新的数据模型
+      const collectionName = saveMode === 'draft' ? 'red_story_draft' : 'red_story';
+
       // 更新数据
-      const result = await db.collection('red_story').doc(storyId).update({
-        title: formData.title.trim(),
-        // String
-        content: formData.content.trim(),
-        // Text
-        author: formData.author.trim(),
-        // String
-        date: formData.date,
-        // Date
-        location: formData.location.trim(),
-        // String
-        image: imageUrl,
-        // Image
-        read_time: formData.readTime,
-        // String
-        tags: tagsArray,
-        // Array
-        status: formData.status,
-        // String
-        updatedAt: currentTimestamp // Number (Unix时间戳)
-      });
+      const result = await db.collection(collectionName).doc(storyId).update(updateData);
       console.log('更新结果:', result);
+
+      // 如果从草稿转为正式发布，需要删除草稿
+      if (saveMode === 'publish' && isDraft) {
+        await db.collection('red_story_draft').doc(storyId).remove();
+        console.log('草稿已删除');
+      }
+
+      // 显示成功提示
       setSuccess(true);
-      setHasUnsavedChanges(false);
+
+      // 延迟跳转
       setTimeout(() => {
-        $w.utils.navigateTo({
+        navigateTo({
           pageId: 'admin',
           params: {}
         });
       }, 2000);
     } catch (err) {
-      console.error('更新故事失败:', err);
+      console.error('更新失败:', err);
       setError(`更新失败: ${err.message || '未知错误'}`);
     } finally {
       setSaving(false);
-    }
-  };
-
-  // 导航函数
-  const navigateTo = $w.utils.navigateTo;
-  const goBack = () => {
-    if (hasUnsavedChanges) {
-      if (confirm('您有未保存的更改，确定要离开吗？')) {
-        $w.utils.navigateBack();
-      }
-    } else {
-      $w.utils.navigateBack();
-    }
-  };
-  const goToAdmin = () => {
-    if (hasUnsavedChanges) {
-      if (confirm('您有未保存的更改，确定要离开吗？')) {
-        navigateTo({
-          pageId: 'admin',
-          params: {}
-        });
-      }
-    } else {
-      navigateTo({
-        pageId: 'admin',
-        params: {}
-      });
     }
   };
 
@@ -337,7 +254,7 @@ export default function EditPage(props) {
     href: true,
     onClick: goToAdmin
   }, {
-    label: '编辑故事'
+    label: '编辑红色故事'
   }];
 
   // 加载状态
@@ -345,7 +262,7 @@ export default function EditPage(props) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-400">加载编辑数据中...</p>
+          <p className="text-gray-400">加载故事数据中...</p>
         </div>
       </div>;
   }
@@ -355,9 +272,13 @@ export default function EditPage(props) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">更新成功！</h2>
-          <p className="text-gray-400 mb-4">红色故事已成功更新</p>
-          <p className="text-sm text-gray-500">正在跳转到管理页面...</p>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            {saveMode === 'draft' ? '草稿更新成功！' : '发布更新成功！'}
+          </h2>
+          <p className="text-gray-400 mb-4">
+            {saveMode === 'draft' ? '您的草稿已更新，可在管理后台继续编辑' : '您的红色故事已成功更新'}
+          </p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto"></div>
         </div>
       </div>;
   }
@@ -366,37 +287,10 @@ export default function EditPage(props) {
       <div className="absolute inset-0 bg-gradient-to-br from-red-900/20 via-gray-900 to-gray-900"></div>
       
       {/* 顶部导航 */}
-      <PageHeader title="编辑红色故事" showBack={true} backAction={goBack} breadcrumbs={breadcrumbs} actions={[{
-      label: '管理',
-      onClick: goToAdmin,
-      className: 'text-gray-300 hover:text-white'
-    }]} />
+      <PageHeader title="编辑红色故事" showBack={true} backAction={goBack} breadcrumbs={breadcrumbs} />
 
       {/* 主要内容 */}
       <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
-        {/* 草稿恢复提示 */}
-        {draftRestored && <div className="bg-blue-900/30 border border-blue-600 text-blue-200 px-4 py-3 rounded-lg mb-6">
-            <div className="flex items-center gap-2">
-              <RefreshCw className="w-4 h-4" />
-              <span>已恢复草稿内容，您可以继续编辑</span>
-            </div>
-          </div>}
-
-        {/* 自动保存状态提示 */}
-        {hasUnsavedChanges && <div className="bg-yellow-900/30 border border-yellow-600 text-yellow-200 px-4 py-3 rounded-lg mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {autoSaving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-300"></div> : <AlertCircle className="w-4 h-4" />}
-                <span className="text-sm">
-                  {autoSaving ? '正在自动保存...' : '您有未保存的更改'}
-                </span>
-              </div>
-              {lastSavedTime && <span className="text-xs text-yellow-300">
-                  上次保存: {lastSavedTime.toLocaleTimeString()}
-                </span>}
-            </div>
-          </div>}
-
         {/* 错误提示 */}
         {error && <div className="bg-red-900/50 border border-red-600 text-red-200 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -408,150 +302,186 @@ export default function EditPage(props) {
             </Button>
           </div>}
 
-        {/* 编辑提示 */}
-        <div className="bg-blue-900/30 border border-blue-600 text-blue-200 px-4 py-3 rounded-lg mb-6">
+        {/* 当前状态提示 */}
+        <div className={`bg-${isDraft ? 'yellow' : 'green'}-900/30 border border-${isDraft ? 'yellow' : 'green'}-600 text-${isDraft ? 'yellow' : 'green'}-200 px-4 py-3 rounded-lg mb-6`}>
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            <span>您正在编辑红色故事，系统会自动保存草稿</span>
+            {isDraft ? <Edit3 className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            <span>当前正在编辑：{isDraft ? '草稿内容' : '正式发布内容'}</span>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-700">
-          {/* 图片编辑区域 */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">故事图片</label>
-            <div className="border-2 border-dashed border-gray-600 rounded-lg p-6">
-              {imagePreview ? <div className="space-y-4">
-                  <img src={imagePreview} alt="预览" className="max-w-full h-48 object-cover rounded-lg mx-auto" />
-                  <div className="flex gap-2 justify-center">
-                    <label className="cursor-pointer">
-                      <span className="text-red-400 hover:text-red-300 text-sm">替换图片</span>
-                      <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                    </label>
-                    <button type="button" onClick={handleDeleteImage} className="text-red-400 hover:text-red-300 text-sm">
-                      删除图片
-                    </button>
-                  </div>
-                </div> : <div className="space-y-4">
-                  <ImageOff className="w-12 h-12 text-gray-400 mx-auto" />
-                  <div>
-                    <label className="cursor-pointer">
-                      <span className="text-red-400 hover:text-red-300">上传新图片</span>
-                      <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-                    </label>
-                    <p className="text-sm text-gray-500 mt-2">支持 JPG、PNG、GIF 格式，最大 5MB</p>
-                  </div>
-                </div>}
-            </div>
-          </div>
-
-          {/* 删除图片确认对话框 */}
-          {deleteImageConfirm && <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-gray-800 rounded-lg p-6 max-w-sm mx-4">
-                <h3 className="text-lg font-medium text-white mb-4">确认删除图片？</h3>
-                <p className="text-gray-400 mb-6">删除后图片将无法恢复，确定要删除吗？</p>
-                <div className="flex gap-3 justify-end">
-                  <Button onClick={cancelDeleteImage} variant="outline" className="border-gray-600 text-gray-300">
-                    取消
-                  </Button>
-                  <Button onClick={confirmDeleteImage} className="bg-red-600 hover:bg-red-700 text-white">
-                    确认删除
-                  </Button>
-                </div>
+        {/* 保存模式选择 */}
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 mb-6 border border-gray-700">
+          <h3 className="text-lg font-semibold text-white mb-4">保存模式选择</h3>
+          <div className="flex gap-4">
+            <button onClick={() => handleSaveModeChange('draft')} className={`flex-1 p-4 rounded-lg border-2 transition-all ${saveMode === 'draft' ? 'border-yellow-600 bg-yellow-900/20' : 'border-gray-600 hover:border-gray-500'}`}>
+              <div className="text-center">
+                <Edit3 className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
+                <h4 className="font-semibold text-white mb-1">更新草稿</h4>
+                <p className="text-sm text-gray-400">仅更新草稿内容，不会立即发布</p>
               </div>
-            </div>}
-
-          {/* 标题 */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              故事标题 <span className="text-red-400">*</span>
-            </label>
-            <input type="text" name="title" value={formData.title} onChange={handleInputChange} placeholder="请输入红色故事标题" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" required />
+            </button>
+            <button onClick={() => handleSaveModeChange('publish')} className={`flex-1 p-4 rounded-lg border-2 transition-all ${saveMode === 'publish' ? 'border-green-600 bg-green-900/20' : 'border-gray-600 hover:border-gray-500'}`}>
+              <div className="text-center">
+                <Eye className="w-8 h-8 mx-auto mb-2 text-green-400" />
+                <h4 className="font-semibold text-white mb-1">更新发布</h4>
+                <p className="text-sm text-gray-400">
+                  {isDraft ? '将草稿转为正式发布' : '更新正式发布内容'}
+                </p>
+              </div>
+            </button>
           </div>
+        </div>
 
-          {/* 内容 */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              故事内容 <span className="text-red-400">*</span>
-            </label>
-            <textarea name="content" value={formData.content} onChange={handleInputChange} placeholder="请详细描述红色故事的内容..." rows={6} className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none" required />
-          </div>
-
-          {/* 作者 */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">作者</label>
-            <input type="text" name="author" value={formData.author} onChange={handleInputChange} placeholder="请输入作者姓名" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
-          </div>
-
-          {/* 时间地点 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {/* 编辑表单 */}
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-700">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* 故事标题 */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                <Calendar className="w-4 h-4 inline mr-2" />
-                发生时间
+                故事标题 *
               </label>
-              <input type="date" name="date" value={formData.date} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
+              <input type="text" name="title" value={formData.title} onChange={handleInputChange} placeholder="请输入红色故事标题" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" required />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                <MapPin className="w-4 h-4 inline mr-2" />
-                发生地点
-              </label>
-              <input type="text" name="location" value={formData.location} onChange={handleInputChange} placeholder="请输入故事发生地点" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
-            </div>
-          </div>
 
-          {/* 阅读时间和标签 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* 故事内容 */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                <Clock className="w-4 h-4 inline mr-2" />
-                阅读时长
+                故事内容 *
               </label>
-              <select name="readTime" value={formData.readTime} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent">
-                <option value="3分钟">3分钟</option>
-                <option value="5分钟">5分钟</option>
-                <option value="10分钟">10分钟</option>
-                <option value="15分钟">15分钟</option>
-                <option value="20分钟">20分钟</option>
-                <option value="30分钟">30分钟</option>
-              </select>
+              <textarea name="content" value={formData.content} onChange={handleInputChange} placeholder="请详细描述红色故事的内容..." rows={8} className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none" required />
             </div>
+
+            {/* 配图上传 */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                <Tag className="w-4 h-4 inline mr-2" />
+                故事配图
+              </label>
+              <div className="flex items-center gap-4">
+                <input type="file" accept="image/*" onChange={handleInputChange} className="hidden" id="image-upload" />
+                <label htmlFor="image-upload" className="cursor-pointer bg-gray-900/50 border border-gray-700 rounded-lg px-4 py-3 text-gray-300 hover:bg-gray-800/50 transition-colors">
+                  <Upload className="w-5 h-5 inline-block mr-2" />
+                  更换图片
+                </label>
+                {imagePreview && <div className="relative">
+                    <img src={imagePreview} alt="预览" className="w-20 h-20 object-cover rounded-lg border border-gray-700" />
+                    <button type="button" onClick={() => {
+                  setImagePreview(null);
+                  setFormData(prev => ({
+                    ...prev,
+                    image: ''
+                  }));
+                }} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                      ×
+                    </button>
+                  </div>}
+              </div>
+            </div>
+
+            {/* 故事信息 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <Calendar className="w-4 h-4 inline-block mr-1" />
+                  时间时期
+                </label>
+                <input type="text" name="date" value={formData.date} onChange={handleInputChange} placeholder="如：1949年10月1日" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <MapPin className="w-4 h-4 inline-block mr-1" />
+                  发生地点
+                </label>
+                <input type="text" name="location" value={formData.location} onChange={handleInputChange} placeholder="如：北京天安门" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <User className="w-4 h-4 inline-block mr-1" />
+                  作者
+                </label>
+                <input type="text" name="author" value={formData.author} onChange={handleInputChange} placeholder="请输入作者姓名" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <Clock className="w-4 h-4 inline-block mr-1" />
+                  阅读时间
+                </label>
+                <input type="text" name="read_time" value={formData.read_time} onChange={handleInputChange} placeholder="如：5分钟" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
+              </div>
+            </div>
+
+            {/* 标签 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <Tag className="w-4 h-4 inline-block mr-1" />
                 标签
               </label>
-              <input type="text" name="tags" value={formData.tags} onChange={handleInputChange} placeholder="用逗号分隔多个标签，如：革命,历史,英雄" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
+              <div className="flex gap-2 mb-2">
+                <input type="text" value={tagInput} onChange={handleTagInput} onKeyPress={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const tag = tagInput.trim();
+                  if (tag && !formData.tags.includes(tag)) {
+                    setFormData(prev => ({
+                      ...prev,
+                      tags: [...prev.tags, tag]
+                    }));
+                    setTagInput('');
+                  }
+                }
+              }} placeholder="输入标签后按回车添加" className="flex-1 px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
+                <button type="button" onClick={() => {
+                const tag = tagInput.trim();
+                if (tag && !formData.tags.includes(tag)) {
+                  setFormData(prev => ({
+                    ...prev,
+                    tags: [...prev.tags, tag]
+                  }));
+                  setTagInput('');
+                }
+              }} className="px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                  添加
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {formData.tags.map((tag, index) => <span key={index} className="px-3 py-1 bg-red-900/30 text-red-300 text-sm rounded-full border border-red-800/50 flex items-center gap-1">
+                    {tag}
+                    <button type="button" onClick={() => {
+                  setFormData(prev => ({
+                    ...prev,
+                    tags: prev.tags.filter(t => t !== tag)
+                  }));
+                }} className="ml-1 text-red-400 hover:text-red-300">
+                      ×
+                    </button>
+                  </span>)}
+              </div>
             </div>
-          </div>
 
-          {/* 状态 */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">发布状态</label>
-            <select name="status" value={formData.status} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent">
-              <option value="draft">草稿</option>
-              <option value="published">发布</option>
-            </select>
-          </div>
+            {/* 排序 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                排序权重
+              </label>
+              <input type="number" name="order" value={formData.order} onChange={handleInputChange} placeholder="数字越大越靠前" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" />
+            </div>
 
-          {/* 提交按钮 */}
-          <div className="flex gap-4">
-            <Button type="submit" disabled={saving || uploading} className="flex-1 bg-red-600 hover:bg-red-700 text-white">
-              {saving || uploading ? <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  {uploading ? '上传中...' : '保存中...'}
-                </div> : <div className="flex items-center justify-center">
-                  <Save className="w-4 h-4 mr-2" />
-                  保存修改
-                </div>}
-            </Button>
-            <Button type="button" onClick={goBack} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
-              <X className="w-4 h-4 mr-2" />
-              取消
-            </Button>
-          </div>
-        </form>
+            {/* 提交按钮 */}
+            <div className="pt-6 border-t border-gray-700">
+              <div className="flex gap-4">
+                <Button type="submit" disabled={saving} className={`flex-1 ${saveMode === 'draft' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-red-600 hover:bg-red-700'} text-white`}>
+                  {saving ? '保存中...' : saveMode === 'draft' ? '更新草稿' : '更新发布'}
+                </Button>
+                <Button type="button" onClick={goBack} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
+                  取消
+                </Button>
+              </div>
+            </div>
+          </form>
+        </div>
       </main>
     </div>;
 }

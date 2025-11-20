@@ -1,0 +1,61 @@
+
+  [
+    {
+      "_id": "draft_001",
+      "story_id": "red_story_draft_001",
+      "title": "井冈山精神（草稿）",
+      "content": "井冈山精神是中国共产党在井冈山革命斗争中形成的伟大革命精神...（草稿内容）",
+      "image": "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop",
+      "date": "1927-1930",
+      "location": "江西井冈山",
+      "author": "管理员",
+      "read_time": "8分钟",
+      "tags": ["革命精神", "井冈山", "红色教育"],
+      "status": "draft",
+      "order": 1,
+      "is_draft": true,
+      "draft_version": 1,
+      "original_id": "red_story_001",
+      "createdAt": 1705276800000,
+      "updatedAt": 1705276800000
+    },
+    {
+      "_id": "draft_002",
+      "story_id": "red_story_draft_002",
+      "title": "长征精神（草稿）",
+      "content": "长征精神是中国共产党人和红军将士用生命和热血铸就的伟大革命精神...（草稿内容）",
+      "image": "https://images.unsplash.com/photo-1579532585305-4bf9442b3d5b?w=800&h=600&fit=crop",
+      "date": "1934-1936",
+      "location": "瑞金-延安",
+      "author": "管理员",
+      "read_time": "10分钟",
+      "tags": ["长征", "革命精神", "红军"],
+      "status": "draft",
+      "order": 2,
+      "is_draft": true,
+      "draft_version": 1,
+      "original_id": "red_story_002",
+      "createdAt": 1705190400000,
+      "updatedAt": 1705190400000
+    },
+    {
+      "_id": "draft_003",
+      "story_id": "red_story_draft_003",
+      "title": "延安精神（草稿）",
+      "content": "延安精神是中国共产党在延安时期培育的伟大革命精神...（草稿内容）",
+      "image": "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800&h=600&fit=crop",
+      "date": "1935-1948",
+      "location": "陕西延安",
+      "author": "管理员",
+      "read_time": "12分钟",
+      "tags": ["延安精神", "革命圣地", "红色教育"],
+      "status": "draft",
+      "order": 3,
+      "is_draft": true,
+      "draft_version": 1,
+      "original_id": "red_story_003",
+      "createdAt": 1705104000000,
+      "updatedAt": 1705104000000
+    }
+  ]
+  
