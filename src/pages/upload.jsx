@@ -114,6 +114,9 @@ export default function UploadPage(props) {
       // 处理标签 - 确保返回数组类型
       const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
 
+      // 生成时间戳（数字类型）
+      const currentTimestamp = Date.now();
+
       // 保存到数据模型 - 确保数据类型匹配
       console.log('开始保存故事数据...');
       const result = await $w.cloud.callDataSource({
@@ -141,9 +144,9 @@ export default function UploadPage(props) {
             // String
             order: 0,
             // Number
-            createdAt: new Date().toISOString(),
-            // DateTime
-            updatedAt: new Date().toISOString() // DateTime
+            createdAt: currentTimestamp,
+            // Number (时间戳)
+            updatedAt: currentTimestamp // Number (时间戳)
           }
         }
       });

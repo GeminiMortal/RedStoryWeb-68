@@ -177,6 +177,9 @@ export default function EditPage(props) {
       }
       // 处理标签 - 确保返回数组类型
       const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+
+      // 生成时间戳（数字类型）
+      const currentTimestamp = Date.now();
       console.log('开始更新故事数据...');
       const result = await $w.cloud.callDataSource({
         dataSourceName: 'red_story',
@@ -208,7 +211,7 @@ export default function EditPage(props) {
             // Array
             status: formData.status,
             // String
-            updatedAt: new Date().toISOString() // DateTime
+            updatedAt: currentTimestamp // Number (时间戳)
           }
         }
       });
