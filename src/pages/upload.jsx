@@ -3,20 +3,11 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Upload as UploadIcon, FileText, Check, Plus, Loader2, Save, Home } from 'lucide-react';
+import { ArrowLeft, Upload as UploadIcon, FileText, Image, X, Check, Plus, Tag, Loader2, Save, RefreshCw, AlertCircle } from 'lucide-react';
 
-// @ts-ignore;
-import { FormInput } from '@/components/FormInput';
-// @ts-ignore;
-import { ImageUpload } from '@/components/ImageUpload';
-// @ts-ignore;
-import { TagManager } from '@/components/TagManager';
-// @ts-ignore;
-import { DraftIndicator } from '@/components/DraftIndicator';
 export default function UploadPage(props) {
   const {
-    $w,
-    page
+    $w
   } = props;
   const [formData, setFormData] = useState({
     title: '',
@@ -40,9 +31,6 @@ export default function UploadPage(props) {
   const [hasDraft, setHasDraft] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
-
-  // 获取来源页面参数
-  const fromPage = page?.dataset?.params?.from;
 
   // 本地存储键名
   const DRAFT_KEY = 'red_story_draft';
@@ -142,42 +130,20 @@ export default function UploadPage(props) {
     }
   };
 
-  // 智能返回导航
-  const handleSmartBack = () => {
-    // 如果有草稿，提示用户
-    if (hasDraft) {
-      if (!confirm('您有未保存的草稿，确定要离开吗？')) {
-        return;
-      }
-    }
-    if (fromPage === 'index' || fromPage === 'admin') {
-      $w.utils.navigateTo({
-        pageId: fromPage,
-        params: {}
-      });
-    } else {
-      // 默认返回主页
-      $w.utils.navigateTo({
-        pageId: 'index',
-        params: {}
-      });
-    }
+  // 格式化最后保存时间
+  const formatLastSaved = dateString => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    if (minutes < 1) return '刚刚保存';
+    if (minutes < 60) return `${minutes}分钟前保存`;
+    if (hours < 24) return `${hours}小时前保存`;
+    return `${days}天前保存`;
   };
-
-  // 返回主页
-  const goHome = () => {
-    if (hasDraft) {
-      if (!confirm('您有未保存的草稿，确定要离开吗？')) {
-        return;
-      }
-    }
-    $w.utils.navigateTo({
-      pageId: 'index',
-      params: {}
-    });
-  };
-
-  // 表单输入处理
   const handleInputChange = e => {
     const {
       name,
@@ -188,8 +154,6 @@ export default function UploadPage(props) {
       [name]: value
     }));
   };
-
-  // 标签管理
   const handleAddTag = () => {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
       setFormData(prev => ({
@@ -268,8 +232,6 @@ export default function UploadPage(props) {
       image: ''
     }));
   };
-
-  // 表单验证
   const validateForm = () => {
     if (!formData.title.trim()) {
       setError('请输入故事标题');
@@ -346,9 +308,7 @@ export default function UploadPage(props) {
         setShowSuccess(false);
         $w.utils.navigateTo({
           pageId: 'admin',
-          params: {
-            from: 'upload'
-          }
+          params: {}
         });
       }, 2000);
     } catch (err) {
@@ -418,24 +378,13 @@ export default function UploadPage(props) {
       });
       setImageFile(null);
 
-      // 2秒后隐藏成功提示并返回来源页面
+      // 2秒后隐藏成功提示并返回主页
       setTimeout(() => {
         setShowSuccess(false);
-        if (fromPage === 'admin') {
-          $w.utils.navigateTo({
-            pageId: 'admin',
-            params: {
-              from: 'upload'
-            }
-          });
-        } else {
-          $w.utils.navigateTo({
-            pageId: 'index',
-            params: {
-              from: 'upload'
-            }
-          });
-        }
+        $w.utils.navigateTo({
+          pageId: 'index',
+          params: {}
+        });
       }, 2000);
     } catch (err) {
       console.error('发布红色故事失败:', err);
@@ -444,20 +393,14 @@ export default function UploadPage(props) {
       setIsSubmitting(false);
     }
   };
-
-  // 格式化最后保存时间
-  const formatLastSaved = dateString => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diff = now - date;
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-    if (minutes < 1) return '刚刚保存';
-    if (minutes < 60) return `${minutes}分钟前保存`;
-    if (hours < 24) return `${hours}小时前保存`;
-    return `${days}天前保存`;
+  const goBack = () => {
+    // 如果有草稿，提示用户
+    if (hasDraft) {
+      if (!confirm('您有未保存的草稿，确定要离开吗？')) {
+        return;
+      }
+    }
+    $w.utils.navigateBack();
   };
   return <div className="min-h-screen bg-gray-900 text-white">
       {/* 背景装饰 */}
@@ -466,15 +409,10 @@ export default function UploadPage(props) {
       {/* 顶部导航 */}
       <header className="relative z-10 bg-black/50 backdrop-blur-sm border-b border-gray-800">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button onClick={handleSmartBack} variant="ghost" className="text-gray-300 hover:text-white">
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              返回
-            </Button>
-            {fromPage && <span className="text-sm text-gray-400">
-                来自: {fromPage === 'index' ? '主页' : fromPage === 'admin' ? '管理后台' : '未知页面'}
-              </span>}
-          </div>
+          <Button onClick={goBack} variant="ghost" className="text-gray-300 hover:text-white">
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            返回主页
+          </Button>
           <h1 className="text-2xl font-bold text-red-600">上传红色故事</h1>
           <div className="flex items-center gap-2">
             {/* 草稿状态指示器 */}
@@ -482,9 +420,6 @@ export default function UploadPage(props) {
                 <Save className="w-4 h-4" />
                 <span>{formatLastSaved(lastSaved)}</span>
               </div>}
-            <Button onClick={goHome} variant="ghost" className="text-gray-300 hover:text-white">
-              <Home className="w-5 h-5" />
-            </Button>
           </div>
         </div>
       </header>
@@ -492,7 +427,15 @@ export default function UploadPage(props) {
       {/* 主要内容 */}
       <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
         {/* 草稿提示 */}
-        <DraftIndicator hasDraft={hasDraft} lastSaved={lastSaved} onClearDraft={clearDraft} className="mb-6" />
+        {hasDraft && <div className="bg-blue-900/30 border border-blue-600 text-blue-200 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              <span>已恢复暂存的草稿内容</span>
+            </div>
+            <Button onClick={clearDraft} variant="ghost" size="sm" className="text-blue-300 hover:text-blue-100">
+              清除草稿
+            </Button>
+          </div>}
 
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-700">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -502,18 +445,44 @@ export default function UploadPage(props) {
               </div>}
 
             {/* 标题输入 */}
-            <FormInput label="故事标题" name="title" value={formData.title} onChange={handleInputChange} placeholder="请输入红色故事标题" required icon={FileText} />
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <FileText className="inline w-4 h-4 mr-1" />
+                故事标题 *
+              </label>
+              <input type="text" name="title" value={formData.title} onChange={handleInputChange} required className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" placeholder="请输入红色故事标题" />
+            </div>
 
-            {/* 时间和地点 */}
+            {/* 时间和地点 - 改为可选 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormInput label="时间时期" name="date" value={formData.date} onChange={handleInputChange} placeholder="如：1927-1930（可选）" />
-              <FormInput label="发生地点" name="location" value={formData.location} onChange={handleInputChange} placeholder="如：江西井冈山（可选）" />
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  时间时期
+                </label>
+                <input type="text" name="date" value={formData.date} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" placeholder="如：1927-1930（可选）" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  发生地点
+                </label>
+                <input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" placeholder="如：江西井冈山（可选）" />
+              </div>
             </div>
 
             {/* 作者和阅读时间 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormInput label="作者" name="author" value={formData.author} onChange={handleInputChange} placeholder="如：中国共产党" />
-              <FormInput label="阅读时间" name="read_time" value={formData.read_time} onChange={handleInputChange} placeholder="如：8分钟" />
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  作者
+                </label>
+                <input type="text" name="author" value={formData.author} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" placeholder="如：中国共产党" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  阅读时间
+                </label>
+                <input type="text" name="read_time" value={formData.read_time} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" placeholder="如：8分钟" />
+              </div>
             </div>
 
             {/* 内容输入 */}
@@ -525,16 +494,67 @@ export default function UploadPage(props) {
             </div>
 
             {/* 标签管理 */}
-            <TagManager tags={formData.tags} newTag={newTag} onNewTagChange={e => setNewTag(e.target.value)} onAddTag={handleAddTag} onRemoveTag={handleRemoveTag} onKeyPress={handleKeyPress} />
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <Tag className="inline w-4 h-4 mr-1" />
+                标签
+              </label>
+              <div className="flex gap-2 mb-3">
+                <input type="text" value={newTag} onChange={e => setNewTag(e.target.value)} onKeyPress={handleKeyPress} className="flex-1 px-4 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" placeholder="输入标签后按回车添加" />
+                <Button type="button" onClick={handleAddTag} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {formData.tags.map((tag, index) => <span key={index} className="inline-flex items-center gap-1 px-3 py-1 bg-red-900/30 text-red-300 rounded-full text-sm">
+                    {tag}
+                    <button type="button" onClick={() => handleRemoveTag(tag)} className="hover:text-red-100">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>)}
+              </div>
+            </div>
 
-            {/* 图片上传 */}
-            <ImageUpload image={formData.image} onImageUpload={handleImageUpload} onRemoveImage={handleRemoveImage} uploadingImage={uploadingImage} />
+            {/* 图片上传 - 改为本地上传 */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <Image className="inline w-4 h-4 mr-1" />
+                配图（可选）
+              </label>
+              
+              {/* 已上传图片预览 */}
+              {formData.image && <div className="mb-4">
+                  <div className="relative inline-block">
+                    <img src={formData.image} alt="已上传的配图" className="w-32 h-32 object-cover rounded-lg border border-gray-600" />
+                    <button type="button" onClick={handleRemoveImage} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>}
+
+              {/* 上传按钮 */}
+              <div className="flex items-center gap-4">
+                <label className="cursor-pointer">
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploadingImage} />
+                  <div className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    {uploadingImage ? <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>上传中...</span>
+                      </> : <>
+                        <UploadIcon className="w-4 h-4" />
+                        <span>选择图片</span>
+                      </>}
+                  </div>
+                </label>
+                <span className="text-sm text-gray-400">支持 JPG、PNG、GIF 格式，最大 5MB</span>
+              </div>
+            </div>
 
             {/* 操作按钮 */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               {/* 左侧按钮 */}
               <div className="flex gap-4">
-                <Button type="button" onClick={handleSmartBack} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
+                <Button type="button" onClick={goBack} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
                   取消
                 </Button>
                 <Button type="button" onClick={handleSaveDraft} disabled={isSavingDraft} variant="outline" className="border-blue-600 text-blue-300 hover:bg-blue-900/20">

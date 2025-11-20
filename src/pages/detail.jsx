@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Calendar, MapPin, Users, Clock, Share2, Heart, BookOpen, MessageCircle, ThumbsUp, Eye, Home, List } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Clock, Share2, Heart, BookOpen, MessageCircle, ThumbsUp, Eye } from 'lucide-react';
 
 export default function Detail(props) {
   const {
@@ -21,10 +21,6 @@ export default function Detail(props) {
 
   // 安全获取页面参数
   const storyId = page?.dataset?.params?.id;
-  const fromPage = page?.dataset?.params?.from;
-  const searchParams = page?.dataset?.params?.search;
-  const tagParams = page?.dataset?.params?.tag;
-  const pageParams = page?.dataset?.params?.page;
 
   // 从数据模型加载红色故事详情
   useEffect(() => {
@@ -140,61 +136,20 @@ export default function Detail(props) {
       console.error('加载相关故事失败:', err);
     }
   };
-
-  // 智能返回导航
-  const handleSmartBack = () => {
-    if (fromPage === 'index' || fromPage === 'admin') {
-      // 构建返回参数
-      const backParams = {};
-      if (searchParams) backParams.search = searchParams;
-      if (tagParams && tagParams !== 'all') backParams.tag = tagParams;
-      if (pageParams && pageParams !== '1') backParams.page = pageParams;
-      $w.utils.navigateTo({
-        pageId: fromPage,
-        params: backParams
-      });
-    } else {
-      // 默认返回主页
-      $w.utils.navigateTo({
-        pageId: 'index',
-        params: {}
-      });
-    }
-  };
-
-  // 返回主页
-  const goHome = () => {
-    $w.utils.navigateTo({
-      pageId: 'index',
-      params: {}
-    });
-  };
-
-  // 返回列表
-  const goToList = () => {
-    if (fromPage === 'index' || fromPage === 'admin') {
-      handleSmartBack();
-    } else {
-      $w.utils.navigateTo({
-        pageId: 'index',
-        params: {}
-      });
-    }
+  const goBack = () => {
+    $w.utils.navigateBack();
   };
   const handleShare = () => {
-    // 构建分享URL，包含当前页面的所有参数
-    const shareUrl = `${window.location.origin}${window.location.pathname}?id=${storyId}`;
-
     // 模拟分享功能
     if (navigator.share) {
       navigator.share({
         title: story?.title,
         text: story?.content?.substring(0, 100) + '...',
-        url: shareUrl
+        url: window.location.href
       });
     } else {
       // 降级处理：复制链接到剪贴板
-      navigator.clipboard.writeText(shareUrl);
+      navigator.clipboard.writeText(window.location.href);
       alert('链接已复制到剪贴板');
     }
   };
@@ -206,11 +161,7 @@ export default function Detail(props) {
     $w.utils.navigateTo({
       pageId: 'detail',
       params: {
-        id: storyId,
-        from: fromPage || 'index',
-        search: searchParams,
-        tag: tagParams,
-        page: pageParams
+        id: storyId
       }
     });
   };
@@ -248,14 +199,9 @@ export default function Detail(props) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-400 mb-4">{error}</h2>
-          <div className="flex gap-4 justify-center">
-            <Button onClick={handleSmartBack} className="bg-red-600 hover:bg-red-700 text-white">
-              返回上一页
-            </Button>
-            <Button onClick={goHome} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
-              返回主页
-            </Button>
-          </div>
+          <Button onClick={goBack} className="bg-red-600 hover:bg-red-700 text-white">
+            返回主页
+          </Button>
         </div>
       </div>;
   }
@@ -265,14 +211,9 @@ export default function Detail(props) {
     return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-400 mb-4">故事未找到</h2>
-          <div className="flex gap-4 justify-center">
-            <Button onClick={handleSmartBack} className="bg-red-600 hover:bg-red-700 text-white">
-              返回上一页
-            </Button>
-            <Button onClick={goHome} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
-              返回主页
-            </Button>
-          </div>
+          <Button onClick={goBack} className="bg-red-600 hover:bg-red-700 text-white">
+            返回主页
+          </Button>
         </div>
       </div>;
   }
@@ -283,23 +224,12 @@ export default function Detail(props) {
       {/* 顶部导航 */}
       <header className="relative z-10 bg-black/50 backdrop-blur-sm border-b border-gray-800 sticky top-0">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Button onClick={handleSmartBack} variant="ghost" className="text-gray-300 hover:text-white">
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              返回
-            </Button>
-            {fromPage && <span className="text-sm text-gray-400">
-                来自: {fromPage === 'index' ? '主页' : fromPage === 'admin' ? '管理后台' : '未知页面'}
-              </span>}
-          </div>
+          <Button onClick={goBack} variant="ghost" className="text-gray-300 hover:text-white">
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            返回
+          </Button>
           <h1 className="text-xl font-bold text-red-600">红色故事详情</h1>
           <div className="flex gap-2">
-            <Button onClick={goHome} variant="ghost" className="text-gray-300 hover:text-white">
-              <Home className="w-5 h-5" />
-            </Button>
-            <Button onClick={goToList} variant="ghost" className="text-gray-300 hover:text-white">
-              <List className="w-5 h-5" />
-            </Button>
             <Button onClick={handleShare} variant="ghost" className="text-gray-300 hover:text-white">
               <Share2 className="w-5 h-5" />
             </Button>
