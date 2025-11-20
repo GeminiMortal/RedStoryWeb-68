@@ -5,6 +5,8 @@ import { Button } from '@/components/ui';
 // @ts-ignore;
 import { ArrowLeft, Upload, Calendar, MapPin, Tag, Clock, AlertCircle, CheckCircle, Trash2, ImageOff, Save, X } from 'lucide-react';
 
+// @ts-ignore;
+import { PageHeader, BreadcrumbNav } from '@/components/Navigation';
 export default function EditPage(props) {
   const {
     $w
@@ -43,25 +45,16 @@ export default function EditPage(props) {
       try {
         setLoading(true);
         console.log('加载编辑数据，故事ID:', storyId);
-        const result = await $w.cloud.callDataSource({
-          dataSourceName: 'red_story',
-          methodName: 'wedaGetRecordV2',
-          params: {
-            filter: {
-              where: {
-                _id: {
-                  $eq: storyId
-                }
-              }
-            },
-            select: {
-              $master: true
-            }
-          }
-        });
+
+        // 使用云开发实例直接调用数据库
+        const tcb = await $w.cloud.getCloudInstance();
+        const db = tcb.database();
+
+        // 查询数据
+        const result = await db.collection('red_story').doc(storyId).get();
         console.log('编辑页面加载结果:', result);
-        if (result && result.record) {
-          const record = result.record;
+        if (result && result.data) {
+          const record = result.data;
           setFormData({
             title: record.title || '',
             content: record.content || '',
@@ -85,7 +78,7 @@ export default function EditPage(props) {
       }
     };
     loadStory();
-  }, [storyId, $w]);
+  }, [storyId]);
 
   // 处理表单输入变化
   const handleInputChange = e => {
@@ -181,39 +174,32 @@ export default function EditPage(props) {
       // 生成当前时间戳（数字格式）
       const currentTimestamp = Date.now();
       console.log('开始更新故事数据...');
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'red_story',
-        methodName: 'wedaUpdateV2',
-        params: {
-          filter: {
-            where: {
-              _id: {
-                $eq: storyId
-              }
-            }
-          },
-          data: {
-            title: formData.title.trim(),
-            // String
-            content: formData.content.trim(),
-            // Text
-            author: formData.author.trim(),
-            // String
-            date: formData.date,
-            // Date
-            location: formData.location.trim(),
-            // String
-            image: imageUrl,
-            // Image
-            read_time: formData.readTime,
-            // String
-            tags: tagsArray,
-            // Array
-            status: formData.status,
-            // String
-            updatedAt: currentTimestamp // Number (Unix时间戳)
-          }
-        }
+
+      // 使用云开发实例直接调用数据库
+      const tcb = await $w.cloud.getCloudInstance();
+      const db = tcb.database();
+
+      // 更新数据
+      const result = await db.collection('red_story').doc(storyId).update({
+        title: formData.title.trim(),
+        // String
+        content: formData.content.trim(),
+        // Text
+        author: formData.author.trim(),
+        // String
+        date: formData.date,
+        // Date
+        location: formData.location.trim(),
+        // String
+        image: imageUrl,
+        // Image
+        read_time: formData.readTime,
+        // String
+        tags: tagsArray,
+        // Array
+        status: formData.status,
+        // String
+        updatedAt: currentTimestamp // Number (Unix时间戳)
       });
       console.log('更新结果:', result);
       setSuccess(true);
@@ -232,15 +218,32 @@ export default function EditPage(props) {
   };
 
   // 导航函数
+  const navigateTo = $w.utils.navigateTo;
   const goBack = () => {
     $w.utils.navigateBack();
   };
   const goToAdmin = () => {
-    $w.utils.navigateTo({
+    navigateTo({
       pageId: 'admin',
       params: {}
     });
   };
+
+  // 面包屑导航
+  const breadcrumbs = [{
+    label: '首页',
+    href: true,
+    onClick: () => navigateTo({
+      pageId: 'index',
+      params: {}
+    })
+  }, {
+    label: '管理后台',
+    href: true,
+    onClick: goToAdmin
+  }, {
+    label: '编辑故事'
+  }];
 
   // 加载状态
   if (loading) {
@@ -268,18 +271,11 @@ export default function EditPage(props) {
       <div className="absolute inset-0 bg-gradient-to-br from-red-900/20 via-gray-900 to-gray-900"></div>
       
       {/* 顶部导航 */}
-      <header className="relative z-10 bg-black/50 backdrop-blur-sm border-b border-gray-800">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Button onClick={goBack} variant="ghost" className="text-gray-300 hover:text-white">
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            返回
-          </Button>
-          <h1 className="text-2xl font-bold text-red-600">编辑红色故事</h1>
-          <Button onClick={goToAdmin} variant="ghost" className="text-gray-300 hover:text-white">
-            管理
-          </Button>
-        </div>
-      </header>
+      <PageHeader title="编辑红色故事" showBack={true} backAction={goBack} breadcrumbs={breadcrumbs} actions={[{
+      label: '管理',
+      onClick: goToAdmin,
+      className: 'text-gray-300 hover:text-white'
+    }]} />
 
       {/* 主要内容 */}
       <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">

@@ -5,6 +5,8 @@ import { Button } from '@/components/ui';
 // @ts-ignore;
 import { ArrowLeft, User, Lock, AlertCircle, Eye, EyeOff, Shield } from 'lucide-react';
 
+// @ts-ignore;
+import { PageHeader, BreadcrumbNav } from '@/components/Navigation';
 export default function LoginPage(props) {
   const {
     $w
@@ -74,6 +76,7 @@ export default function LoginPage(props) {
   };
 
   // 导航函数
+  const navigateTo = $w.utils.navigateTo;
   const goBack = () => {
     $w.utils.navigateBack();
   };
@@ -82,33 +85,44 @@ export default function LoginPage(props) {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
-  return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+
+  // 面包屑导航
+  const breadcrumbs = [{
+    label: '首页',
+    href: true,
+    onClick: () => navigateTo({
+      pageId: 'index',
+      params: {}
+    })
+  }, {
+    label: '管理员登录'
+  }];
+  return <div className="min-h-screen bg-gray-900 text-white">
       {/* 背景装饰 */}
       <div className="absolute inset-0 bg-gradient-to-br from-red-900/20 via-gray-900 to-gray-900"></div>
       
       {/* 顶部导航 */}
-      <header className="absolute top-0 left-0 right-0 z-10 bg-black/50 backdrop-blur-sm border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Button onClick={goBack} variant="ghost" className="text-gray-300 hover:text-white">
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            返回主页
-          </Button>
-          <h1 className="text-2xl font-bold text-red-600">管理员登录</h1>
-          <div className="w-24"></div>
-        </div>
-      </header>
+      <PageHeader title="管理员登录" showBack={true} backAction={goBack} breadcrumbs={breadcrumbs} />
 
       {/* 主要内容 */}
-      <main className="relative z-10 w-full max-w-md mx-auto px-4 pt-20">
-        {/* 登录表单容器 */}
+      <main className="relative z-10 max-w-md mx-auto px-4 py-8">
+        {/* 安全提示 */}
+        <div className="bg-yellow-900/30 border border-yellow-600 text-yellow-200 px-4 py-3 rounded-lg mb-6">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            <span className="text-sm">管理员登录 - 请确保您有权限访问此页面</span>
+          </div>
+        </div>
+
+        {/* 登录表单 */}
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-700">
-          {/* 登录图标和标题 */}
+          {/* 登录图标 */}
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-8 h-8 text-red-500" />
+              <Shield className="w-8 h-8 text-red-400" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">管理员登录</h2>
-            <p className="text-gray-400 text-sm">请输入管理员账号和密码</p>
+            <p className="text-gray-400">请输入您的管理员凭据</p>
           </div>
 
           {/* 错误提示 */}
@@ -123,31 +137,31 @@ export default function LoginPage(props) {
             </div>}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 用户名输入框 */}
+            {/* 用户名 */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 <User className="w-4 h-4 inline mr-2" />
                 用户名
               </label>
-              <input type="text" name="username" value={formData.username} onChange={handleInputChange} placeholder="请输入用户名" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" autoComplete="username" disabled={loading} />
+              <input type="text" name="username" value={formData.username} onChange={handleInputChange} placeholder="请输入用户名" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" autoComplete="username" />
             </div>
 
-            {/* 密码输入框 */}
+            {/* 密码 */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 <Lock className="w-4 h-4 inline mr-2" />
                 密码
               </label>
               <div className="relative">
-                <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleInputChange} placeholder="请输入密码" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent pr-12" autoComplete="current-password" disabled={loading} />
-                <button type="button" onClick={togglePasswordVisibility} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 focus:outline-none" disabled={loading}>
+                <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleInputChange} placeholder="请输入密码" className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent pr-12" autoComplete="current-password" />
+                <button type="button" onClick={togglePasswordVisibility} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {/* 登录按钮 */}
-            <Button type="submit" disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white py-3">
+            {/* 提交按钮 */}
+            <Button type="submit" disabled={loading} className="w-full bg-red-600 hover:bg-red-700 text-white">
               {loading ? <div className="flex items-center justify-center">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   登录中...
@@ -155,23 +169,24 @@ export default function LoginPage(props) {
             </Button>
           </form>
 
-          {/* 提示信息 */}
-          <div className="mt-6 p-4 bg-gray-900/30 rounded-lg">
-            <p className="text-sm text-gray-400 text-center">
-              <span className="text-red-400">提示：</span>
-              默认用户名和密码都是 <span className="text-white font-mono bg-gray-800 px-2 py-1 rounded">admin</span>
-            </p>
+          {/* 底部提示 */}
+          <div className="mt-6 pt-6 border-t border-gray-700">
+            <div className="text-center text-sm text-gray-400">
+              <p>默认账号：admin / admin</p>
+              <p className="mt-2">如遇问题请联系系统管理员</p>
+            </div>
           </div>
         </div>
 
-        {/* 底部装饰 */}
-        <div className="mt-8 text-center">
-          <p className="text-gray-500 text-sm">
-            红色记忆管理系统
-          </p>
-          <p className="text-gray-600 text-xs mt-1">
-            © 2025 Red Memory. All rights reserved.
-          </p>
+        {/* 返回首页 */}
+        <div className="mt-6 text-center">
+          <Button onClick={() => navigateTo({
+          pageId: 'index',
+          params: {}
+        })} variant="ghost" className="text-gray-400 hover:text-white">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            返回首页
+          </Button>
         </div>
       </main>
     </div>;

@@ -5,6 +5,8 @@ import { Button } from '@/components/ui';
 // @ts-ignore;
 import { ArrowLeft, Upload, Calendar, MapPin, Tag, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 
+// @ts-ignore;
+import { PageHeader, BreadcrumbNav } from '@/components/Navigation';
 export default function UploadPage(props) {
   const {
     $w
@@ -117,38 +119,36 @@ export default function UploadPage(props) {
       // 生成当前时间戳（数字格式）
       const currentTimestamp = Date.now();
 
-      // 保存到数据模型 - 确保数据类型匹配
+      // 使用云开发实例直接调用数据库
+      const tcb = await $w.cloud.getCloudInstance();
+      const db = tcb.database();
+
+      // 保存数据
       console.log('开始保存故事数据...');
-      const result = await $w.cloud.callDataSource({
-        dataSourceName: 'red_story',
-        methodName: 'wedaCreateV2',
-        params: {
-          data: {
-            title: formData.title.trim(),
-            // String
-            content: formData.content.trim(),
-            // Text
-            author: formData.author.trim() || '佚名',
-            // String
-            date: formData.date,
-            // Date
-            location: formData.location.trim(),
-            // String
-            image: imageUrl,
-            // Image
-            read_time: formData.readTime,
-            // String
-            tags: tagsArray,
-            // Array
-            status: formData.status,
-            // String
-            order: 0,
-            // Number
-            createdAt: currentTimestamp,
-            // Number (Unix时间戳)
-            updatedAt: currentTimestamp // Number (Unix时间戳)
-          }
-        }
+      const result = await db.collection('red_story').add({
+        title: formData.title.trim(),
+        // String
+        content: formData.content.trim(),
+        // Text
+        author: formData.author.trim() || '佚名',
+        // String
+        date: formData.date,
+        // Date
+        location: formData.location.trim(),
+        // String
+        image: imageUrl,
+        // Image
+        read_time: formData.readTime,
+        // String
+        tags: tagsArray,
+        // Array
+        status: formData.status,
+        // String
+        order: 0,
+        // Number
+        createdAt: currentTimestamp,
+        // Number (Unix时间戳)
+        updatedAt: currentTimestamp // Number (Unix时间戳)
       });
       console.log('故事保存成功:', result);
       setSuccess(true);
@@ -183,9 +183,29 @@ export default function UploadPage(props) {
   };
 
   // 导航函数
+  const navigateTo = $w.utils.navigateTo;
   const goBack = () => {
     $w.utils.navigateBack();
   };
+
+  // 面包屑导航
+  const breadcrumbs = [{
+    label: '首页',
+    href: true,
+    onClick: () => navigateTo({
+      pageId: 'index',
+      params: {}
+    })
+  }, {
+    label: '管理后台',
+    href: true,
+    onClick: () => navigateTo({
+      pageId: 'admin',
+      params: {}
+    })
+  }, {
+    label: '上传故事'
+  }];
 
   // 成功状态
   if (success) {
@@ -203,16 +223,7 @@ export default function UploadPage(props) {
       <div className="absolute inset-0 bg-gradient-to-br from-red-900/20 via-gray-900 to-gray-900"></div>
       
       {/* 顶部导航 */}
-      <header className="relative z-10 bg-black/50 backdrop-blur-sm border-b border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Button onClick={goBack} variant="ghost" className="text-gray-300 hover:text-white">
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            返回
-          </Button>
-          <h1 className="text-2xl font-bold text-red-600">上传红色故事</h1>
-          <div className="w-24"></div>
-        </div>
-      </header>
+      <PageHeader title="上传红色故事" showBack={true} backAction={goBack} breadcrumbs={breadcrumbs} />
 
       {/* 主要内容 */}
       <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
