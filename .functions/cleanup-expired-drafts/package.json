@@ -1,0 +1,11 @@
+
+    {
+      "name": "cleanup-expired-drafts",
+      "version": "1.0.0",
+      "description": "定时清理7天前的过期草稿",
+      "main": "index.js",
+      "dependencies": {
+        "@cloudbase/node-sdk": "^3.3.7"
+      }
+    }
+  
