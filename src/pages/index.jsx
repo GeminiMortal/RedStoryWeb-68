@@ -36,7 +36,7 @@ export default function HomePage(props) {
         const tcb = await $w.cloud.getCloudInstance();
         const db = tcb.database();
 
-        // 查询已发布的故事
+        // 查询已发布的故事，按创建时间倒序排列
         const result = await db.collection('red_story').where({
           status: 'published'
         }).orderBy('createdAt', 'desc').get();
