@@ -1,9 +1,9 @@
 // @ts-ignore;
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Upload, Calendar, MapPin, Tag, Clock, AlertCircle, CheckCircle, Trash2, ImageOff, Save, X } from 'lucide-react';
+import { ArrowLeft, Upload, Calendar, MapPin, Tag, Clock, AlertCircle, CheckCircle, Trash2, ImageOff, Save, X, RefreshCw } from 'lucide-react';
 
 // @ts-ignore;
 import { PageHeader, BreadcrumbNav } from '@/components/Navigation';
@@ -26,13 +26,82 @@ export default function EditPage(props) {
   const [imagePreview, setImagePreview] = useState('');
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [deleteImageConfirm, setDeleteImageConfirm] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  // 从URL参数获取故事ID
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [lastSavedTime, setLastSavedTime] = useState(null);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const autoSaveTimer = useRef(null);
   const storyId = props.$w.page.dataset.params.id;
+
+  // 自动保存草稿
+  const autoSaveDraft = async () => {
+    if (!hasUnsavedChanges || autoSaving) return;
+    try {
+      setAutoSaving(true);
+      console.log('自动保存草稿...');
+
+      // 生成当前时间戳
+      const currentTimestamp = Date.now();
+
+      // 处理标签
+      const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+
+      // 使用云开发实例直接调用数据库
+      const tcb = await $w.cloud.getCloudInstance();
+      const db = tcb.database();
+
+      // 保存草稿
+      await db.collection('red_story').doc(storyId).update({
+        title: formData.title.trim(),
+        content: formData.content.trim(),
+        author: formData.author.trim(),
+        date: formData.date,
+        location: formData.location.trim(),
+        read_time: formData.readTime,
+        tags: tagsArray,
+        status: 'draft',
+        updatedAt: currentTimestamp
+      });
+      setLastSavedTime(new Date());
+      setHasUnsavedChanges(false);
+      console.log('草稿自动保存成功');
+    } catch (err) {
+      console.error('自动保存草稿失败:', err);
+    } finally {
+      setAutoSaving(false);
+    }
+  };
+
+  // 设置自动保存定时器
+  useEffect(() => {
+    if (hasUnsavedChanges && !autoSaving) {
+      // 清除之前的定时器
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+      }
+
+      // 设置新的定时器，3秒后自动保存
+      autoSaveTimer.current = setTimeout(() => {
+        autoSaveDraft();
+      }, 3000);
+    }
+    return () => {
+      if (autoSaveTimer.current) {
+        clearTimeout(autoSaveTimer.current);
+      }
+    };
+  }, [formData, hasUnsavedChanges, autoSaving]);
+
+  // 监听表单变化
+  useEffect(() => {
+    if (!loading && !draftRestored) {
+      setHasUnsavedChanges(true);
+    }
+  }, [formData, loading, draftRestored]);
 
   // 加载现有故事数据
   useEffect(() => {
@@ -55,7 +124,7 @@ export default function EditPage(props) {
         console.log('编辑页面加载结果:', result);
         if (result && result.data) {
           const record = result.data;
-          setFormData({
+          const loadedData = {
             title: record.title || '',
             content: record.content || '',
             author: record.author || '',
@@ -64,9 +133,18 @@ export default function EditPage(props) {
             readTime: record.read_time || '5分钟',
             tags: Array.isArray(record.tags) ? record.tags.join(', ') : '',
             status: record.status || 'draft'
-          });
+          };
+          setFormData(loadedData);
           setOriginalImage(record.image || '');
           setImagePreview(record.image || '');
+
+          // 如果是草稿状态，提示用户
+          if (record.status === 'draft') {
+            setDraftRestored(true);
+            setTimeout(() => {
+              setDraftRestored(false);
+            }, 3000);
+          }
         } else {
           setError('未找到该红色故事');
         }
@@ -123,6 +201,7 @@ export default function EditPage(props) {
     setImageFile(null);
     setImagePreview('');
     setDeleteImageConfirm(false);
+    setHasUnsavedChanges(true);
   };
   const cancelDeleteImage = () => {
     setDeleteImageConfirm(false);
@@ -203,6 +282,7 @@ export default function EditPage(props) {
       });
       console.log('更新结果:', result);
       setSuccess(true);
+      setHasUnsavedChanges(false);
       setTimeout(() => {
         $w.utils.navigateTo({
           pageId: 'admin',
@@ -220,13 +300,28 @@ export default function EditPage(props) {
   // 导航函数
   const navigateTo = $w.utils.navigateTo;
   const goBack = () => {
-    $w.utils.navigateBack();
+    if (hasUnsavedChanges) {
+      if (confirm('您有未保存的更改，确定要离开吗？')) {
+        $w.utils.navigateBack();
+      }
+    } else {
+      $w.utils.navigateBack();
+    }
   };
   const goToAdmin = () => {
-    navigateTo({
-      pageId: 'admin',
-      params: {}
-    });
+    if (hasUnsavedChanges) {
+      if (confirm('您有未保存的更改，确定要离开吗？')) {
+        navigateTo({
+          pageId: 'admin',
+          params: {}
+        });
+      }
+    } else {
+      navigateTo({
+        pageId: 'admin',
+        params: {}
+      });
+    }
   };
 
   // 面包屑导航
@@ -279,6 +374,29 @@ export default function EditPage(props) {
 
       {/* 主要内容 */}
       <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
+        {/* 草稿恢复提示 */}
+        {draftRestored && <div className="bg-blue-900/30 border border-blue-600 text-blue-200 px-4 py-3 rounded-lg mb-6">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="w-4 h-4" />
+              <span>已恢复草稿内容，您可以继续编辑</span>
+            </div>
+          </div>}
+
+        {/* 自动保存状态提示 */}
+        {hasUnsavedChanges && <div className="bg-yellow-900/30 border border-yellow-600 text-yellow-200 px-4 py-3 rounded-lg mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {autoSaving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-300"></div> : <AlertCircle className="w-4 h-4" />}
+                <span className="text-sm">
+                  {autoSaving ? '正在自动保存...' : '您有未保存的更改'}
+                </span>
+              </div>
+              {lastSavedTime && <span className="text-xs text-yellow-300">
+                  上次保存: {lastSavedTime.toLocaleTimeString()}
+                </span>}
+            </div>
+          </div>}
+
         {/* 错误提示 */}
         {error && <div className="bg-red-900/50 border border-red-600 text-red-200 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -294,7 +412,7 @@ export default function EditPage(props) {
         <div className="bg-blue-900/30 border border-blue-600 text-blue-200 px-4 py-3 rounded-lg mb-6">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4" />
-            <span>您正在编辑红色故事，修改后请记得保存</span>
+            <span>您正在编辑红色故事，系统会自动保存草稿</span>
           </div>
         </div>
 
