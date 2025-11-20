@@ -6,7 +6,7 @@ import { Button } from '@/components/ui';
 import { ArrowLeft, Edit, Trash2, Share2, Heart, Clock, Calendar, MapPin, User, Eye, BookOpen } from 'lucide-react';
 
 // @ts-ignore;
-import { PageHeader, BottomNav } from '@/components/Navigation';
+import { Sidebar } from '@/components/Sidebar';
 export default function DetailPage(props) {
   const {
     $w
@@ -14,11 +14,10 @@ export default function DetailPage(props) {
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigateTo = $w.utils.navigateTo;
 
-  // 从 URL 参数获取故事 ID
-  const storyId = $w.page.dataset.params?.id;
-
-  // 仅从 red_story 主库加载已发布故事
+  // 修正参数访问方式 - 直接使用 params.id
+  const storyId = $w.page.dataset.params.id;
   useEffect(() => {
     const loadStory = async () => {
       if (!storyId) {
@@ -30,11 +29,8 @@ export default function DetailPage(props) {
         setLoading(true);
         const tcb = await $w.cloud.getCloudInstance();
         const db = tcb.database();
-
-        // 仅查询 red_story 主库
         const result = await db.collection('red_story').doc(storyId).get();
         if (result && result.data) {
-          // 确保只显示已发布的内容
           if (result.data.status === 'published') {
             setStory(result.data);
           } else {
@@ -57,7 +53,6 @@ export default function DetailPage(props) {
       setError('未提供故事ID');
     }
   }, [storyId]);
-  const navigateTo = $w.utils.navigateTo;
   const goBack = () => {
     navigateTo({
       pageId: 'index',
@@ -75,110 +70,130 @@ export default function DetailPage(props) {
   };
   const formatDate = timestamp => {
     if (!timestamp) return '未知时间';
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
+    return new Date(timestamp).toLocaleDateString('zh-CN');
   };
   if (loading) {
-    return <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
-          <p className="text-gray-400">加载故事中...</p>
+    return <div className="min-h-screen bg-gray-900 text-white flex">
+        <Sidebar currentPage="detail" navigateTo={navigateTo} />
+        <div className="flex-1 ml-64 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto mb-4"></div>
+            <p className="text-gray-400">加载故事中...</p>
+          </div>
         </div>
       </div>;
   }
   if (error || !story) {
-    return <div className="min-h-screen bg-gray-900 text-white">
-        <PageHeader title="故事详情" showBack={true} onBack={goBack} />
-        <main className="max-w-4xl mx-auto px-4 py-8">
-          <div className="bg-red-900/20 border border-red-600/50 rounded-lg p-8 text-center">
-            <BookOpen className="w-16 h-16 text-red-400 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-white mb-2">加载失败</h2>
-            <p className="text-gray-400">{error || '故事不存在'}</p>
-            <Button onClick={goBack} className="mt-4 bg-red-600 hover:bg-red-700">
-              返回首页
-            </Button>
-          </div>
-        </main>
-        {/* 仅保留首页和上传两个底部导航 */}
-        <BottomNav currentPage="detail" navigateTo={navigateTo} />
+    return <div className="min-h-screen bg-gray-900 text-white flex">
+        <Sidebar currentPage="detail" navigateTo={navigateTo} />
+        <div className="flex-1 ml-64">
+          <header className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
+            <div className="max-w-7xl mx-auto px-6 py-4">
+              <div className="flex items-center">
+                <button onClick={goBack} className="flex items-center text-gray-300 hover:text-white">
+                  <ArrowLeft className="w-5 h-5 mr-2" />
+                  返回
+                </button>
+              </div>
+            </div>
+          </header>
+          
+          <main className="max-w-7xl mx-auto px-6 py-8">
+            <div className="bg-red-900/20 border border-red-600/50 rounded-lg p-8 text-center">
+              <BookOpen className="w-16 h-16 text-red-400 mx-auto mb-4" />
+              <h2 className="text-xl font-semibold text-white mb-2">加载失败</h2>
+              <p className="text-gray-400">{error || '故事不存在'}</p>
+              <Button onClick={goBack} className="mt-4 bg-red-600 hover:bg-red-700">
+                返回首页
+              </Button>
+            </div>
+          </main>
+        </div>
       </div>;
   }
-  return <div className="min-h-screen bg-gray-900 text-white">
-      <PageHeader title={story.title} showBack={true} onBack={goBack} />
+  return <div className="min-h-screen bg-gray-900 text-white flex">
+      <Sidebar currentPage="detail" navigateTo={navigateTo} />
       
-      <main className="max-w-4xl mx-auto px-4 py-8 pb-24">
-        <article className="bg-gray-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-700">
-          {/* 故事图片 */}
-          {story.image && <div className="relative h-64 md:h-96">
-              <img src={story.image} alt={story.title} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-            </div>}
-          
-          {/* 故事内容 */}
-          <div className="p-6 md:p-8">
-            {/* 标题和元信息 */}
-            <div className="mb-6">
-              <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">{story.title}</h1>
-              
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
-                <span className="flex items-center gap-1">
-                  <User className="w-4 h-4" />
-                  {story.author || '佚名'}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  {formatDate(story.createdAt)}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  {story.read_time || '5分钟阅读'}
-                </span>
-                {story.location && <span className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    {story.location}
-                  </span>}
+      <div className="flex-1 ml-64">
+        <header className="bg-gray-800/80 backdrop-blur-sm border-b border-gray-700">
+          <div className="max-w-7xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <button onClick={goBack} className="flex items-center text-gray-300 hover:text-white">
+                  <ArrowLeft className="w-5 h-5 mr-2" />
+                  返回
+                </button>
               </div>
-
-              {story.tags && story.tags.length > 0 && <div className="flex flex-wrap gap-2 mt-4">
-                  {story.tags.map((tag, index) => <span key={index} className="px-3 py-1 bg-red-900/30 text-red-300 text-sm rounded-full border border-red-800/50">
-                      {tag}
-                    </span>)}
-                </div>}
-            </div>
-
-            {/* 故事正文 */}
-            <div className="prose prose-invert max-w-none">
-              <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{story.content}</p>
-            </div>
-
-            {/* 操作按钮 */}
-            <div className="flex gap-3 mt-8 pt-6 border-t border-gray-700">
-              <Button onClick={goBack} variant="outline" className="border-gray-600 text-gray-300">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                返回
-              </Button>
               <Button onClick={goToEdit} className="bg-red-600 hover:bg-red-700">
                 <Edit className="w-4 h-4 mr-2" />
                 编辑
               </Button>
-              <Button variant="outline" className="border-gray-600 text-gray-300">
-                <Share2 className="w-4 h-4 mr-2" />
-                分享
-              </Button>
-              <Button variant="outline" className="border-gray-600 text-gray-300">
-                <Heart className="w-4 h-4 mr-2" />
-                收藏
-              </Button>
             </div>
           </div>
-        </article>
-      </main>
-      
-      {/* 仅保留首页和上传两个底部导航 */}
-      <BottomNav currentPage="detail" navigateTo={navigateTo} />
+        </header>
+
+        <main className="max-w-7xl mx-auto px-6 py-8">
+          <article className="bg-gray-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-700">
+            {story.image && <div className="relative h-64 md:h-96">
+                <img src={story.image} alt={story.title} className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+              </div>}
+            
+            <div className="p-6 md:p-8">
+              <div className="mb-6">
+                <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">{story.title}</h1>
+                
+                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+                  <span className="flex items-center gap-1">
+                    <User className="w-4 h-4" />
+                    {story.author || '佚名'}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    {formatDate(story.createdAt)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    {story.read_time || '5分钟阅读'}
+                  </span>
+                  {story.location && <span className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4" />
+                      {story.location}
+                    </span>}
+                </div>
+
+                {story.tags && story.tags.length > 0 && <div className="flex flex-wrap gap-2 mt-4">
+                    {story.tags.map((tag, index) => <span key={index} className="px-3 py-1 bg-red-900/30 text-red-300 text-sm rounded-full border border-red-800/50">
+                        {tag}
+                      </span>)}
+                  </div>}
+              </div>
+
+              <div className="prose prose-invert max-w-none">
+                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{story.content}</p>
+              </div>
+
+              <div className="flex gap-3 mt-8 pt-6 border-t border-gray-700">
+                <Button onClick={goBack} variant="outline" className="border-gray-600 text-gray-300">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  返回
+                </Button>
+                <Button onClick={goToEdit} className="bg-red-600 hover:bg-red-700">
+                  <Edit className="w-4 h-4 mr-2" />
+                  编辑
+                </Button>
+                <Button variant="outline" className="border-gray-600 text-gray-300">
+                  <Share2 className="w-4 h-4 mr-2" />
+                  分享
+                </Button>
+                <Button variant="outline" className="border-gray-600 text-gray-300">
+                  <Heart className="w-4 h-4 mr-2" />
+                  收藏
+                </Button>
+              </div>
+            </div>
+          </article>
+        </main>
+      </div>
     </div>;
 }
