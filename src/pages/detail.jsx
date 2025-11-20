@@ -136,6 +136,12 @@ export default function DetailPage(props) {
       params: {}
     });
   };
+  const goToUpload = () => {
+    navigateTo({
+      pageId: 'upload',
+      params: {}
+    });
+  };
   const goToDetail = id => {
     navigateTo({
       pageId: 'detail',
@@ -331,7 +337,7 @@ export default function DetailPage(props) {
               </div>
             </div>}
 
-          {/* 故事元信息 */}
+          {/* 故事内容 */}
           <div className="p-6 md:p-8">
             {/* 标签 */}
             {story.tags && story.tags.length > 0 && <div className="flex flex-wrap gap-2 mb-6">
@@ -403,6 +409,10 @@ export default function DetailPage(props) {
                   <BookOpen className="w-4 h-4 mr-2" />
                   更多故事
                 </Button>
+                {isAdmin && <Button onClick={goToUpload} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
+                    <Plus className="w-4 h-4 mr-2" />
+                    上传故事
+                  </Button>}
               </div>
             </div>
           </div>
