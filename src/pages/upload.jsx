@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Upload as UploadIcon, FileText, Image, X, Check, Plus, Tag } from 'lucide-react';
+import { ArrowLeft, Upload as UploadIcon, FileText, Image, X, Check, Plus, Tag, Loader2 } from 'lucide-react';
 
 export default function UploadPage(props) {
   const {
@@ -26,6 +26,8 @@ export default function UploadPage(props) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState(null);
   const [newTag, setNewTag] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
   const handleInputChange = e => {
     const {
       name,
@@ -57,6 +59,63 @@ export default function UploadPage(props) {
       handleAddTag();
     }
   };
+
+  // 图片上传处理
+  const handleImageUpload = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // 检查文件类型
+    if (!file.type.startsWith('image/')) {
+      setError('请选择图片文件');
+      return;
+    }
+
+    // 检查文件大小 (限制为5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('图片大小不能超过5MB');
+      return;
+    }
+    setImageFile(file);
+    setUploadingImage(true);
+    setError(null);
+    try {
+      // 获取云开发实例
+      const tcb = await $w.cloud.getCloudInstance();
+
+      // 上传图片到云存储
+      const uploadResult = await tcb.uploadFile({
+        cloudPath: `red-story-images/${Date.now()}-${file.name}`,
+        fileContent: file
+      });
+
+      // 获取图片的下载链接
+      const fileInfo = await tcb.getTempFileURL({
+        fileList: [uploadResult.fileID]
+      });
+      if (fileInfo.fileList && fileInfo.fileList.length > 0) {
+        const imageUrl = fileInfo.fileList[0].tempFileURL;
+        setFormData(prev => ({
+          ...prev,
+          image: imageUrl
+        }));
+      }
+    } catch (err) {
+      console.error('图片上传失败:', err);
+      setError('图片上传失败，请重试');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // 移除已上传的图片
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setFormData(prev => ({
+      ...prev,
+      image: ''
+    }));
+  };
   const validateForm = () => {
     if (!formData.title.trim()) {
       setError('请输入故事标题');
@@ -64,14 +123,6 @@ export default function UploadPage(props) {
     }
     if (!formData.content.trim()) {
       setError('请输入故事内容');
-      return false;
-    }
-    if (!formData.date.trim()) {
-      setError('请输入时间时期');
-      return false;
-    }
-    if (!formData.location.trim()) {
-      setError('请输入发生地点');
       return false;
     }
     return true;
@@ -90,8 +141,9 @@ export default function UploadPage(props) {
         // 确保必填字段不为空
         title: formData.title.trim(),
         content: formData.content.trim(),
-        date: formData.date.trim(),
-        location: formData.location.trim(),
+        // 可选字段处理
+        date: formData.date.trim() || '',
+        location: formData.location.trim() || '',
         author: formData.author.trim() || '佚名',
         read_time: formData.read_time.trim() || '5分钟',
         tags: formData.tags.length > 0 ? formData.tags : ['红色教育'],
@@ -126,6 +178,7 @@ export default function UploadPage(props) {
         status: 'draft',
         order: 0
       });
+      setImageFile(null);
 
       // 2秒后隐藏成功提示并返回主页
       setTimeout(() => {
@@ -179,19 +232,19 @@ export default function UploadPage(props) {
               <input type="text" name="title" value={formData.title} onChange={handleInputChange} required className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" placeholder="请输入红色故事标题" />
             </div>
 
-            {/* 时间和地点 */}
+            {/* 时间和地点 - 改为可选 */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  时间时期 *
+                  时间时期
                 </label>
-                <input type="text" name="date" value={formData.date} onChange={handleInputChange} required className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" placeholder="如：1927-1930" />
+                <input type="text" name="date" value={formData.date} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" placeholder="如：1927-1930（可选）" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  发生地点 *
+                  发生地点
                 </label>
-                <input type="text" name="location" value={formData.location} onChange={handleInputChange} required className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" placeholder="如：江西井冈山" />
+                <input type="text" name="location" value={formData.location} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" placeholder="如：江西井冈山（可选）" />
               </div>
             </div>
 
@@ -241,13 +294,39 @@ export default function UploadPage(props) {
               </div>
             </div>
 
-            {/* 图片上传 */}
+            {/* 图片上传 - 改为本地上传 */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 <Image className="inline w-4 h-4 mr-1" />
-                配图链接（可选）
+                配图（可选）
               </label>
-              <input type="url" name="image" value={formData.image} onChange={handleInputChange} className="w-full px-4 py-3 bg-gray-900/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent" placeholder="请输入图片URL地址" />
+              
+              {/* 已上传图片预览 */}
+              {formData.image && <div className="mb-4">
+                  <div className="relative inline-block">
+                    <img src={formData.image} alt="已上传的配图" className="w-32 h-32 object-cover rounded-lg border border-gray-600" />
+                    <button type="button" onClick={handleRemoveImage} className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>}
+
+              {/* 上传按钮 */}
+              <div className="flex items-center gap-4">
+                <label className="cursor-pointer">
+                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploadingImage} />
+                  <div className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    {uploadingImage ? <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>上传中...</span>
+                      </> : <>
+                        <UploadIcon className="w-4 h-4" />
+                        <span>选择图片</span>
+                      </>}
+                  </div>
+                </label>
+                <span className="text-sm text-gray-400">支持 JPG、PNG、GIF 格式，最大 5MB</span>
+              </div>
             </div>
 
             {/* 提交按钮 */}
