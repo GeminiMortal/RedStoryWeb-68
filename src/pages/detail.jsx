@@ -59,6 +59,22 @@ export default function DetailPage(props) {
   // 安全获取故事ID - 修复 dataset 读取错误
   const storyId = props.page?.dataset?.params?.id || '1';
 
+  // 添加缺失的辅助函数
+  const formatDate = timestamp => {
+    if (!timestamp) return '未知时间';
+    return new Date(timestamp).toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+  const formatReadTime = content => {
+    if (!content) return '5分钟阅读';
+    const wordCount = content.length;
+    const readTime = Math.ceil(wordCount / 500);
+    return `${readTime}分钟阅读`;
+  };
+
   // 从 localStorage 加载字体设置
   useEffect(() => {
     const savedSettings = localStorage.getItem('fontSettings');
