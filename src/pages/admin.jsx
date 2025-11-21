@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button, useToast, Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui';
 // @ts-ignore;
-import { Plus, Search, BookOpen, FileText } from 'lucide-react';
+import { Plus, Search, BookOpen, FileText, LogOut, Shield } from 'lucide-react';
 
 // @ts-ignore;
 import { Sidebar } from '@/components/Sidebar';
@@ -13,10 +13,13 @@ import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 // @ts-ignore;
 import { StoryCard } from '@/components/StoryCard';
+// @ts-ignore;
+import { AdminPasswordGate } from '@/components/AdminPasswordGate';
 export default function AdminPage(props) {
   const {
     $w
   } = props;
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [publishedStories, setPublishedStories] = useState([]);
   const [drafts, setDrafts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,9 +30,45 @@ export default function AdminPage(props) {
     toast
   } = useToast();
   const navigateTo = $w.utils.navigateTo;
+
+  // 检查登录状态
   useEffect(() => {
-    loadData();
+    checkAuthStatus();
   }, []);
+  const checkAuthStatus = () => {
+    const isAuthenticated = localStorage.getItem('admin_authenticated') === 'true';
+    const loginTime = localStorage.getItem('admin_login_time');
+
+    // 检查是否在24小时内登录
+    if (isAuthenticated && loginTime) {
+      const now = Date.now();
+      const loginTimestamp = parseInt(loginTime);
+      const hoursSinceLogin = (now - loginTimestamp) / (1000 * 60 * 60);
+      if (hoursSinceLogin < 24) {
+        setIsAuthenticated(true);
+        loadData();
+        return;
+      } else {
+        // 超过24小时，清除登录状态
+        localStorage.removeItem('admin_authenticated');
+        localStorage.removeItem('admin_login_time');
+      }
+    }
+    setIsAuthenticated(false);
+  };
+  const handleAuthenticated = () => {
+    setIsAuthenticated(true);
+    loadData();
+  };
+  const handleLogout = () => {
+    localStorage.removeItem('admin_authenticated');
+    localStorage.removeItem('admin_login_time');
+    setIsAuthenticated(false);
+    toast({
+      title: '已退出登录',
+      description: '您已安全退出管理界面'
+    });
+  };
   const loadData = async () => {
     try {
       setLoading(true);
@@ -103,11 +142,18 @@ export default function AdminPage(props) {
   // 搜索过滤
   const filteredPublished = publishedStories.filter(story => (story.title || '').toLowerCase().includes(searchTerm.toLowerCase()) || (story.content || '').toLowerCase().includes(searchTerm.toLowerCase()));
   const filteredDrafts = drafts.filter(draft => (draft.title || '无标题草稿').toLowerCase().includes(searchTerm.toLowerCase()));
+
+  // 如果未认证，显示密码验证界面
+  if (!isAuthenticated) {
+    return <AdminPasswordGate onAuthenticated={handleAuthenticated} />;
+  }
+
+  // 加载状态
   if (loading) {
-    return <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+    return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         <Sidebar currentPage="admin" navigateTo={navigateTo} />
         <div className="flex-1 transition-all duration-300 ease-in-out">
-          <header className="bg-gray-800/90 backdrop-blur-sm border-b border-gray-700 px-6 py-4">
+          <header className="bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 px-6 py-4">
             <div className="max-w-7xl mx-auto flex justify-between items-center">
               <h1 className="text-2xl font-bold text-white">故事管理</h1>
               <Button onClick={() => navigateTo({
@@ -125,17 +171,23 @@ export default function AdminPage(props) {
         </div>
       </div>;
   }
-  return <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+  return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
       <Sidebar currentPage="admin" navigateTo={navigateTo} />
       
       <div className="flex-1 transition-all duration-300 ease-in-out">
-        <header className="bg-gray-800/90 backdrop-blur-sm border-b border-gray-700 px-4 md:px-6 py-4">
+        <header className="bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 px-4 md:px-6 py-4">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <h1 className="text-2xl font-bold text-white">故事管理</h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold text-white">故事管理</h1>
+              <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 border border-green-500/50 rounded-full">
+                <Shield className="w-4 h-4 text-green-400" />
+                <span className="text-sm text-green-400">已认证</span>
+              </div>
+            </div>
             <div className="flex items-center gap-4">
               <div className="relative flex-1 md:flex-initial">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input type="text" placeholder="搜索故事..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full md:w-64 pl-10 pr-4 py-2 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input type="text" placeholder="搜索故事..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full md:w-64 pl-10 pr-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
               <Button onClick={() => navigateTo({
               pageId: 'upload',
@@ -144,13 +196,17 @@ export default function AdminPage(props) {
                 <Plus className="w-4 h-4 mr-2" />
                 新建
               </Button>
+              <Button onClick={handleLogout} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all">
+                <LogOut className="w-4 h-4 mr-2" />
+                退出
+              </Button>
             </div>
           </div>
         </header>
 
         <main className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8 pb-24 md:pb-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-gray-800 border-gray-700 max-w-md mx-auto md:mx-0">
+            <TabsList className="grid w-full grid-cols-2 bg-slate-800 border-slate-700 max-w-md mx-auto md:mx-0">
               <TabsTrigger value="published" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-red-500 data-[state=active]:to-red-600 data-[state=active]:text-white transition-all">
                 <BookOpen className="w-4 h-4 mr-2" />
                 已发布 ({filteredPublished.length})
@@ -163,11 +219,11 @@ export default function AdminPage(props) {
 
             <TabsContent value="published" className="mt-6">
               {filteredPublished.length === 0 ? <div className="text-center py-12 animate-fade-in">
-                  <BookOpen className="w-20 h-20 text-gray-600 mx-auto mb-4 animate-bounce" />
-                  <h3 className="text-xl font-medium text-gray-400 mb-2">
+                  <BookOpen className="w-20 h-20 text-slate-600 mx-auto mb-4 animate-bounce" />
+                  <h3 className="text-xl font-medium text-slate-400 mb-2">
                     {searchTerm ? '未找到相关故事' : '暂无已发布故事'}
                   </h3>
-                  <p className="text-gray-500 mb-6">
+                  <p className="text-slate-500 mb-6">
                     {searchTerm ? '尝试其他关键词' : '开始创建您的第一个红色故事吧'}
                   </p>
                   {!searchTerm && <Button onClick={() => navigateTo({
@@ -184,11 +240,11 @@ export default function AdminPage(props) {
 
             <TabsContent value="drafts" className="mt-6">
               {filteredDrafts.length === 0 ? <div className="text-center py-12 animate-fade-in">
-                  <FileText className="w-20 h-20 text-gray-600 mx-auto mb-4 animate-bounce" />
-                  <h3 className="text-xl font-medium text-gray-400 mb-2">
+                  <FileText className="w-20 h-20 text-slate-600 mx-auto mb-4 animate-bounce" />
+                  <h3 className="text-xl font-medium text-slate-400 mb-2">
                     {searchTerm ? '未找到相关草稿' : '暂无草稿'}
                   </h3>
-                  <p className="text-gray-500 mb-6">
+                  <p className="text-slate-500 mb-6">
                     {searchTerm ? '尝试其他关键词' : '创建或编辑故事时会自动保存为草稿'}
                   </p>
                   {!searchTerm && <Button onClick={() => navigateTo({
