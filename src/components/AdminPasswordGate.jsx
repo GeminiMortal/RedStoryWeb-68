@@ -108,14 +108,6 @@ export function AdminPasswordGate({
                 </div>}
             </Button>
           </form>
-
-          {/* 提示信息 */}
-          <div className="mt-6 p-4 bg-slate-700/30 rounded-lg border border-slate-600/50">
-            <p className="text-xs text-slate-400 text-center">
-              <span className="text-red-400">提示：</span>
-              默认密码为 admin123，请在生产环境中修改
-            </p>
-          </div>
         </div>
 
         {/* 底部信息 */}
