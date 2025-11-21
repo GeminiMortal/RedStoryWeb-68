@@ -44,10 +44,10 @@ export function StoryCarousel({
     });
   };
   const currentStory = carouselStories[currentIndex];
-  return <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12 animate-fade-in" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+  return <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
       
       {/* 轮播容器 */}
-      <div className="relative h-96 md:h-[500px] rounded-2xl overflow-hidden shadow-2xl hover-lift">
+      <div className="relative h-96 md:h-[500px] rounded-2xl overflow-hidden shadow-2xl">
         {/* 背景图片 */}
         <div className="absolute inset-0">
           {carouselStories.map((story, index) => <div key={story._id} className={cn("absolute inset-0 transition-opacity duration-500 cursor-pointer", index === currentIndex ? "opacity-100" : "opacity-0")} onClick={() => handleStoryClick(story._id)}>
@@ -70,7 +70,7 @@ export function StoryCarousel({
                 <Button onClick={e => {
                 e.stopPropagation();
                 handleStoryClick(currentStory._id);
-              }} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105 button-press">
+              }} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105">
                   <Eye className="w-4 h-4 mr-2" />
                   阅读全文
                 </Button>
@@ -88,13 +88,13 @@ export function StoryCarousel({
         <button onClick={e => {
         e.stopPropagation();
         goToPrevious();
-      }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-800/50 hover:bg-slate-700/70 backdrop-blur-sm text-white p-3 rounded-full transition-all duration-200 hover:scale-110 button-press">
+      }} className="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-800/50 hover:bg-slate-700/70 backdrop-blur-sm text-white p-3 rounded-full transition-all duration-200 hover:scale-110">
           <ChevronLeft className="w-6 h-6" />
         </button>
         <button onClick={e => {
         e.stopPropagation();
         goToNext();
-      }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-800/50 hover:bg-slate-700/70 backdrop-blur-sm text-white p-3 rounded-full transition-all duration-200 hover:scale-110 button-press">
+      }} className="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-800/50 hover:bg-slate-700/70 backdrop-blur-sm text-white p-3 rounded-full transition-all duration-200 hover:scale-110">
           <ChevronRight className="w-6 h-6" />
         </button>
 
@@ -103,7 +103,7 @@ export function StoryCarousel({
           {carouselStories.map((_, index) => <button key={index} onClick={e => {
           e.stopPropagation();
           goToSlide(index);
-        }} className={cn("w-2 h-2 rounded-full transition-all duration-300 button-press", index === currentIndex ? "bg-red-500 w-8" : "bg-slate-400/50 hover:bg-slate-300/70")} />)}
+        }} className={cn("w-2 h-2 rounded-full transition-all duration-300", index === currentIndex ? "bg-red-500 w-8" : "bg-slate-400/50 hover:bg-slate-300/70")} />)}
         </div>
 
         {/* 自动播放状态指示器 */}

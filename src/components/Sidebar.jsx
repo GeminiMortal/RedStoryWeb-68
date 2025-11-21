@@ -1,5 +1,5 @@
 // @ts-ignore;
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore;
 import { Home, BookOpen, Settings, Copyright, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
 // @ts-ignore;
@@ -7,11 +7,13 @@ import { cn } from '@/lib/utils';
 
 export function Sidebar({
   currentPage,
-  navigateTo
+  navigateTo,
+  onStateChange
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // 从 sessionStorage 读取侧边栏状态
   useEffect(() => {
@@ -21,11 +23,25 @@ export function Sidebar({
     }
   }, []);
 
-  // 保存侧边栏状态到 sessionStorage
-  const updateCollapsedState = collapsed => {
+  // 保存侧边栏状态到 sessionStorage 并通知父组件
+  const updateCollapsedState = useCallback(collapsed => {
+    setIsTransitioning(true);
     setIsCollapsed(collapsed);
     sessionStorage.setItem('sidebarCollapsed', String(collapsed));
-  };
+
+    // 通知父组件状态变化
+    if (onStateChange) {
+      onStateChange({
+        isCollapsed: collapsed,
+        isDesktop: isDesktop
+      });
+    }
+
+    // 动画结束后重置过渡状态
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, 300);
+  }, [onStateChange, isDesktop]);
 
   // 监听窗口大小变化
   useEffect(() => {
@@ -43,11 +59,19 @@ export function Sidebar({
           setIsCollapsed(savedCollapsed === 'true');
         }
       }
+
+      // 通知父组件屏幕尺寸变化
+      if (onStateChange) {
+        onStateChange({
+          isCollapsed: savedCollapsed === 'true',
+          isDesktop: isDesktopView
+        });
+      }
     };
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+  }, [onStateChange]);
   const navItems = [{
     id: 'index',
     label: '主页',
@@ -87,13 +111,13 @@ export function Sidebar({
       {/* 侧边栏主体 - 桌面端固定显示，移动端可折叠 */}
       <div className={cn("fixed left-0 top-0 h-full bg-slate-800/95 backdrop-blur-md border-r border-slate-700/50 flex flex-col transition-all duration-300 ease-in-out z-50", "md:translate-x-0", isMobileOpen ? "translate-x-0" : "-translate-x-full", isCollapsed && isDesktop ? "md:w-16" : "md:w-64", "w-64")}>
         {/* Logo/标题区域 */}
-        <div className={cn("p-6 border-b border-slate-700/50 flex items-center justify-between", isCollapsed && isDesktop && "md:p-3 md:justify-center")}>
-          {!isCollapsed || !isDesktop ? <h1 className="text-xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
+        <div className={cn("p-6 border-b border-slate-700/50 flex items-center justify-between transition-all duration-300", isCollapsed && isDesktop && "md:p-3 md:justify-center")}>
+          {!isCollapsed || !isDesktop ? <h1 className="text-xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent transition-opacity duration-300">
               红色故事
-            </h1> : <BookOpen className="w-6 h-6 text-red-500" />}
+            </h1> : <BookOpen className="w-6 h-6 text-red-500 transition-transform duration-300 hover:scale-110" />}
           
           {/* 移动端关闭按钮 */}
-          <button onClick={toggleMobile} className="md:hidden text-slate-400 hover:text-white p-1">
+          <button onClick={toggleMobile} className="md:hidden text-slate-400 hover:text-white p-1 transition-colors duration-200">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -106,8 +130,8 @@ export function Sidebar({
             const isActive = currentPage === item.id;
             return <li key={item.id}>
                   <button onClick={() => handleNavigation(item.pageId)} className={cn("w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200", "hover:scale-105 hover:shadow-lg", isActive ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-md" : "text-slate-300 hover:bg-slate-700/50 hover:text-white", isCollapsed && isDesktop && "md:justify-center md:px-2")}>
-                    <Icon className="w-5 h-5 flex-shrink-0" />
-                    {(!isCollapsed || !isDesktop) && <span>{item.label}</span>}
+                    <Icon className="w-5 h-5 flex-shrink-0 transition-transform duration-200" />
+                    {(!isCollapsed || !isDesktop) && <span className="transition-opacity duration-300">{item.label}</span>}
                   </button>
                 </li>;
           })}
@@ -115,15 +139,15 @@ export function Sidebar({
         </nav>
 
         {/* 版权信息 */}
-        <div className={cn("p-4 border-t border-slate-700/50", isCollapsed && isDesktop && "md:p-2")}>
-          {!isCollapsed || !isDesktop ? <p className="text-xs text-slate-500 text-center">
+        <div className={cn("p-4 border-t border-slate-700/50 transition-all duration-300", isCollapsed && isDesktop && "md:p-2")}>
+          {!isCollapsed || !isDesktop ? <p className="text-xs text-slate-500 text-center transition-opacity duration-300">
               © <span className="text-red-400">sut</span>·code2501
-            </p> : <Copyright className="w-4 h-4 text-slate-500 mx-auto" />}
+            </p> : <Copyright className="w-4 h-4 text-slate-500 mx-auto transition-transform duration-300 hover:scale-110" />}
         </div>
 
         {/* 折叠按钮 - 仅桌面端显示 */}
-        {isDesktop && <button onClick={toggleSidebar} className={cn("absolute top-1/2 -right-3 transform -translate-y-1/2", "bg-slate-700 hover:from-red-500 hover:to-orange-500 text-white", "rounded-full p-1.5 shadow-lg border border-slate-600", "transition-all duration-200 hover:scale-110")}>
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        {isDesktop && <button onClick={toggleSidebar} className={cn("absolute top-1/2 -right-3 transform -translate-y-1/2", "bg-slate-700 hover:from-red-500 hover:to-orange-500 text-white", "rounded-full p-1.5 shadow-lg border border-slate-600", "transition-all duration-200 hover:scale-110", isTransitioning && "animate-pulse")}>
+            {isCollapsed ? <ChevronRight className="w-4 h-4 transition-transform duration-200" /> : <ChevronLeft className="w-4 h-4 transition-transform duration-200" />}
           </button>}
       </div>
     </>;
