@@ -3,7 +3,7 @@ import React from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { Home, PlusCircle, User, Settings } from 'lucide-react';
+import { Home, PlusCircle, Shield } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
@@ -16,13 +16,9 @@ const navItems = [{
   label: '新建',
   icon: PlusCircle
 }, {
-  id: 'profile',
-  label: '我的',
-  icon: User
-}, {
-  id: 'settings',
-  label: '设置',
-  icon: Settings
+  id: 'admin',
+  label: '管理',
+  icon: Shield
 }];
 export function MobileBottomNav({
   currentPage = 'index',

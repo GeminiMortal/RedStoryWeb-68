@@ -3,7 +3,7 @@ import React from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { Home, PlusCircle, User, Settings, Shield, LogOut, Menu, X } from 'lucide-react';
+import { Home, PlusCircle, Shield, LogOut, Menu, X } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
@@ -18,17 +18,9 @@ const menuItems = [{
   label: '新建故事',
   icon: PlusCircle
 }, {
-  id: 'profile',
-  label: '个人中心',
-  icon: User
-}, {
   id: 'admin',
   label: '管理后台',
   icon: Shield
-}, {
-  id: 'settings',
-  label: '设置',
-  icon: Settings
 }];
 export function Sidebar({
   currentPage = 'index',
