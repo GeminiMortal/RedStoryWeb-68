@@ -137,7 +137,7 @@ export default function HomePage(props) {
             {story.content || '暂无内容'}
           </p>
           
-          {story.tags && story.tags.length > 0 && <div className="flex flex-wrap gap-1 mb-4">
+          {story.tags && Array.isArray(story.tags) && story.tags.length > 0 && <div className="flex flex-wrap gap-1 mb-4">
               {story.tags.slice(0, 3).map((tag, idx) => <Badge key={idx} variant="outline" className="border-red-500/30 text-red-400 text-xs bg-red-500/10 hover:bg-red-500/20 transition-colors">
                   {tag}
                 </Badge>)}
