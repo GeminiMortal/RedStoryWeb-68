@@ -18,7 +18,7 @@ import { StoryCarousel } from '@/components/StoryCarousel';
 // @ts-ignore;
 import { useSidebar } from '@/components/SidebarStore';
 // @ts-ignore;
-import { FadeIn, AnimatedCard } from '@/components/AnimationProvider';
+import { FadeIn } from '@/components/AnimationProvider';
 export default function HomePage(props) {
   const {
     $w
@@ -90,7 +90,7 @@ export default function HomePage(props) {
   const StoryCard = ({
     story,
     index
-  }) => <AnimatedCard delay={index * 100}>
+  }) => <FadeIn delay={index * 100}>
       <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-red-500/10 hover:border-red-500/50 transition-all duration-300 transform hover:-translate-y-2 hover:scale-[1.02]">
         {story.image && <div className="aspect-video overflow-hidden relative">
             <img src={story.image} alt={story.title} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" onError={e => {
@@ -138,7 +138,7 @@ export default function HomePage(props) {
           </div>
         </CardContent>
       </Card>
-    </AnimatedCard>;
+    </FadeIn>;
   return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
       <Sidebar currentPage="index" navigateTo={navigateTo} />
 
