@@ -167,11 +167,15 @@ export default function HomePage(props) {
                   <div className="flex flex-wrap gap-2">
                     {searchTerm && <Badge variant="outline" className="border-red-500/50 text-red-400 bg-red-500/10">
                         搜索: {searchTerm}
-                        <button onClick={() => setSearchTerm('')} className="ml-2 text-red-400 hover:text-red-300">×</button>
+                        <button onClick={() => setSearchTerm('')} className="ml-2 text-red-400 hover:text-red-300">
+                          ×
+                        </button>
                       </Badge>}
                     {filterTag && <Badge variant="outline" className="border-orange-500/50 text-orange-400 bg-orange-500/10">
                         标签: {filterTag}
-                        <button onClick={() => setFilterTag('')} className="ml-2 text-orange-400 hover:text-orange-300">×</button>
+                        <button onClick={() => setFilterTag('')} className="ml-2 text-orange-400 hover:text-orange-300">
+                          ×
+                        </button>
                       </Badge>}
                   </div>
                 </div>}

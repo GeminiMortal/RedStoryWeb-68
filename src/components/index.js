@@ -7,3 +7,4 @@ export * from './AnimatedCard.jsx';
 export * from './StoryCard.jsx';
 export * from './AdminPasswordGate.jsx';
 export * from './StoryCarousel.jsx';
+export * from './SidebarStore.jsx';
