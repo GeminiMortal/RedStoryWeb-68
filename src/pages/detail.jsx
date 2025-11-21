@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 // @ts-ignore;
 import { Button, Card, CardContent, useToast } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Share2, Heart, Eye, Clock, User, ZoomIn, ZoomOut, Home, Settings, Menu } from 'lucide-react';
+import { ArrowLeft, Share2, Heart, Eye, Clock, User, ZoomIn, ZoomOut, Home, Settings } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
@@ -19,8 +19,9 @@ export default function DetailPage(props) {
   } = props;
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [fontSize, setFontSize] = useState(16);
-  const [lineHeight, setLineHeight] = useState(1.6);
+  const [lineHeight, setLineHeight] = useState(1.8);
   const [readingProgress, setReadingProgress] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [sidebarState, setSidebarState] = useState({
@@ -35,9 +36,32 @@ export default function DetailPage(props) {
   const navigateTo = $w.utils.navigateTo;
   const navigateBack = $w.utils.navigateBack;
 
-  // 加载故事数据
+  // 字体大小配置
+  const fontSizes = {
+    small: {
+      fontSize: 14,
+      lineHeight: 1.6,
+      name: '小'
+    },
+    medium: {
+      fontSize: 16,
+      lineHeight: 1.8,
+      name: '中'
+    },
+    large: {
+      fontSize: 18,
+      lineHeight: 2.0,
+      name: '大'
+    }
+  };
+
+  // 当前字体大小状态
+  const [currentFontSize, setCurrentFontSize] = useState('medium');
+
+  // 统一的数据模型调用
   const loadStory = useCallback(async () => {
     if (!storyId) {
+      setError('故事ID无效');
       toast({
         title: '错误',
         description: '故事ID无效',
@@ -48,43 +72,42 @@ export default function DetailPage(props) {
     }
     try {
       setLoading(true);
+      setError(null);
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
+
+      // 获取故事详情
       const result = await db.collection('red_story').doc(storyId).get();
       const storyData = result.data;
       if (!storyData) {
+        setError('故事不存在');
         toast({
           title: '故事不存在',
           description: '该故事可能已被删除',
           variant: 'destructive'
         });
-        navigateTo({
-          pageId: 'index'
-        });
         return;
       }
 
-      // 标准化故事数据
+      // 标准化字段映射
       const normalizedStory = {
-        ...storyData,
-        id: storyId,
+        id: storyData.story_id || storyData._id,
         title: storyData.title || '无标题',
         content: storyData.content || '',
         author: storyData.author || '佚名',
-        publishedAt: storyData.publishedAt || storyData.createdAt || new Date(),
-        views: (storyData.views || 0) + 1,
-        imageUrl: storyData.imageUrl || '',
+        publishedAt: storyData.updatedAt || storyData.createdAt || new Date(),
+        views: 0,
+        // 浏览量字段不存在，使用默认值
+        imageUrl: storyData.image || '',
         tags: storyData.tags || [],
-        category: storyData.category || '红色故事'
+        location: storyData.location || '',
+        date: storyData.date || '',
+        readTime: storyData.read_time || ''
       };
       setStory(normalizedStory);
-
-      // 更新浏览量
-      await db.collection('red_story').doc(storyId).update({
-        views: normalizedStory.views
-      });
     } catch (error) {
       console.error('加载故事失败:', error);
+      setError(error.message || '无法加载故事内容');
       toast({
         title: '加载失败',
         description: error.message || '无法加载故事内容',
@@ -104,7 +127,7 @@ export default function DetailPage(props) {
     loadStory();
   }, [loadStory]);
 
-  // 字体大小调整
+  // 字体大小调节
   useEffect(() => {
     setLineHeight(Math.max(1.4, fontSize / 10));
   }, [fontSize]);
@@ -138,9 +161,19 @@ export default function DetailPage(props) {
     return content.split('\n').map((paragraph, index) => {
       if (paragraph.trim() === '') return <br key={index} />;
 
-      // 处理标题
+      // 处理图片标记 [img:url]
+      if (paragraph.startsWith('[img:') && paragraph.endsWith(']')) {
+        const imageUrl = paragraph.slice(5, -1);
+        return <div key={index} className="my-6">
+            <img src={imageUrl} alt="故事图片" className="w-full max-w-2xl mx-auto rounded-lg shadow-lg" onError={e => {
+            e.target.style.display = 'none';
+          }} />
+          </div>;
+      }
+
+      // 处理标题标记
       if (paragraph.startsWith('# ')) {
-        return <h1 key={index} className="text-2xl font-bold my-6 text-white" style={{
+        return <h1 key={index} className="text-2xl font-bold text-white my-6" style={{
           fontSize: `${fontSize + 8}px`,
           lineHeight
         }}>
@@ -148,20 +181,12 @@ export default function DetailPage(props) {
           </h1>;
       }
       if (paragraph.startsWith('## ')) {
-        return <h2 key={index} className="text-xl font-semibold my-4 text-white" style={{
+        return <h2 key={index} className="text-xl font-semibold text-white my-4" style={{
           fontSize: `${fontSize + 4}px`,
           lineHeight
         }}>
             {paragraph.slice(3)}
           </h2>;
-      }
-
-      // 处理图片
-      if (paragraph.startsWith('[img:') && paragraph.endsWith(']')) {
-        const imageUrl = paragraph.slice(5, -1);
-        return <div key={index} className="my-6">
-            <img src={imageUrl} alt="故事插图" className="w-full max-w-2xl mx-auto rounded-lg shadow-lg" />
-          </div>;
       }
 
       // 普通段落
@@ -181,10 +206,11 @@ export default function DetailPage(props) {
         </div>
       </div>;
   }
-  if (!story) {
+  if (error) {
     return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">故事加载失败</h1>
+          <p className="text-slate-400 mb-4">{error}</p>
           <Button onClick={() => navigateTo({
           pageId: 'index'
         })} className="bg-red-500 hover:bg-red-600">
@@ -192,6 +218,9 @@ export default function DetailPage(props) {
           </Button>
         </div>
       </div>;
+  }
+  if (!story) {
+    return null;
   }
   return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <Sidebar currentPage="detail" navigateTo={navigateTo} onStateChange={setSidebarState} />

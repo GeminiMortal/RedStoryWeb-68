@@ -26,25 +26,38 @@ export default function HomePage(props) {
   } = useToast();
   const navigateTo = $w.utils.navigateTo;
 
-  // 统一的数据模型调用
+  // 统一的数据模型调用 - 使用标准字段名
   const loadStories = useCallback(async () => {
     try {
       setLoading(true);
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
 
-      // 使用标准字段名
+      // 使用标准字段名和查询条件
       const result = await db.collection('red_story').where({
         status: 'published'
-      }).orderBy('publishedAt', 'desc').get();
+      }).orderBy('updatedAt', 'desc').get();
       const storiesData = result.data || [];
-      setStories(storiesData);
 
-      // 设置精选故事（前3个）
-      setFeaturedStories(storiesData.slice(0, 3));
-
-      // 设置最近故事（前6个）
-      setRecentStories(storiesData.slice(0, 6));
+      // 标准化字段映射
+      const normalizedStories = storiesData.map(story => ({
+        id: story.story_id || story._id,
+        title: story.title || '无标题',
+        content: story.content || '',
+        author: story.author || '佚名',
+        category: story.status || '红色故事',
+        publishedAt: story.updatedAt || story.createdAt || new Date(),
+        views: 0,
+        // 浏览量字段不存在，使用默认值
+        imageUrl: story.image || '',
+        tags: story.tags || [],
+        location: story.location || '',
+        date: story.date || '',
+        readTime: story.read_time || ''
+      }));
+      setStories(normalizedStories);
+      setFeaturedStories(normalizedStories.slice(0, 3));
+      setRecentStories(normalizedStories.slice(0, 6));
     } catch (error) {
       console.error('加载故事失败:', error);
       toast({
@@ -64,16 +77,17 @@ export default function HomePage(props) {
     loadStories();
   }, [loadStories]);
 
-  // 统一字段处理
+  // 格式化故事数据
   const formatStory = story => ({
-    id: story._id,
+    ...story,
+    id: story.id || story._id,
     title: story.title || '无标题',
     content: story.content || '',
     author: story.author || '佚名',
     category: story.category || '红色故事',
     publishedAt: story.publishedAt || story.createdAt || new Date(),
     views: story.views || 0,
-    imageUrl: story.imageUrl || '',
+    imageUrl: story.imageUrl || story.image || '',
     tags: story.tags || []
   });
 
