@@ -24,7 +24,7 @@ import { FontSettings } from '@/components/FontSettings';
 export default function DetailPage(props) {
   const {
     $w
-  } = props;
+  } = props || {};
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -44,7 +44,6 @@ export default function DetailPage(props) {
     isSwiping: false,
     isAnimating: false,
     showHint: false,
-    velocity: 0,
     opacity: 1
   });
   const {
@@ -53,77 +52,83 @@ export default function DetailPage(props) {
   const contentRef = useRef(null);
   const {
     isOpen
-  } = useSidebar();
-  const navigateTo = $w.utils.navigateTo;
+  } = useSidebar() || {};
+  const navigateTo = $w?.utils?.navigateTo || (() => {});
 
-  // 安全获取故事ID - 修复 dataset 读取错误
-  const storyId = props.page?.dataset?.params?.id || '1';
-
-  // 添加缺失的辅助函数
-  const formatDate = timestamp => {
-    if (!timestamp) return '未知时间';
-    return new Date(timestamp).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-  const formatReadTime = content => {
-    if (!content) return '5分钟阅读';
-    const wordCount = content.length;
-    const readTime = Math.ceil(wordCount / 500);
-    return `${readTime}分钟阅读`;
-  };
+  // 安全获取故事ID
+  const storyId = props?.page?.dataset?.params?.id || '1';
 
   // 从 localStorage 加载字体设置
   useEffect(() => {
-    const savedSettings = localStorage.getItem('fontSettings');
-    if (savedSettings) {
-      try {
+    try {
+      const savedSettings = localStorage?.getItem?.('fontSettings');
+      if (savedSettings) {
         setFontSettings(JSON.parse(savedSettings));
-      } catch (error) {
-        console.error('加载字体设置失败:', error);
       }
+    } catch (error) {
+      console.error('加载字体设置失败:', error);
     }
   }, []);
 
   // 保存字体设置到 localStorage
   useEffect(() => {
-    localStorage.setItem('fontSettings', JSON.stringify(fontSettings));
+    try {
+      localStorage?.setItem?.('fontSettings', JSON.stringify(fontSettings));
+    } catch (error) {
+      console.error('保存字体设置失败:', error);
+    }
   }, [fontSettings]);
 
-  // 模拟获取故事数据
+  // 获取故事数据
   useEffect(() => {
     const fetchStory = async () => {
+      if (!storyId) {
+        setError('无效的故事ID');
+        setLoading(false);
+        return;
+      }
       try {
         setLoading(true);
-        const tcb = await $w.cloud.getCloudInstance();
+        const tcb = await $w?.cloud?.getCloudInstance?.();
+        if (!tcb) {
+          throw new Error('云开发服务不可用');
+        }
         const db = tcb.database();
 
         // 获取故事详情
         const result = await db.collection('red_story').doc(storyId).get();
-        if (result && result.data) {
+        if (result?.data) {
           setStory(result.data);
+
+          // 更新浏览量
+          try {
+            await db.collection('red_story').doc(storyId).update({
+              views: (result.data.views || 0) + 1
+            });
+          } catch (updateError) {
+            console.error('更新浏览量失败:', updateError);
+          }
         } else {
           // 使用模拟数据
           const mockStory = {
             _id: storyId,
-            title: "赛博朋克2077：夜之城的觉醒",
-            author: "银翼杀手",
-            content: `# 第一章：觉醒\n\n在霓虹闪烁的夜之城，**霓虹灯**像毒蛇的眼睛一样注视着每一个过客。\n\n> "这座城市会吃掉你的灵魂，然后吐出你的空壳。"\n\n## 主角介绍\n\n*V*，一个来自荒坂塔的逃亡者，现在正躲在沃森区的某个破旧公寓里。\n\n### 关键物品\n\n- **生物芯片**：包含强尼·银手的数字灵魂\n- **螳螂刀**：荒坂公司最新研发的近战武器\n- **网络接入仓**：连接赛博空间的必备设备\n\n\`\`\`javascript\n// 主角的初始状态\nconst v = {\n  name: "V",\n  streetCred: 0,\n  eddies: 1000,\n  cyberware: ["Kiroshi Optics", "Subdermal Armor"]\n};\n\`\`\`\n\n## 故事开始\n\n夜已深，但夜之城从不睡觉。V站在公寓的窗前，看着外面**永不停息**的车流和全息广告。\n\n> 这是一个关于生存、背叛和救赎的故事。\n\n*你准备好进入夜之城了吗？*\n\n## 第二章：任务\n\nV接到了第一个任务：从**军用科技**的实验室里偷取一份机密文件。\n\n### 任务目标\n\n1. 潜入军用科技大楼\n2. 找到实验室\n3. 下载机密文件\n4. 安全撤离\n\n**注意**：这个任务有多个完成方式，你可以选择：\n\n- **潜行**：使用隐身和黑客技术\n- **战斗**：正面硬刚\n- **谈判**：用口才说服守卫\n\n\`\`\`python\n# 任务状态\nmission_status = {\n    "stealth": True,\n    "combat": False,\n    "negotiation": False\n}\n\`\`\`\n\n## 结局\n\n每个选择都会影响故事的走向。在夜之城，没有绝对的对错，只有生存和死亡。\n\n> "欢迎来到夜之城，别死得太快。"`,
-            category: "科幻",
-            readTime: 15,
-            views: 1234,
-            createdAt: "2024-11-21",
-            tags: ["赛博朋克", "科幻", "冒险"]
+            title: "井冈山革命根据地的建立",
+            author: "党史研究专家",
+            content: `# 井冈山革命根据地的建立\n\n## 历史背景\n\n1927年，大革命失败后，中国共产党开始独立领导武装斗争。毛泽东同志率领秋收起义部队向井冈山进军，开创了中国革命的新道路。\n\n## 重要事件\n\n### 三湾改编\n1927年9月29日，起义部队到达江西永新县三湾村，毛泽东主持了著名的"三湾改编"，确立了党对军队的绝对领导。\n\n### 井冈山会师\n1928年4月，朱德、陈毅率领南昌起义保存下来的部队和湘南起义农军到达井冈山，与毛泽东领导的部队胜利会师。\n\n## 历史意义\n\n井冈山革命根据地的建立，开创了农村包围城市、武装夺取政权的革命道路，为中国革命的胜利奠定了基础。\n\n> "星星之火，可以燎原。" —— 毛泽东`,
+            category: "革命历史",
+            readTime: 8,
+            views: 1567,
+            createdAt: Date.now() - 86400000 * 7,
+            tags: ["井冈山", "革命根据地", "党史"]
           };
           setStory(mockStory);
         }
       } catch (err) {
-        setError(err.message);
+        console.error('加载故事失败:', err);
+        setError(err.message || '加载失败');
         toast({
           title: "加载失败",
-          description: "无法加载故事内容",
+          description: err.message || "无法加载故事内容",
           variant: "destructive"
         });
       } finally {
@@ -137,19 +142,22 @@ export default function DetailPage(props) {
   useEffect(() => {
     const handleScroll = () => {
       if (!contentRef.current) return;
-      const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = Math.min(scrollTop / docHeight * 100, 100);
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const docHeight = Math.max(document.body.scrollHeight, document.body.offsetHeight, document.documentElement.clientHeight, document.documentElement.scrollHeight, document.documentElement.offsetHeight) - window.innerHeight;
+      const progress = docHeight > 0 ? Math.min(scrollTop / docHeight * 100, 100) : 0;
       setReadingProgress(progress);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, {
+      passive: true
+    });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // 手势处理
   useEffect(() => {
     const handleTouchStart = e => {
-      const touch = e.touches[0];
+      const touch = e.touches?.[0];
+      if (!touch) return;
       setGestureState(prev => ({
         ...prev,
         startX: touch.clientX,
@@ -160,7 +168,8 @@ export default function DetailPage(props) {
     };
     const handleTouchMove = e => {
       if (gestureState.isAnimating) return;
-      const touch = e.touches[0];
+      const touch = e.touches?.[0];
+      if (!touch) return;
       const deltaX = touch.clientX - gestureState.startX;
       const deltaY = touch.clientY - gestureState.startY;
 
@@ -204,11 +213,15 @@ export default function DetailPage(props) {
         }));
       }
     };
-    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchstart', handleTouchStart, {
+      passive: true
+    });
     document.addEventListener('touchmove', handleTouchMove, {
       passive: false
     });
-    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('touchend', handleTouchEnd, {
+      passive: true
+    });
     return () => {
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchmove', handleTouchMove);
@@ -219,37 +232,71 @@ export default function DetailPage(props) {
     setIsBookmarked(!isBookmarked);
     toast({
       title: isBookmarked ? "已取消收藏" : "已收藏",
-      description: isBookmarked ? "已从收藏夹移除" : "已添加到收藏夹"
+      description: isBookmarked ? "已从收藏夹移除" : "已添加到收藏夹",
+      variant: "default"
     });
   };
   const handleShare = async () => {
-    if (navigator.share && story) {
+    if (!story) return;
+    const shareData = {
+      title: story.title || '红色故事',
+      text: story.title || '红色故事',
+      url: window.location.href
+    };
+    if (navigator.share && navigator.canShare?.(shareData)) {
       try {
-        await navigator.share({
-          title: story.title,
-          text: story.title,
-          url: window.location.href
-        });
+        await navigator.share(shareData);
       } catch (err) {
-        toast({
-          title: "分享失败",
-          description: "无法分享此内容",
-          variant: "destructive"
-        });
+        if (err.name !== 'AbortError') {
+          toast({
+            title: "分享失败",
+            description: "无法分享此内容",
+            variant: "destructive"
+          });
+        }
       }
     } else {
       // 复制链接
-      navigator.clipboard.writeText(window.location.href);
-      toast({
-        title: "链接已复制",
-        description: "故事链接已复制到剪贴板"
-      });
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({
+          title: "链接已复制",
+          description: "故事链接已复制到剪贴板",
+          variant: "default"
+        });
+      } catch (err) {
+        toast({
+          title: "复制失败",
+          description: "无法复制链接",
+          variant: "destructive"
+        });
+      }
     }
+  };
+  const formatDate = timestamp => {
+    if (!timestamp) return '未知时间';
+    try {
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) return '未知时间';
+      return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return '未知时间';
+    }
+  };
+  const formatReadTime = content => {
+    if (!content) return '5分钟阅读';
+    const wordCount = content?.length || 0;
+    const readTime = Math.max(1, Math.ceil(wordCount / 500));
+    return `${readTime}分钟阅读`;
   };
   if (loading) {
     return <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="animate-pulse">
-          <BookOpen className="w-12 h-12 text-red-500 animate-bounce" />
+        <div className="animate-pulse text-center">
+          <BookOpen className="w-12 h-12 text-red-500 animate-bounce mx-auto" />
           <p className="text-slate-400 mt-4">加载中...</p>
         </div>
       </div>;
@@ -258,22 +305,36 @@ export default function DetailPage(props) {
     return <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 text-xl mb-4">加载失败</p>
+          <p className="text-slate-400 mb-4">{error}</p>
           <Button onClick={() => navigateTo({
           pageId: 'index',
           params: {}
         })} variant="outline">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            返回
+            返回首页
           </Button>
         </div>
       </div>;
   }
-  if (!story) return null;
+  if (!story) {
+    return <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-slate-400 text-xl mb-4">故事不存在</p>
+          <Button onClick={() => navigateTo({
+          pageId: 'index',
+          params: {}
+        })} variant="outline">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            返回首页
+          </Button>
+        </div>
+      </div>;
+  }
   return <div className="min-h-screen bg-slate-900">
       <ReadingProgress progress={readingProgress} />
       
       {/* 侧边栏 */}
-      <Sidebar />
+      <Sidebar currentPage="detail" navigateTo={navigateTo} />
       
       {/* 主内容区 */}
       <div className={cn("transition-all duration-300", isOpen ? "lg:ml-64" : "lg:ml-0")} style={{
@@ -293,7 +354,7 @@ export default function DetailPage(props) {
               </Button>
               <div className="hidden sm:block">
                 <h1 className="text-lg font-bold text-white truncate max-w-xs">
-                  {story.title}
+                  {story.title || '故事详情'}
                 </h1>
               </div>
             </div>
@@ -315,13 +376,13 @@ export default function DetailPage(props) {
           <div className="max-w-4xl mx-auto px-4 py-8">
             <div className="bg-slate-800 rounded-lg p-6 mb-8">
               <h1 className="text-3xl font-bold text-white mb-4">
-                {story.title}
+                {story.title || '无标题'}
               </h1>
               
               <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
                 <div className="flex items-center">
                   <User className="w-4 h-4 mr-1" />
-                  {story.author}
+                  {story.author || '佚名'}
                 </div>
                 <div className="flex items-center">
                   <Calendar className="w-4 h-4 mr-1" />
@@ -329,7 +390,7 @@ export default function DetailPage(props) {
                 </div>
                 <div className="flex items-center">
                   <Clock className="w-4 h-4 mr-1" />
-                  {story.readTime || formatReadTime(story.content)}分钟阅读
+                  {formatReadTime(story.content)}
                 </div>
                 <div className="flex items-center">
                   <Eye className="w-4 h-4 mr-1" />
@@ -338,7 +399,7 @@ export default function DetailPage(props) {
               </div>
 
               <div className="flex flex-wrap gap-2 mt-4">
-                {(story.tags || []).map(tag => <Badge key={tag} variant="secondary" className="bg-slate-700">
+                {(story.tags || []).map((tag, index) => <Badge key={index} variant="secondary" className="bg-slate-700">
                     {tag}
                   </Badge>)}
               </div>
@@ -347,7 +408,7 @@ export default function DetailPage(props) {
             {/* 故事内容 */}
             <FadeIn delay={200}>
               <div ref={contentRef} className="bg-slate-800 rounded-lg p-6">
-                <ContentRenderer content={story.content} fontSettings={fontSettings} />
+                <ContentRenderer content={story.content || '暂无内容'} fontSettings={fontSettings} />
               </div>
             </FadeIn>
 

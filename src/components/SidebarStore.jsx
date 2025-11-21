@@ -1,67 +1,51 @@
 // @ts-ignore;
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { create } from 'zustand';
+// @ts-ignore;
+import { persist } from 'zustand/middleware';
 
-// 创建上下文
-const SidebarContext = createContext({
-  isOpen: false,
-  isCollapsed: false,
-  isDesktop: false,
-  toggleSidebar: () => {},
-  toggleCollapse: () => {},
-  setIsOpen: () => {},
-  setIsCollapsed: () => {}
-});
-
-// 提供器组件
-export const SidebarProvider = ({
-  children
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
-  useEffect(() => {
-    const checkScreenSize = () => {
-      const isDesktopScreen = window.innerWidth >= 768;
-      setIsDesktop(isDesktopScreen);
-      if (isDesktopScreen) {
-        setIsOpen(true);
-        setIsCollapsed(false);
-      } else {
-        setIsOpen(false);
-        setIsCollapsed(false);
+export const useSidebar = create(
+  persist(
+    (set, get) => ({
+      isOpen: false,
+      isCollapsed: false,
+      isDesktop: typeof window !== 'undefined' && window.innerWidth >= 1024,
+      
+      toggleSidebar: () => set((state) => ({ isOpen: !state.isOpen })),
+      openSidebar: () => set({ isOpen: true }),
+      closeSidebar: () => set({ isOpen: false }),
+      
+      collapseSidebar: () => set({ isCollapsed: true }),
+      expandSidebar: () => set({ isCollapsed: false }),
+      
+      setDesktop: (isDesktop) => set({ isDesktop }),
+      
+      // 响应式处理
+      handleResize: () => {
+        if (typeof window === 'undefined') return;
+        
+        const isDesktop = window.innerWidth >= 1024;
+        set({ 
+          isDesktop,
+          isOpen: false, // 窗口大小变化时关闭移动端菜单
+          isCollapsed: isDesktop ? get().isCollapsed : false // 移动端不折叠
+        });
       }
-    };
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
-  const toggleSidebar = () => {
-    setIsOpen(!isOpen);
-  };
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-  };
-  return <SidebarContext.Provider value={{
-    isOpen,
-    isCollapsed,
-    isDesktop,
-    toggleSidebar,
-    toggleCollapse,
-    setIsOpen,
-    setIsCollapsed
-  }}>
-      {children}
-    </SidebarContext.Provider>;
-};
+    }),
+    {
+      name: 'sidebar-storage',
+      partialize: (state) => ({
+        isCollapsed: state.isCollapsed
+      })
+    }
+  )
+);
 
-// Hook 使用
-export const useSidebar = () => {
-  const context = useContext(SidebarContext);
-  if (!context) {
-    throw new Error('useSidebar must be used within SidebarProvider');
-  }
-  return context;
-};
-
-// 默认导出
-export default SidebarContext;
+// 响应式处理
+if (typeof window !== 'undefined') {
+  const handleResize = () => {
+    useSidebar.getState().handleResize();
+  };
+  
+  window.addEventListener('resize', handleResize);
+  handleResize(); // 初始化
+}

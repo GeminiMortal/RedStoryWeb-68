@@ -3,58 +3,118 @@ import React from 'react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
-export const ContentRenderer = ({
-  content,
-  fontSettings
-}) => {
-  // 处理内容格式
-  const processContent = text => {
-    if (!text) return [];
-
-    // 处理换行和段落
-    const paragraphs = text.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 0);
-    return paragraphs.map(paragraph => {
-      let processed = paragraph;
-
-      // 处理标题标记
-      processed = processed.replace(/^### (.*$)/gm, '<h3 class="text-xl font-bold mb-3 text-red-400">$1</h3>');
-      processed = processed.replace(/^## (.*$)/gm, '<h2 class="text-2xl font-bold mb-4 text-red-400">$1</h2>');
-      processed = processed.replace(/^# (.*$)/gm, '<h1 class="text-3xl font-bold mb-6 text-red-400">$1</h1>');
-
-      // 处理粗体
-      processed = processed.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>');
-
-      // 处理斜体
-      processed = processed.replace(/\*(.*?)\*/g, '<em class="italic text-slate-300">$1</em>');
-
-      // 处理引用
-      processed = processed.replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-red-500 pl-4 italic text-slate-400 my-4">$1</blockquote>');
-
-      // 处理列表
-      processed = processed.replace(/^\* (.*$)/gm, '<li class="ml-4 mb-1 text-slate-300">• $1</li>');
-      processed = processed.replace(/^- (.*$)/gm, '<li class="ml-4 mb-1 text-slate-300">• $1</li>');
-      processed = processed.replace(/^(\d+)\. (.*$)/gm, '<li class="ml-4 mb-1 text-slate-300">$1. $2</li>');
-
-      // 处理代码块
-      processed = processed.replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-800 p-4 rounded-lg my-4 overflow-x-auto"><code class="text-sm font-mono text-green-400">$1</code></pre>');
-
-      // 处理行内代码
-      processed = processed.replace(/`([^`]+)`/g, '<code class="bg-slate-700 px-2 py-1 rounded text-sm font-mono text-green-400">$1</code>');
-
-      // 处理链接
-      processed = processed.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-red-400 hover:text-red-300 underline" target="_blank" rel="noopener noreferrer">$1</a>');
-
-      // 处理换行
-      processed = processed.replace(/\n/g, '<br>');
-      return processed;
-    });
+export function ContentRenderer({
+  content = '',
+  fontSettings = {}
+}) {
+  if (!content || typeof content !== 'string') {
+    return <div className="text-slate-400 text-center py-8">
+        <p>暂无内容</p>
+      </div>;
+  }
+  const {
+    size = 'medium',
+    lineHeight = 'relaxed',
+    paragraphSpacing = '6'
+  } = fontSettings || {};
+  const sizeClasses = {
+    small: 'text-sm',
+    medium: 'text-base',
+    large: 'text-lg',
+    xl: 'text-xl'
   };
-  const paragraphs = processContent(content);
-  return <div className={cn("prose prose-invert max-w-none font-serif", fontSettings.size === 'small' && 'text-sm leading-relaxed', fontSettings.size === 'medium' && 'text-base leading-relaxed', fontSettings.size === 'large' && 'text-lg leading-loose')}>
-      {paragraphs.map((paragraph, index) => <div key={index} className={cn("transition-opacity duration-300", fontSettings.size === 'small' && 'mb-4', fontSettings.size === 'medium' && 'mb-5', fontSettings.size === 'large' && 'mb-6')} style={{
-      animationDelay: `${index * 50}ms`
-    }} dangerouslySetInnerHTML={{
-      __html: paragraph
-    }} />)}
+  const lineHeightClasses = {
+    tight: 'leading-tight',
+    normal: 'leading-normal',
+    relaxed: 'leading-relaxed',
+    loose: 'leading-loose'
+  };
+  const spacingClasses = {
+    4: 'space-y-4',
+    6: 'space-y-6',
+    8: 'space-y-8',
+    10: 'space-y-10'
+  };
+
+  // 简单的Markdown解析
+  const renderContent = text => {
+    if (!text) return [];
+    const lines = text.split('\n').filter(line => line.trim());
+    const elements = [];
+    let inList = false;
+    let listItems = [];
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('# ')) {
+        if (inList) {
+          elements.push(<ul key={`list-${index}`} className="list-disc list-inside space-y-2 mb-4">
+              {listItems}
+            </ul>);
+          listItems = [];
+          inList = false;
+        }
+        elements.push(<h1 key={`h1-${index}`} className="text-3xl font-bold text-white mb-4">
+            {trimmedLine.substring(2)}
+          </h1>);
+      } else if (trimmedLine.startsWith('## ')) {
+        if (inList) {
+          elements.push(<ul key={`list-${index}`} className="list-disc list-inside space-y-2 mb-4">
+              {listItems}
+            </ul>);
+          listItems = [];
+          inList = false;
+        }
+        elements.push(<h2 key={`h2-${index}`} className="text-2xl font-bold text-white mb-3">
+            {trimmedLine.substring(3)}
+          </h2>);
+      } else if (trimmedLine.startsWith('### ')) {
+        if (inList) {
+          elements.push(<ul key={`list-${index}`} className="list-disc list-inside space-y-2 mb-4">
+              {listItems}
+            </ul>);
+          listItems = [];
+          inList = false;
+        }
+        elements.push(<h3 key={`h3-${index}`} className="text-xl font-bold text-white mb-2">
+            {trimmedLine.substring(4)}
+          </h3>);
+      } else if (trimmedLine.startsWith('- ')) {
+        inList = true;
+        listItems.push(<li key={`li-${index}`} className="text-slate-300">
+            {trimmedLine.substring(2)}
+          </li>);
+      } else if (trimmedLine.startsWith('> ')) {
+        if (inList) {
+          elements.push(<ul key={`list-${index}`} className="list-disc list-inside space-y-2 mb-4">
+              {listItems}
+            </ul>);
+          listItems = [];
+          inList = false;
+        }
+        elements.push(<blockquote key={`quote-${index}`} className="border-l-4 border-red-500 pl-4 italic text-slate-300 mb-4">
+            {trimmedLine.substring(2)}
+          </blockquote>);
+      } else if (trimmedLine) {
+        if (inList) {
+          elements.push(<ul key={`list-${index}`} className="list-disc list-inside space-y-2 mb-4">
+              {listItems}
+            </ul>);
+          listItems = [];
+          inList = false;
+        }
+        elements.push(<p key={`p-${index}`} className="text-slate-300 mb-4">
+            {trimmedLine}
+          </p>);
+      }
+    });
+    if (inList && listItems.length > 0) {
+      elements.push(<ul key="final-list" className="list-disc list-inside space-y-2 mb-4">
+          {listItems}
+        </ul>);
+    }
+    return elements;
+  };
+  return <div className={cn("prose prose-invert max-w-none", sizeClasses[size] || sizeClasses.medium, lineHeightClasses[lineHeight] || lineHeightClasses.relaxed, spacingClasses[paragraphSpacing] || spacingClasses[6])}>
+      {renderContent(content)}
     </div>;
-};
+}
