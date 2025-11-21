@@ -78,7 +78,7 @@ export default function HomePage(props) {
       {/* 英雄区域 */}
       <header className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-red-600/10 via-orange-600/10 to-transparent"></div>
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width=%2240%22%20height=%2240%22%20viewBox=%220%200%2040%2040%22%20xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg%20fill=%22%239C92AC%22%20fill-opacity=%220.03%22%3E%3Cpath%20d=%22M0%2040L40%200H20L0%2020M40%2040V20L20%2040%22/%3E%3C/g%3E%3C/svg%3E')]"></div>
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width=%2740%27%20height=%2740%27%20viewBox=%270%200%2040%2040%27%20xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cg%20fill=%27%239C92AC%27%20fill-opacity=%270.03%27%3E%3Cpath%20d=%27M0%2040L40%200H20L0%2020M40%2040V20L20%2040%27/%3E%3C/g%3E%3C/svg%3E')]"></div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
           <div className="text-center">
@@ -156,11 +156,11 @@ export default function HomePage(props) {
                         </span>}
                     </div>
                     <Button variant="ghost" size="sm" onClick={() => navigateTo({
-                    pageId: 'detail',
-                    params: {
-                      id: featuredStory._id
-                    }
-                  })} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20">
+                  pageId: 'detail',
+                  params: {
+                    id: featuredStory._id
+                  }
+                })} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20">
                       <Eye className="w-4 h-4 mr-1" />
                       阅读全文
                     </Button>
@@ -182,9 +182,9 @@ export default function HomePage(props) {
               {searchTerm || filterTag ? '尝试调整搜索条件或标签' : '开始创建您的第一个红色故事，让历史在新时代焕发光芒'}
             </p>
             {!searchTerm && !filterTag && <Button onClick={() => navigateTo({
-            pageId: 'upload',
-            params: {}
-          })} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105">
+          pageId: 'upload',
+          params: {}
+        })} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105">
                 <Plus className="w-5 h-5 mr-2" />
                 创建第一个故事
               </Button>}
@@ -193,24 +193,26 @@ export default function HomePage(props) {
                 <h2 className="text-xl font-bold text-white mb-2">
                   搜索结果 ({filteredStories.length}个故事)
                 </h2>
-                {(searchTerm || filterTag) && <div className="flex flex-wrap gap-2">
-                    {searchTerm && <Badge variant="outline" className="border-red-500/50 text-red-400 bg-red-500/10">
-                        搜索: {searchTerm}
-                        <button onClick={() => setSearchTerm('')} className="ml-2 text-red-400 hover:text-red-300">×</button>
-                      </Badge>}
-                    {filterTag && <Badge variant="outline" className="border-orange-500/50 text-orange-400 bg-orange-500/10">
-                        标签: {filterTag}
-                        <button onClick={() => setFilterTag('')} className="ml-2 text-orange-400 hover:text-orange-300">×</button>
-                      </Badge>}
-                  </div>}
+                <div className="flex flex-wrap gap-2">
+                  {searchTerm && <Badge variant="outline" className="border-red-500/50 text-red-400 bg-red-500/10">
+                      搜索: {searchTerm}
+                      <button onClick={() => setSearchTerm('')} className="ml-2 text-red-400 hover:text-red-300">×</button>
+                    </Badge>}
+                  {filterTag && <Badge variant="outline" className="border-orange-500/50 text-orange-400 bg-orange-500/10">
+                      标签: {filterTag}
+                      <button onClick={() => setFilterTag('')} className="ml-2 text-orange-400 hover:text-orange-300">×</button>
+                    </Badge>}
+                </div>
               </div>}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredStories.map((story, index) => <div key={story._id} className="group animate-fade-in" style={{
-              animationDelay: `${index * 100}ms`
-            }}>
+            animationDelay: `${index * 100}ms`
+          }}>
                   <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl hover:shadow-red-500/10 hover:border-red-500/50 transition-all duration-300 transform hover:-translate-y-2 hover:scale-[1.02]">
                     {story.image && <div className="aspect-video overflow-hidden relative">
-                        <img src={story.image} alt={story.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                        <img src={story.image} alt={story.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onError={e => {
+                  e.target.style.display = 'none';
+                }} />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       </div>}
                     <CardHeader className="p-5">
@@ -241,11 +243,11 @@ export default function HomePage(props) {
                           </span>
                         </div>
                         <Button variant="ghost" size="sm" onClick={() => navigateTo({
-                        pageId: 'detail',
-                        params: {
-                          id: story._id
-                        }
-                      })} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200">
+                    pageId: 'detail',
+                    params: {
+                      id: story._id
+                    }
+                  })} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200">
                           <Eye className="w-4 h-4" />
                         </Button>
                       </div>
@@ -253,7 +255,7 @@ export default function HomePage(props) {
                   </Card>
                 </div>)}
             </div>
-          </div>}
+          </>}
       </main>
 
       <MobileBottomNav currentPage="index" navigateTo={navigateTo} />
