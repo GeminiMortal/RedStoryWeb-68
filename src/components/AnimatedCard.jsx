@@ -1,26 +1,19 @@
 // @ts-ignore;
 import React from 'react';
-// @ts-ignore;
-import { cn } from '@/lib/utils';
 
-// 动画卡片组件 - 修复重复定义问题
-export const AnimatedCard = ({
+export function AnimatedCard({
   children,
-  delay = 0,
-  className,
-  ...props
-}) => {
-  const [isVisible, setIsVisible] = React.useState(false);
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-  return <div className={cn("transition-all duration-700 ease-out", isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4", className)} {...props}>
+  delay = 0
+}) {
+  return <div style={{
+    opacity: 0,
+    transform: 'translateY(20px)',
+    transition: 'opacity 0.5s ease, transform 0.5s ease',
+    transitionDelay: `${delay * 0.1}s`
+  }} onAnimationEnd={e => {
+    e.currentTarget.style.opacity = 1;
+    e.currentTarget.style.transform = 'translateY(0)';
+  }} className="transform transition-all duration-300 hover:scale-105">
       {children}
     </div>;
-};
-
-// 确保只导出一次
-export default AnimatedCard;
+}
