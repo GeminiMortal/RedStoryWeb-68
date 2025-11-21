@@ -169,7 +169,7 @@ export default function HomePage(props) {
           </div>
         </header>
 
-        {/* 英雄区域 - 添加动画 */}
+        {/* 英雄区域 */}
         <header className="relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-red-600/10 via-orange-600/10 to-transparent"></div>
           <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width=%2740%27%20height=%2740%27%20viewBox=%270%200%2040%2040%27%20xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cg%20fill=%27%239C92AC%27%20fill-opacity=%270.03%27%3E%3Cpath%20d=%27M0%2040L40%200H20L0%2020M40%2040V20L20%2040%27/%3E%3C/g%3E%3C/svg%3E')]"></div>
@@ -188,7 +188,7 @@ export default function HomePage(props) {
           </div>
         </header>
 
-        {/* 轮播区域 - 使用优化后的 StoryCarousel */}
+        {/* 轮播区域 */}
         {!loading && stories.length > 0 && <FadeIn delay={300}>
             <StoryCarousel stories={stories} onNavigate={navigateTo} />
           </FadeIn>}
