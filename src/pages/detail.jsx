@@ -3,14 +3,17 @@ import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore;
 import { Button, Badge, useToast } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Clock, User, Calendar, Eye, Share2, Bookmark, BookOpen, Text } from 'lucide-react';
+import { ArrowLeft, Clock, User, Calendar, Eye, Share2, Bookmark, BookOpen } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
-// @ts-ignore;
 import { Sidebar } from '@/components/Sidebar';
-// @ts-ignore;
 import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { useSidebar } from '@/components/SidebarStore';
+import { FadeIn, AnimatedCard } from '@/components/AnimationProvider';
+import { ContentRenderer } from '@/components/ContentRenderer';
+import { ReadingProgress } from '@/components/ReadingProgress';
+import { FontSettings } from '@/components/FontSettings';
 export default function DetailPage(props) {
   const {
     $w
@@ -33,471 +36,274 @@ export default function DetailPage(props) {
     translateX: 0,
     isSwiping: false,
     isAnimating: false,
-    showHint: false
+    showHint: false,
+    velocity: 0,
+    opacity: 1
   });
-  const gestureRef = useRef(null);
-  const contentRef = useRef(null);
   const {
     toast
   } = useToast();
-  const navigateTo = $w.utils.navigateTo;
-  const navigateBack = $w.utils.navigateBack;
+  const contentRef = useRef(null);
+  const {
+    isOpen
+  } = useSidebar();
 
-  // 字体样式映射
-  const fontStyleMap = {
-    small: {
-      fontSize: 'text-sm',
-      lineHeight: 'leading-relaxed',
-      paragraphSpacing: 'mb-4',
-      letterSpacing: 'tracking-normal'
-    },
-    medium: {
-      fontSize: 'text-base',
-      lineHeight: 'leading-relaxed',
-      paragraphSpacing: 'mb-5',
-      letterSpacing: 'tracking-normal'
-    },
-    large: {
-      fontSize: 'text-lg',
-      lineHeight: 'leading-loose',
-      paragraphSpacing: 'mb-6',
-      letterSpacing: 'tracking-wide'
-    }
-  };
+  // 获取故事ID
+  const storyId = props.page.dataset.params?.id || '1';
 
-  // 从 localStorage 加载字体设置
+  // 模拟获取故事数据
   useEffect(() => {
-    const savedSettings = localStorage.getItem('detailFontSettings');
-    if (savedSettings) {
+    const fetchStory = async () => {
       try {
-        setFontSettings(JSON.parse(savedSettings));
-      } catch (e) {
-        console.error('加载字体设置失败:', e);
+        setLoading(true);
+        // 模拟API调用
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const mockStory = {
+          id: storyId,
+          title: "赛博朋克2077：夜之城的觉醒",
+          author: "银翼杀手",
+          content: `# 第一章：觉醒\n\n在霓虹闪烁的夜之城，**霓虹灯**像毒蛇的眼睛一样注视着每一个过客。\n\n> "这座城市会吃掉你的灵魂，然后吐出你的空壳。"\n\n## 主角介绍\n\n*V*，一个来自荒坂塔的逃亡者，现在正躲在沃森区的某个破旧公寓里。\n\n### 关键物品\n\n- **生物芯片**：包含强尼·银手的数字灵魂\n- **螳螂刀**：荒坂公司最新研发的近战武器\n- **网络接入仓**：连接赛博空间的必备设备\n\n\`\`\`javascript\n// 主角的初始状态\nconst v = {\n  name: "V",\n  streetCred: 0,\n  eddies: 1000,\n  cyberware: ["Kiroshi Optics", "Subdermal Armor"]\n};\n\`\`\`\n\n## 故事开始\n\n夜已深，但夜之城从不睡觉。V站在公寓的窗前，看着外面**永不停息**的车流和全息广告。\n\n> 这是一个关于生存、背叛和救赎的故事。\n\n*你准备好进入夜之城了吗？*\n\n## 第二章：任务\n\nV接到了第一个任务：从**军用科技**的实验室里偷取一份机密文件。\n\n### 任务目标\n\n1. 潜入军用科技大楼\n2. 找到实验室\n3. 下载机密文件\n4. 安全撤离\n\n**注意**：这个任务有多个完成方式，你可以选择：\n\n- **潜行**：使用隐身和黑客技术\n- **战斗**：正面硬刚\n- **谈判**：用口才说服守卫\n\n\`\`\`python\n# 任务状态\nmission_status = {\n    "stealth": True,\n    "combat": False,\n    "negotiation": False\n}\n\`\`\`\n\n## 结局\n\n每个选择都会影响故事的走向。在夜之城，没有绝对的对错，只有生存和死亡。\n\n> "欢迎来到夜之城，别死得太快。"`,
+          category: "科幻",
+          readTime: 15,
+          views: 1234,
+          publishDate: "2024-11-21",
+          tags: ["赛博朋克", "科幻", "冒险"]
+        };
+        setStory(mockStory);
+      } catch (err) {
+        setError(err.message);
+        toast({
+          title: "加载失败",
+          description: "无法加载故事内容",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
       }
-    }
-  }, []);
+    };
+    fetchStory();
+  }, [storyId, toast]);
 
-  // 从URL参数获取故事ID
-  const storyId = props.$w.page.dataset.params?.id;
-  useEffect(() => {
-    if (storyId) {
-      loadStory();
-      checkBookmarkStatus();
-    }
-  }, [storyId]);
-
-  // 监听滚动事件计算阅读进度
+  // 监听滚动更新阅读进度
   useEffect(() => {
     const handleScroll = () => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-      const progress = Math.min(scrollTop / scrollHeight * 100, 100);
+      if (!contentRef.current) return;
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = Math.min(scrollTop / docHeight * 100, 100);
       setReadingProgress(progress);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 手势处理 - 添加动画效果
-  const handleTouchStart = e => {
-    const touch = e.touches[0];
-    setGestureState(prev => ({
-      ...prev,
-      startX: touch.clientX,
-      startY: touch.clientY,
-      currentX: touch.clientX,
-      currentY: touch.clientY,
-      translateX: 0,
-      isSwiping: false,
-      isAnimating: false,
-      showHint: false
-    }));
-  };
-  const handleTouchMove = e => {
-    if (e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - gestureState.startX;
-    const deltaY = touch.clientY - gestureState.startY;
-
-    // 计算角度（弧度转角度）
-    const angle = Math.abs(Math.atan2(deltaY, deltaX) * 180 / Math.PI);
-
-    // 检查是否为水平滑动
-    const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY) * 2;
-    if (isHorizontalSwipe && deltaX < 0) {
-      // 限制最大滑动距离
-      const maxTranslate = Math.min(Math.abs(deltaX), 100);
+  // 手势处理
+  useEffect(() => {
+    const handleTouchStart = e => {
+      const touch = e.touches[0];
       setGestureState(prev => ({
         ...prev,
-        currentX: touch.clientX,
-        currentY: touch.clientY,
-        translateX: -maxTranslate,
-        isSwiping: true,
-        showHint: Math.abs(deltaX) > 30
+        startX: touch.clientX,
+        startY: touch.clientY,
+        isSwiping: false,
+        isAnimating: false
       }));
+    };
+    const handleTouchMove = e => {
+      if (gestureState.isAnimating) return;
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - gestureState.startX;
+      const deltaY = touch.clientY - gestureState.startY;
 
-      // 防止页面滚动
-      e.preventDefault();
-    }
-  };
-  const handleTouchEnd = e => {
-    const deltaX = gestureState.currentX - gestureState.startX;
-    const deltaY = gestureState.currentY - gestureState.startY;
-    const angle = Math.abs(Math.atan2(deltaY, deltaX) * 180 / Math.PI);
-
-    // 触发返回条件：左滑距离 > 60px 且角度 < 30°
-    if (deltaX < -60 && angle < 30) {
-      // 开始返回动画
-      setGestureState(prev => ({
-        ...prev,
-        translateX: -window.innerWidth,
-        isAnimating: true
-      }));
-
-      // 延迟执行返回操作，等待动画完成
-      setTimeout(() => {
-        navigateBack();
-      }, 300);
-    } else {
-      // 回弹动画
-      setGestureState(prev => ({
-        ...prev,
-        translateX: 0,
-        isAnimating: true
-      }));
-
-      // 重置状态
-      setTimeout(() => {
-        setGestureState({
-          startX: 0,
-          startY: 0,
-          currentX: 0,
-          currentY: 0,
-          translateX: 0,
-          isSwiping: false,
-          isAnimating: false,
-          showHint: false
-        });
-      }, 300);
-    }
-  };
-  const loadStory = async () => {
-    try {
-      setLoading(true);
-      const tcb = await $w.cloud.getCloudInstance();
-      const db = tcb.database();
-      const result = await db.collection('red_story').doc(storyId).get();
-      if (result && result.data) {
-        setStory(result.data);
-        // 增加阅读次数
-        await db.collection('red_story').doc(storyId).update({
-          views: (result.data.views || 0) + 1
-        });
-      } else {
-        setError('故事不存在');
+      // 检查是否为水平滑动
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+        e.preventDefault();
+        const translateX = Math.max(-100, Math.min(100, deltaX));
+        const opacity = Math.max(0.3, 1 - Math.abs(deltaX) / 500);
+        setGestureState(prev => ({
+          ...prev,
+          currentX: touch.clientX,
+          currentY: touch.clientY,
+          translateX,
+          opacity,
+          isSwiping: true,
+          showHint: Math.abs(deltaX) > 100
+        }));
       }
-    } catch (err) {
-      console.error('加载故事失败:', err);
-      setError('加载失败，请稍后重试');
-      toast({
-        title: '加载失败',
-        description: '无法加载故事内容',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
+    };
+    const handleTouchEnd = () => {
+      if (!gestureState.isSwiping || gestureState.isAnimating) return;
+      setGestureState(prev => ({
+        ...prev,
+        isAnimating: true
+      }));
+      if (Math.abs(gestureState.translateX) > 150) {
+        // 触发返回
+        $w.utils.navigateBack();
+      } else {
+        // 重置位置
+        setGestureState(prev => ({
+          ...prev,
+          translateX: 0,
+          opacity: 1,
+          isSwiping: false,
+          showHint: false,
+          isAnimating: false
+        }));
+      }
+    };
+    document.addEventListener('touchstart', handleTouchStart);
+    document.addEventListener('touchmove', handleTouchMove, {
+      passive: false
+    });
+    document.addEventListener('touchend', handleTouchEnd);
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [gestureState, $w.utils]);
+  const handleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+    toast({
+      title: isBookmarked ? "已取消收藏" : "已收藏",
+      description: isBookmarked ? "已从收藏夹移除" : "已添加到收藏夹"
+    });
   };
-  const checkBookmarkStatus = () => {
-    const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-    setIsBookmarked(bookmarks.includes(storyId));
-  };
-  const toggleBookmark = () => {
-    const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
-    if (isBookmarked) {
-      const newBookmarks = bookmarks.filter(id => id !== storyId);
-      localStorage.setItem('bookmarks', JSON.stringify(newBookmarks));
-      setIsBookmarked(false);
-      toast({
-        title: '已取消收藏',
-        description: '故事已从收藏夹移除'
-      });
-    } else {
-      bookmarks.push(storyId);
-      localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
-      setIsBookmarked(true);
-      toast({
-        title: '收藏成功',
-        description: '故事已添加到收藏夹'
-      });
-    }
-  };
-  const shareStory = async () => {
-    if (navigator.share) {
+  const handleShare = async () => {
+    if (navigator.share && story) {
       try {
         await navigator.share({
-          title: story?.title || '红色故事',
-          text: story?.content?.substring(0, 100) + '...',
+          title: story.title,
+          text: story.title,
           url: window.location.href
         });
       } catch (err) {
-        console.log('分享取消');
+        toast({
+          title: "分享失败",
+          description: "无法分享此内容",
+          variant: "destructive"
+        });
       }
     } else {
-      // 复制链接到剪贴板
+      // 复制链接
       navigator.clipboard.writeText(window.location.href);
       toast({
-        title: '链接已复制',
-        description: '故事链接已复制到剪贴板'
+        title: "链接已复制",
+        description: "故事链接已复制到剪贴板"
       });
     }
   };
-  const changeFontSettings = size => {
-    const newSettings = {
-      ...fontSettings,
-      size,
-      lineHeight: size === 'large' ? 'leading-loose' : 'leading-relaxed',
-      paragraphSpacing: size === 'small' ? 'mb-4' : size === 'medium' ? 'mb-5' : 'mb-6'
-    };
-    setFontSettings(newSettings);
-    localStorage.setItem('detailFontSettings', JSON.stringify(newSettings));
-    toast({
-      title: '阅读设置已更新',
-      description: `字体大小：${size === 'small' ? '小' : size === 'medium' ? '中' : '大'}，行高已同步调整`,
-      duration: 2000
-    });
-  };
-  const formatDate = timestamp => {
-    if (!timestamp) return '未知时间';
-    return new Date(timestamp).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-  const formatReadTime = content => {
-    if (!content) return '5分钟阅读';
-    const wordCount = content.length;
-    const readTime = Math.ceil(wordCount / 500);
-    return `${readTime}分钟阅读`;
-  };
   if (loading) {
-    return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-        <Sidebar currentPage="index" navigateTo={navigateTo} />
-        <main className="transition-all duration-300 ease-in-out md:ml-16 lg:ml-64">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="animate-pulse">
-              <div className="h-8 bg-slate-700 rounded w-1/3 mb-4"></div>
-              <div className="h-64 bg-slate-700 rounded mb-6"></div>
-              <div className="space-y-3">
-                <div className="h-4 bg-slate-700 rounded"></div>
-                <div className="h-4 bg-slate-700 rounded w-5/6"></div>
-                <div className="h-4 bg-slate-700 rounded w-4/6"></div>
-              </div>
-            </div>
-          </div>
-        </main>
+    return <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="animate-pulse">
+          <BookOpen className="w-12 h-12 text-red-500 animate-bounce" />
+          <p className="text-slate-400 mt-4">加载中...</p>
+        </div>
       </div>;
   }
-  if (error || !story) {
-    return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-        <Sidebar currentPage="index" navigateTo={navigateTo} />
-        <main className="transition-all duration-300 ease-in-out md:ml-16 lg:ml-64">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="text-center py-16">
-              <BookOpen className="w-24 h-24 text-slate-600 mx-auto mb-6" />
-              <h2 className="text-2xl font-bold text-slate-400 mb-4">{error || '故事不存在'}</h2>
-              <Button onClick={navigateBack} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                返回首页
+  if (error) {
+    return <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 text-xl mb-4">加载失败</p>
+          <Button onClick={() => $w.utils.navigateBack()} variant="outline">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            返回
+          </Button>
+        </div>
+      </div>;
+  }
+  if (!story) return null;
+  return <div className="min-h-screen bg-slate-900">
+      <ReadingProgress progress={readingProgress} />
+      
+      {/* 侧边栏 */}
+      <Sidebar />
+      
+      {/* 主内容区 */}
+      <div className={cn("transition-all duration-300", isOpen ? "lg:ml-64" : "lg:ml-0")} style={{
+      transform: `translateX(${gestureState.translateX}px)`,
+      opacity: gestureState.opacity,
+      transition: gestureState.isAnimating ? 'transform 0.3s ease-out, opacity 0.3s ease-out' : 'none'
+    }}>
+        {/* 顶部导航 */}
+        <div className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-sm border-b border-slate-800">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" size="sm" onClick={() => $w.utils.navigateBack()} className="hover:bg-slate-800">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-bold text-white truncate max-w-xs">
+                  {story.title}
+                </h1>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <FontSettings fontSettings={fontSettings} onSettingsChange={setFontSettings} />
+              <Button variant="ghost" size="sm" onClick={handleBookmark} className={cn("hover:bg-slate-800", isBookmarked && "text-red-500")}>
+                <Bookmark className={cn("w-4 h-4", isBookmarked && "fill-current")} />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleShare} className="hover:bg-slate-800">
+                <Share2 className="w-4 h-4" />
               </Button>
             </div>
           </div>
-        </main>
-      </div>;
-  }
-  return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-      {/* 阅读进度条 */}
-      <div className="fixed top-0 left-0 w-full h-1 bg-slate-700 z-50">
-        <div className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-300" style={{
-        width: `${readingProgress}%`
-      }} />
-      </div>
-
-      {/* 手势返回遮罩层 */}
-      {gestureState.isSwiping && gestureState.translateX < 0 && <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity duration-300 md:hidden" style={{
-      opacity: Math.min(Math.abs(gestureState.translateX) / 100, 0.5)
-    }} />}
-
-      {/* 手势返回提示 */}
-      {gestureState.showHint && <div className="fixed top-1/2 left-4 transform -translate-y-1/2 z-50 bg-slate-800/90 backdrop-blur-sm text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 md:hidden">
-          <div className="flex items-center space-x-2">
-            <ArrowLeft className="w-5 h-5 animate-pulse" />
-            <span className="text-sm">左滑返回</span>
-          </div>
-        </div>}
-
-      <Sidebar currentPage="index" navigateTo={navigateTo} />
-
-      {/* 移动端返回按钮 */}
-      <div className="md:hidden sticky top-0 bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 px-4 py-3 flex items-center justify-between z-40">
-        <Button onClick={navigateBack} variant="ghost" size="sm" className="text-slate-300 hover:text-white">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          返回
-        </Button>
-        <div className="flex items-center space-x-2">
-          <Button onClick={toggleBookmark} variant="ghost" size="sm" className={isBookmarked ? 'text-red-500' : 'text-slate-400'}>
-            <Bookmark className="w-4 h-4" fill={isBookmarked ? 'currentColor' : 'none'} />
-          </Button>
-          <Button onClick={shareStory} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-            <Share2 className="w-4 h-4" />
-          </Button>
         </div>
-      </div>
 
-      {/* 文章头部 */}
-      <header className="relative overflow-hidden">
-        {story.image && <div className="relative h-64 md:h-96 overflow-hidden">
-            <img src={story.image} alt={story.title} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent"></div>
-          </div>}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10">
-          <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-2xl">
-            <div className="flex items-center space-x-2 text-sm text-slate-400 mb-4">
-              <Calendar className="w-4 h-4" />
-              <span>{formatDate(story.createdAt)}</span>
-              <span>•</span>
-              <Clock className="w-4 h-4" />
-              <span>{formatReadTime(story.content)}</span>
-              <span>•</span>
-              <Eye className="w-4 h-4" />
-              <span>{story.views || 0}次阅读</span>
-            </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
-              {story.title}
-            </h1>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <User className="w-5 h-5 text-slate-400" />
-                <span className="text-slate-300">{story.author || '佚名'}</span>
-              </div>
-              {story.tags && story.tags.length > 0 && <div className="flex items-center space-x-2">
-                  {story.tags.map((tag, index) => <Badge key={index} variant="outline" className="border-red-500/30 text-red-400 text-sm bg-red-500/10">
+        {/* 故事信息卡片 */}
+        <FadeIn>
+          <div className="max-w-4xl mx-auto px-4 py-8">
+            <AnimatedCard>
+              <div className="bg-slate-800 rounded-lg p-6 mb-8">
+                <h1 className="text-3xl font-bold text-white mb-4">
+                  {story.title}
+                </h1>
+                
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
+                  <div className="flex items-center">
+                    <User className="w-4 h-4 mr-1" />
+                    {story.author}
+                  </div>
+                  <div className="flex items-center">
+                    <Calendar className="w-4 h-4 mr-1" />
+                    {story.publishDate}
+                  </div>
+                  <div className="flex items-center">
+                    <Clock className="w-4 h-4 mr-1" />
+                    {story.readTime}分钟阅读
+                  </div>
+                  <div className="flex items-center">
+                    <Eye className="w-4 h-4 mr-1" />
+                    {story.views}次浏览
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {story.tags.map(tag => <Badge key={tag} variant="secondary" className="bg-slate-700">
                       {tag}
                     </Badge>)}
-                </div>}
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* 字体大小调节工具栏 */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 flex items-center justify-between border border-slate-700/50">
-          <div className="flex items-center space-x-2">
-            <Text className="w-4 h-4 text-slate-400" />
-            <span className="text-sm text-slate-300">阅读设置</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button onClick={() => changeFontSettings('small')} variant={fontSettings.size === 'small' ? 'default' : 'ghost'} size="sm" className={cn("px-3 py-1", fontSettings.size === 'small' && "bg-red-500 hover:bg-red-600")}>
-              小
-            </Button>
-            <Button onClick={() => changeFontSettings('medium')} variant={fontSettings.size === 'medium' ? 'default' : 'ghost'} size="sm" className={cn("px-3 py-1", fontSettings.size === 'medium' && "bg-red-500 hover:bg-red-600")}>
-              中
-            </Button>
-            <Button onClick={() => changeFontSettings('large')} variant={fontSettings.size === 'large' ? 'default' : 'ghost'} size="sm" className={cn("px-3 py-1", fontSettings.size === 'large' && "bg-red-500 hover:bg-red-600")}>
-              大
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* 文章内容 - 添加手势动画效果 */}
-      <div className="relative overflow-hidden md:hidden">
-        <div ref={contentRef} className="transition-transform duration-300 ease-out" style={{
-        transform: `translateX(${gestureState.translateX}px)`,
-        transition: gestureState.isAnimating ? 'transform 0.3s ease-out' : 'none'
-      }}>
-          <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
-            <div className="prose prose-invert prose-lg max-w-none">
-              <div className={cn("text-slate-300 whitespace-pre-wrap font-serif transition-all duration-300", fontStyleMap[fontSettings.size].fontSize, fontStyleMap[fontSettings.size].lineHeight, fontStyleMap[fontSettings.size].letterSpacing)}>
-                {story.content.split('\n\n').map((paragraph, index) => <p key={index} className={cn("text-justify", fontStyleMap[fontSettings.size].paragraphSpacing)}>
-                    {paragraph}
-                  </p>)}
-              </div>
-            </div>
-
-            {/* 文章底部操作栏 */}
-            <div className="mt-12 pt-8 border-t border-slate-700">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <Button onClick={toggleBookmark} variant="outline" className={isBookmarked ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-slate-600 text-slate-300 hover:bg-slate-700'}>
-                    <Bookmark className="w-4 h-4 mr-2" fill={isBookmarked ? 'currentColor' : 'none'} />
-                    {isBookmarked ? '已收藏' : '收藏'}
-                  </Button>
-                  <Button onClick={shareStory} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
-                    <Share2 className="w-4 h-4 mr-2" />
-                    分享
-                  </Button>
                 </div>
-                <Button onClick={navigateBack} variant="ghost" className="text-slate-400 hover:text-white">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  返回列表
-                </Button>
               </div>
-            </div>
-          </article>
-        </div>
-      </div>
+            </AnimatedCard>
 
-      {/* 桌面端内容 - 无手势动画 */}
-      <div className="hidden md:block">
-        <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="prose prose-invert prose-lg max-w-none">
-            <div className={cn("text-slate-300 whitespace-pre-wrap font-serif transition-all duration-300", fontStyleMap[fontSettings.size].fontSize, fontStyleMap[fontSettings.size].lineHeight, fontStyleMap[fontSettings.size].letterSpacing)}>
-              {story.content.split('\n\n').map((paragraph, index) => <p key={index} className={cn("text-justify", fontStyleMap[fontSettings.size].paragraphSpacing)}>
-                  {paragraph}
-                </p>)}
-            </div>
-          </div>
-
-          {/* 文章底部操作栏 */}
-          <div className="mt-12 pt-8 border-t border-slate-700">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <Button onClick={toggleBookmark} variant="outline" className={isBookmarked ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-slate-600 text-slate-300 hover:bg-slate-700'}>
-                  <Bookmark className="w-4 h-4 mr-2" fill={isBookmarked ? 'currentColor' : 'none'} />
-                  {isBookmarked ? '已收藏' : '收藏'}
-                </Button>
-                <Button onClick={shareStory} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
-                  <Share2 className="w-4 h-4 mr-2" />
-                  分享
-                </Button>
+            {/* 故事内容 */}
+            <AnimatedCard delay={200}>
+              <div ref={contentRef} className="bg-slate-800 rounded-lg p-6">
+                <ContentRenderer content={story.content} fontSettings={fontSettings} />
               </div>
-              <Button onClick={navigateBack} variant="ghost" className="text-slate-400 hover:text-white">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                返回列表
-              </Button>
-            </div>
+            </AnimatedCard>
+
+            {/* 手势提示 */}
+            {gestureState.showHint && <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-slate-700 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+                滑动返回
+              </div>}
           </div>
-        </article>
+        </FadeIn>
       </div>
 
-      {/* 桌面端底部操作栏 */}
-      <div className="hidden md:block fixed bottom-8 right-8 space-y-2">
-        <Button onClick={toggleBookmark} size="icon" className={isBookmarked ? 'bg-red-500 hover:bg-red-600' : 'bg-slate-700 hover:bg-slate-600'}>
-          <Bookmark className="w-4 h-4" fill={isBookmarked ? 'currentColor' : 'none'} />
-        </Button>
-        <Button onClick={shareStory} size="icon" className="bg-slate-700 hover:bg-slate-600">
-          <Share2 className="w-4 h-4" />
-        </Button>
-        <Button onClick={navigateBack} size="icon" className="bg-slate-700 hover:bg-slate-600">
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-      </div>
-
-      <MobileBottomNav currentPage="detail" navigateTo={navigateTo} />
+      {/* 移动端底部导航 */}
+      <MobileBottomNav />
     </div>;
 }

@@ -1,156 +1,167 @@
 // @ts-ignore;
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore;
-import { Button } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button } from '@/components/ui';
 // @ts-ignore;
-import { ChevronLeft, ChevronRight, Eye, Circle, Pause, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
+// @ts-ignore;
+import { FadeIn, AnimatedCard } from '@/components/AnimationProvider';
 export function StoryCarousel({
   stories,
   onNavigate
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isAutoPlay, setIsAutoPlay] = useState(true);
-  const [isHovered, setIsHovered] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [direction, setDirection] = useState('right');
   const intervalRef = useRef(null);
+  const touchStartRef = useRef(null);
+  const touchEndRef = useRef(null);
 
-  // 过滤有图片的故事作为轮播项
-  const carouselStories = stories.filter(story => story.image).slice(0, 5);
-  if (carouselStories.length === 0) return null;
+  // 自动轮播
+  useEffect(() => {
+    if (stories.length > 1) {
+      intervalRef.current = setInterval(() => {
+        handleNext();
+      }, 5000);
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+      };
+    }
+  }, [stories.length, currentIndex]);
 
-  // 清除自动播放定时器
-  const clearAutoPlay = () => {
+  // 处理下一张
+  const handleNext = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setDirection('right');
+    setTimeout(() => {
+      setCurrentIndex(prev => (prev + 1) % stories.length);
+      setIsTransitioning(false);
+    }, 300);
+  };
+
+  // 处理上一张
+  const handlePrev = () => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setDirection('left');
+    setTimeout(() => {
+      setCurrentIndex(prev => (prev - 1 + stories.length) % stories.length);
+      setIsTransitioning(false);
+    }, 300);
+  };
+
+  // 处理点击指示器
+  const handleIndicatorClick = index => {
+    if (isTransitioning || index === currentIndex) return;
+    setDirection(index > currentIndex ? 'right' : 'left');
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentIndex(index);
+      setIsTransitioning(false);
+    }, 300);
+  };
+
+  // 触摸处理
+  const handleTouchStart = e => {
+    touchStartRef.current = e.touches[0].clientX;
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
-      intervalRef.current = null;
     }
   };
-
-  // 设置自动播放
-  const startAutoPlay = () => {
-    clearAutoPlay();
-    if (isAutoPlay && !isHovered) {
-      intervalRef.current = setInterval(() => {
-        setCurrentIndex(prev => (prev + 1) % carouselStories.length);
-      }, 5000);
+  const handleTouchMove = e => {
+    touchEndRef.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = () => {
+    if (!touchStartRef.current || !touchEndRef.current) return;
+    const deltaX = touchEndRef.current - touchStartRef.current;
+    if (Math.abs(deltaX) > 50) {
+      if (deltaX > 0) {
+        handlePrev();
+      } else {
+        handleNext();
+      }
     }
+    touchStartRef.current = null;
+    touchEndRef.current = null;
   };
 
-  // 自动播放控制
-  useEffect(() => {
-    startAutoPlay();
-    return () => clearAutoPlay();
-  }, [isAutoPlay, isHovered, carouselStories.length]);
-
-  // 切换轮播
-  const goToPrevious = useCallback(() => {
-    clearAutoPlay();
-    setCurrentIndex(prev => (prev - 1 + carouselStories.length) % carouselStories.length);
-    // 手动操作后延迟恢复自动播放
-    setTimeout(startAutoPlay, 3000);
-  }, [carouselStories.length]);
-  const goToNext = useCallback(() => {
-    clearAutoPlay();
-    setCurrentIndex(prev => (prev + 1) % carouselStories.length);
-    // 手动操作后延迟恢复自动播放
-    setTimeout(startAutoPlay, 3000);
-  }, [carouselStories.length]);
-  const goToSlide = useCallback(index => {
-    clearAutoPlay();
-    setCurrentIndex(index);
-    // 手动操作后延迟恢复自动播放
-    setTimeout(startAutoPlay, 3000);
-  }, []);
-  const handleStoryClick = storyId => {
-    onNavigate('detail', {
-      id: storyId
+  // 格式化日期
+  const formatDate = timestamp => {
+    if (!timestamp) return '未知时间';
+    return new Date(timestamp).toLocaleDateString('zh-CN', {
+      month: 'long',
+      day: 'numeric'
     });
   };
-  const toggleAutoPlay = () => {
-    setIsAutoPlay(!isAutoPlay);
-  };
-  const currentStory = carouselStories[currentIndex];
-  return <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-12" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
-      
-      {/* 轮播容器 */}
-      <div className="relative h-96 md:h-[500px] rounded-2xl overflow-hidden shadow-2xl">
-        {/* 背景图片 */}
-        <div className="absolute inset-0">
-          {carouselStories.map((story, index) => <div key={story._id} className={cn("absolute inset-0 transition-all duration-500 cursor-pointer", index === currentIndex ? "opacity-100 scale-100" : "opacity-0 scale-105")} onClick={() => handleStoryClick(story._id)}>
-              <img src={story.image} alt={story.title} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-            </div>)}
-        </div>
-
-        {/* 内容区域 */}
-        <div className="absolute inset-0 flex items-end">
-          <div className="w-full p-8 md:p-12">
-            <div className="max-w-2xl">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
-                {currentStory.title}
-              </h2>
-              <p className="text-slate-200 text-lg mb-6 line-clamp-3">
-                {currentStory.content}
-              </p>
-              <div className="flex items-center space-x-4">
-                <Button onClick={e => {
-                e.stopPropagation();
-                handleStoryClick(currentStory._id);
-              }} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105">
-                  <Eye className="w-4 h-4 mr-2" />
-                  阅读全文
-                </Button>
-                <div className="flex items-center space-x-2 text-sm text-slate-300">
-                  <span>{currentStory.author || '佚名'}</span>
-                  <span>•</span>
-                  <span>{new Date(currentStory.createdAt).toLocaleDateString('zh-CN')}</span>
-                </div>
-              </div>
-            </div>
+  if (!stories || stories.length === 0) {
+    return null;
+  }
+  return <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-800/80 to-slate-700/80 backdrop-blur-sm border border-slate-700/50">
+        {/* 轮播内容 */}
+        <div className="relative h-96 md:h-[500px] overflow-hidden" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd}>
+          <div className={cn("flex transition-transform duration-300 ease-out", {
+          'translate-x-0': !isTransitioning,
+          '-translate-x-full': isTransitioning && direction === 'right',
+          'translate-x-full': isTransitioning && direction === 'left'
+        })} style={{
+          transform: `translateX(-${currentIndex * 100}%)`
+        }}>
+            {stories.map((story, index) => <div key={story._id} className="w-full flex-shrink-0 h-full relative">
+                <AnimatedCard>
+                  <div className="absolute inset-0">
+                    {story.image && <img src={story.image} alt={story.title} className="w-full h-full object-cover" />}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-8">
+                    <FadeIn delay={200}>
+                      <h3 className="text-2xl md:text-4xl font-bold text-white mb-2 line-clamp-2">
+                        {story.title}
+                      </h3>
+                      <p className="text-slate-300 mb-4 line-clamp-3 max-w-2xl">
+                        {story.content?.substring(0, 150)}...
+                      </p>
+                      <div className="flex items-center space-x-4 text-sm text-slate-400">
+                        <span>{formatDate(story.createdAt)}</span>
+                        <span>•</span>
+                        <span>{story.author || '佚名'}</span>
+                      </div>
+                      <Button onClick={() => onNavigate({
+                    pageId: 'detail',
+                    params: {
+                      id: story._id
+                    }
+                  })} className="mt-4 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600">
+                        <Eye className="w-4 h-4 mr-2" />
+                        阅读故事
+                      </Button>
+                    </FadeIn>
+                  </div>
+                </AnimatedCard>
+              </div>)}
           </div>
         </div>
 
-        {/* 左右切换按钮 */}
-        <button onClick={e => {
-        e.stopPropagation();
-        goToPrevious();
-      }} className={cn("absolute left-4 top-1/2 -translate-y-1/2 bg-slate-800/70 hover:bg-slate-700/90 backdrop-blur-sm text-white p-3 rounded-full transition-all duration-200 hover:scale-110 z-10", "opacity-0 group-hover:opacity-100")} aria-label="上一张">
+        {/* 导航按钮 */}
+        <button onClick={handlePrev} className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-200 hover:scale-110">
           <ChevronLeft className="w-6 h-6" />
         </button>
-        
-        <button onClick={e => {
-        e.stopPropagation();
-        goToNext();
-      }} className={cn("absolute right-4 top-1/2 -translate-y-1/2 bg-slate-800/70 hover:bg-slate-700/90 backdrop-blur-sm text-white p-3 rounded-full transition-all duration-200 hover:scale-110 z-10", "opacity-0 group-hover:opacity-100")} aria-label="下一张">
+        <button onClick={handleNext} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-all duration-200 hover:scale-110">
           <ChevronRight className="w-6 h-6" />
         </button>
 
-        {/* 轮播指示器 */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center space-x-3 z-10">
-          {carouselStories.map((_, index) => <button key={index} onClick={e => {
-          e.stopPropagation();
-          goToSlide(index);
-        }} className={cn("transition-all duration-300 rounded-full", index === currentIndex ? "w-8 h-2 bg-red-500" : "w-2 h-2 bg-slate-400/50 hover:bg-slate-300/70")} aria-label={`跳转到第${index + 1}张`} />)}
-        </div>
-
-        {/* 自动播放控制按钮 */}
-        <button onClick={e => {
-        e.stopPropagation();
-        toggleAutoPlay();
-      }} className={cn("absolute top-4 right-4 bg-slate-800/70 hover:bg-slate-700/90 backdrop-blur-sm text-white p-2 rounded-full transition-all duration-200 z-10", "opacity-0 group-hover:opacity-100")} aria-label={isAutoPlay ? "暂停自动播放" : "开始自动播放"}>
-          {isAutoPlay ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-        </button>
-
-        {/* 当前位置指示器 */}
-        <div className="absolute top-4 left-4 bg-slate-800/70 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm z-10">
-          {currentIndex + 1} / {carouselStories.length}
-        </div>
-
-        {/* 移动端滑动提示 */}
-        <div className="absolute bottom-4 right-4 md:hidden bg-slate-800/70 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm">
-          左右滑动切换
+        {/* 指示器 */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
+          {stories.map((_, index) => <button key={index} onClick={() => handleIndicatorClick(index)} className={cn("w-2 h-2 rounded-full transition-all duration-300", {
+          'bg-red-500 scale-125': index === currentIndex,
+          'bg-slate-400 hover:bg-slate-300': index !== currentIndex
+        })} />)}
         </div>
       </div>
     </div>;
