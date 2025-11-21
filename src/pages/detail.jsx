@@ -1,9 +1,9 @@
 // @ts-ignore;
 import React, { useState, useEffect, useRef } from 'react';
 // @ts-ignore;
-import { Button, Badge, useToast, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
+import { Button, Badge, useToast } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Clock, User, Calendar, Eye, Share2, Bookmark, BookOpen, Text } from 'lucide-react';
+import { ArrowLeft, Clock, User, Calendar, Eye, Share2, Heart, Bookmark, BookOpen, Text, Minus, Plus, ChevronLeft } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
@@ -23,13 +23,15 @@ export default function DetailPage(props) {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [readingProgress, setReadingProgress] = useState(0);
   const [fontSize, setFontSize] = useState('medium');
-  const [gestureHint, setGestureHint] = useState(false);
-  const touchRef = useRef({
+  const [gestureState, setGestureState] = useState({
     startX: 0,
     startY: 0,
-    startTime: 0,
-    isTracking: false
+    currentX: 0,
+    currentY: 0,
+    isSwiping: false,
+    showHint: false
   });
+  const gestureRef = useRef(null);
   const {
     toast
   } = useToast();
@@ -37,22 +39,75 @@ export default function DetailPage(props) {
   const navigateBack = $w.utils.navigateBack;
 
   // 字体大小映射
-  const fontSizeClasses = {
+  const fontSizeMap = {
     small: 'text-sm leading-relaxed',
     medium: 'text-base leading-relaxed',
     large: 'text-lg leading-relaxed'
   };
-  const fontSizeLabels = {
-    small: '小',
-    medium: '中',
-    large: '大'
+
+  // 手势处理
+  const handleTouchStart = e => {
+    const touch = e.touches[0];
+    setGestureState({
+      startX: touch.clientX,
+      startY: touch.clientY,
+      currentX: touch.clientX,
+      currentY: touch.clientY,
+      isSwiping: false,
+      showHint: false
+    });
+  };
+  const handleTouchMove = e => {
+    if (e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - gestureState.startX;
+    const deltaY = touch.clientY - gestureState.startY;
+
+    // 计算角度（弧度转角度）
+    const angle = Math.abs(Math.atan2(deltaY, deltaX) * 180 / Math.PI);
+
+    // 检查是否为水平滑动
+    const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY) * 2;
+    const isLeftSwipe = deltaX < -60 && angle < 30;
+    setGestureState(prev => ({
+      ...prev,
+      currentX: touch.clientX,
+      currentY: touch.clientY,
+      isSwiping: isHorizontalSwipe,
+      showHint: isLeftSwipe
+    }));
+
+    // 防止页面滚动
+    if (isHorizontalSwipe) {
+      e.preventDefault();
+    }
+  };
+  const handleTouchEnd = e => {
+    const deltaX = gestureState.currentX - gestureState.startX;
+    const deltaY = gestureState.currentY - gestureState.startY;
+    const angle = Math.abs(Math.atan2(deltaY, deltaX) * 180 / Math.PI);
+
+    // 触发返回条件：左滑距离 > 60px 且角度 < 30°
+    if (deltaX < -60 && angle < 30) {
+      navigateBack();
+    }
+
+    // 重置手势状态
+    setGestureState({
+      startX: 0,
+      startY: 0,
+      currentX: 0,
+      currentY: 0,
+      isSwiping: false,
+      showHint: false
+    });
   };
 
   // 从URL参数获取故事ID
   const storyId = props.$w.page.dataset.params?.id;
   useEffect(() => {
-    // 从localStorage加载字体大小偏好
-    const savedFontSize = localStorage.getItem('readingFontSize') || 'medium';
+    // 加载保存的字体大小设置
+    const savedFontSize = localStorage.getItem('detailFontSize') || 'medium';
     setFontSize(savedFontSize);
     if (storyId) {
       loadStory();
@@ -70,76 +125,6 @@ export default function DetailPage(props) {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  // 手势返回功能
-  useEffect(() => {
-    const handleTouchStart = e => {
-      const touch = e.touches[0];
-      touchRef.current = {
-        startX: touch.clientX,
-        startY: touch.clientY,
-        startTime: Date.now(),
-        isTracking: true
-      };
-    };
-    const handleTouchMove = e => {
-      if (!touchRef.current.isTracking) return;
-      const touch = e.touches[0];
-      const deltaX = touch.clientX - touchRef.current.startX;
-      const deltaY = touch.clientY - touchRef.current.startY;
-
-      // 计算滑动角度（避免垂直滑动触发）
-      const angle = Math.abs(Math.atan2(Math.abs(deltaY), Math.abs(deltaX)) * 180 / Math.PI);
-
-      // 显示手势提示
-      if (deltaX < -30 && angle < 30) {
-        setGestureHint(true);
-      } else {
-        setGestureHint(false);
-      }
-    };
-    const handleTouchEnd = e => {
-      if (!touchRef.current.isTracking) return;
-      const touch = e.changedTouches[0];
-      const deltaX = touch.clientX - touchRef.current.startX;
-      const deltaY = touch.clientY - touchRef.current.startY;
-      const deltaTime = Date.now() - touchRef.current.startTime;
-
-      // 计算滑动距离和角度
-      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-      const angle = Math.abs(Math.atan2(Math.abs(deltaY), Math.abs(deltaX)) * 180 / Math.PI);
-
-      // 判断是否符合返回条件
-      if (deltaX < -50 && angle < 30 && distance > 50 && deltaTime < 300) {
-        navigateBack();
-      }
-
-      // 重置状态
-      touchRef.current.isTracking = false;
-      setGestureHint(false);
-    };
-
-    // 只在移动端添加手势监听
-    const isMobile = window.innerWidth < 768;
-    if (isMobile) {
-      document.addEventListener('touchstart', handleTouchStart, {
-        passive: true
-      });
-      document.addEventListener('touchmove', handleTouchMove, {
-        passive: true
-      });
-      document.addEventListener('touchend', handleTouchEnd, {
-        passive: true
-      });
-    }
-    return () => {
-      if (isMobile) {
-        document.removeEventListener('touchstart', handleTouchStart);
-        document.removeEventListener('touchmove', handleTouchMove);
-        document.removeEventListener('touchend', handleTouchEnd);
-      }
-    };
-  }, [navigateBack]);
   const loadStory = async () => {
     try {
       setLoading(true);
@@ -171,14 +156,25 @@ export default function DetailPage(props) {
     const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
     setIsBookmarked(bookmarks.includes(storyId));
   };
-  const handleFontSizeChange = value => {
-    setFontSize(value);
-    localStorage.setItem('readingFontSize', value);
-    toast({
-      title: '字体大小已调整',
-      description: `已设置为${fontSizeLabels[value]}字号`,
-      duration: 2000
-    });
+  const toggleBookmark = () => {
+    const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+    if (isBookmarked) {
+      const newBookmarks = bookmarks.filter(id => id !== storyId);
+      localStorage.setItem('bookmarks', JSON.stringify(newBookmarks));
+      setIsBookmarked(false);
+      toast({
+        title: '已取消收藏',
+        description: '故事已从收藏夹移除'
+      });
+    } else {
+      bookmarks.push(storyId);
+      localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+      setIsBookmarked(true);
+      toast({
+        title: '收藏成功',
+        description: '故事已添加到收藏夹'
+      });
+    }
   };
   const shareStory = async () => {
     if (navigator.share) {
@@ -199,6 +195,15 @@ export default function DetailPage(props) {
         description: '故事链接已复制到剪贴板'
       });
     }
+  };
+  const changeFontSize = size => {
+    setFontSize(size);
+    localStorage.setItem('detailFontSize', size);
+    toast({
+      title: '字体大小已调整',
+      description: `已设置为${size === 'small' ? '小' : size === 'medium' ? '中' : '大'}字体`,
+      duration: 2000
+    });
   };
   const formatDate = timestamp => {
     if (!timestamp) return '未知时间';
@@ -260,9 +265,11 @@ export default function DetailPage(props) {
       </div>
 
       {/* 手势返回提示 */}
-      {gestureHint && <div className="fixed top-1/2 left-4 transform -translate-y-1/2 bg-slate-800/90 backdrop-blur-sm text-white px-3 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-200">
-          <ArrowLeft className="w-4 h-4 inline-block mr-1" />
-          <span className="text-sm">滑动返回</span>
+      {gestureState.showHint && <div className="fixed top-1/2 left-4 transform -translate-y-1/2 z-50 bg-slate-800/90 backdrop-blur-sm text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 md:hidden">
+          <div className="flex items-center space-x-2">
+            <ChevronLeft className="w-5 h-5 animate-pulse" />
+            <span className="text-sm">左滑返回</span>
+          </div>
         </div>}
 
       <Sidebar currentPage="index" navigateTo={navigateTo} />
@@ -292,34 +299,16 @@ export default function DetailPage(props) {
             </div>}
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10">
             <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-2xl">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-2 text-sm text-slate-400">
-                  <Calendar className="w-4 h-4" />
-                  <span>{formatDate(story.createdAt)}</span>
-                  <span>•</span>
-                  <Clock className="w-4 h-4" />
-                  <span>{formatReadTime(story.content)}</span>
-                  <span>•</span>
-                  <Eye className="w-4 h-4" />
-                  <span>{story.views || 0}次阅读</span>
-                </div>
-                
-                {/* 字体大小调节 */}
-                <div className="flex items-center space-x-2">
-                  <Text className="w-4 h-4 text-slate-400" />
-                  <Select value={fontSize} onValueChange={handleFontSizeChange}>
-                    <SelectTrigger className="w-20 h-8 bg-slate-700/50 border-slate-600 text-white text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="small">小</SelectItem>
-                      <SelectItem value="medium">中</SelectItem>
-                      <SelectItem value="large">大</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="flex items-center space-x-2 text-sm text-slate-400 mb-4">
+                <Calendar className="w-4 h-4" />
+                <span>{formatDate(story.createdAt)}</span>
+                <span>•</span>
+                <Clock className="w-4 h-4" />
+                <span>{formatReadTime(story.content)}</span>
+                <span>•</span>
+                <Eye className="w-4 h-4" />
+                <span>{story.views || 0}次阅读</span>
               </div>
-              
               <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
                 {story.title}
               </h1>
@@ -338,10 +327,31 @@ export default function DetailPage(props) {
           </div>
         </header>
 
-        {/* 文章内容 */}
-        <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="prose prose-invert max-w-none">
-            <div className={cn("text-slate-300 whitespace-pre-wrap font-serif transition-all duration-300", fontSizeClasses[fontSize])}>
+        {/* 字体大小调节工具栏 */}
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl p-4 flex items-center justify-between border border-slate-700/50">
+            <div className="flex items-center space-x-2">
+              <Text className="w-4 h-4 text-slate-400" />
+              <span className="text-sm text-slate-300">字体大小</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button onClick={() => changeFontSize('small')} variant={fontSize === 'small' ? 'default' : 'ghost'} size="sm" className={cn("px-3 py-1", fontSize === 'small' && "bg-red-500 hover:bg-red-600")}>
+                小
+              </Button>
+              <Button onClick={() => changeFontSize('medium')} variant={fontSize === 'medium' ? 'default' : 'ghost'} size="sm" className={cn("px-3 py-1", fontSize === 'medium' && "bg-red-500 hover:bg-red-600")}>
+                中
+              </Button>
+              <Button onClick={() => changeFontSize('large')} variant={fontSize === 'large' ? 'default' : 'ghost'} size="sm" className={cn("px-3 py-1", fontSize === 'large' && "bg-red-500 hover:bg-red-600")}>
+                大
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* 文章内容 - 添加手势事件监听 */}
+        <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8" onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} ref={gestureRef}>
+          <div className="prose prose-invert prose-lg max-w-none">
+            <div className={cn("text-slate-300 whitespace-pre-wrap font-serif transition-all duration-300", fontSizeMap[fontSize])}>
               {story.content}
             </div>
           </div>
@@ -369,23 +379,6 @@ export default function DetailPage(props) {
 
         {/* 桌面端底部操作栏 */}
         <div className="hidden md:block fixed bottom-8 right-8 space-y-2">
-          <div className="bg-slate-800/90 backdrop-blur-sm rounded-lg p-2 shadow-lg border border-slate-700">
-            <div className="flex items-center space-x-2 mb-2 px-2">
-              <Text className="w-4 h-4 text-slate-400" />
-              <span className="text-xs text-slate-300">字号</span>
-            </div>
-            <Select value={fontSize} onValueChange={handleFontSizeChange}>
-              <SelectTrigger className="w-20 h-8 bg-slate-700/50 border-slate-600 text-white text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="small" className="text-xs">小</SelectItem>
-                <SelectItem value="medium" className="text-sm">中</SelectItem>
-                <SelectItem value="large" className="text-base">大</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
           <Button onClick={toggleBookmark} size="icon" className={isBookmarked ? 'bg-red-500 hover:bg-red-600' : 'bg-slate-700 hover:bg-slate-600'}>
             <Bookmark className="w-4 h-4" fill={isBookmarked ? 'currentColor' : 'none'} />
           </Button>

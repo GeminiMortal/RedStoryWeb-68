@@ -113,7 +113,7 @@ export default function HomePage(props) {
           </div>
         </header>
 
-        {/* 轮播区域 - 已集成自动播放功能 */}
+        {/* 轮播区域 */}
         {!loading && stories.length > 0 && <StoryCarousel stories={stories} onNavigate={navigateTo} />}
 
         {/* 搜索和过滤区域 */}

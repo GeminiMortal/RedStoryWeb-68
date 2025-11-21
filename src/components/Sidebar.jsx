@@ -13,13 +13,19 @@ export function Sidebar({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
 
-  // 从 localStorage 加载侧边栏状态
+  // 从 sessionStorage 读取侧边栏状态
   useEffect(() => {
-    const savedCollapsed = localStorage.getItem('sidebarCollapsed');
+    const savedCollapsed = sessionStorage.getItem('sidebarCollapsed');
     if (savedCollapsed !== null) {
       setIsCollapsed(savedCollapsed === 'true');
     }
   }, []);
+
+  // 保存侧边栏状态到 sessionStorage
+  const updateCollapsedState = collapsed => {
+    setIsCollapsed(collapsed);
+    sessionStorage.setItem('sidebarCollapsed', String(collapsed));
+  };
 
   // 监听窗口大小变化
   useEffect(() => {
@@ -31,30 +37,17 @@ export function Sidebar({
       if (isDesktopView) {
         setIsMobileOpen(false);
       } else {
-        setIsCollapsed(false);
+        // 移动端保持折叠状态，但不打开侧边栏
+        const savedCollapsed = sessionStorage.getItem('sidebarCollapsed');
+        if (savedCollapsed !== null) {
+          setIsCollapsed(savedCollapsed === 'true');
+        }
       }
     };
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
-
-  // 保存侧边栏状态到 localStorage
-  const toggleSidebar = () => {
-    const newCollapsed = !isCollapsed;
-    setIsCollapsed(newCollapsed);
-    localStorage.setItem('sidebarCollapsed', String(newCollapsed));
-  };
-  const toggleMobile = () => {
-    setIsMobileOpen(!isMobileOpen);
-  };
-  const handleNavigation = pageId => {
-    navigateTo({
-      pageId,
-      params: {}
-    });
-    setIsMobileOpen(false);
-  };
   const navItems = [{
     id: 'index',
     label: '主页',
@@ -66,6 +59,19 @@ export function Sidebar({
     icon: Settings,
     pageId: 'admin'
   }];
+  const toggleSidebar = () => {
+    updateCollapsedState(!isCollapsed);
+  };
+  const toggleMobile = () => {
+    setIsMobileOpen(!isMobileOpen);
+  };
+  const handleNavigation = pageId => {
+    navigateTo({
+      pageId,
+      params: {}
+    });
+    setIsMobileOpen(false);
+  };
 
   // 移动端遮罩层
   const MobileOverlay = () => <div className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300" onClick={toggleMobile} />;
