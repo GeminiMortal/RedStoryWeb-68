@@ -1,9 +1,9 @@
 // @ts-ignore;
 import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore;
-import { Button, Card, CardContent, CardHeader, CardTitle, useToast } from '@/components/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, useToast, Badge } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Plus, Search, Filter, BookOpen, FileText, Calendar, Loader2, Home, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Filter, BookOpen, FileText, Calendar, Loader2, Home, Send, Trash2, CheckSquare, Square, RefreshCw, Eye, Edit3, User } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
@@ -13,12 +13,6 @@ import { Sidebar } from '@/components/Sidebar';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 // @ts-ignore;
 import { AdminPasswordGate } from '@/components/AdminPasswordGate';
-// @ts-ignore;
-import { StoryCard } from '@/components/StoryCard';
-// @ts-ignore;
-import { BatchOperations } from '@/components/BatchOperations';
-// @ts-ignore;
-import { ErrorState } from '@/components/ErrorState';
 export default function AdminPage(props) {
   const {
     $w
@@ -75,14 +69,13 @@ export default function AdminPage(props) {
       navigateBack();
     } catch (error) {
       console.error('返回失败:', error);
-      // 如果返回失败，尝试跳转到首页
       handleNavigate('index');
     } finally {
       setNavigating(false);
     }
-  }, [navigating, navigateBack, handleNavigate, toast]);
+  }, [navigating, navigateBack, handleNavigate]);
 
-  // 优化的数据加载函数
+  // 加载数据
   const loadData = useCallback(async (showRefresh = false) => {
     try {
       if (showRefresh) {
@@ -94,48 +87,24 @@ export default function AdminPage(props) {
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
 
-      // 优化查询：只获取必要字段
-      const result = await db.collection('red_story').field({
-        _id: true,
-        title: true,
-        content: true,
-        author: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        publishedAt: true,
-        views: true,
-        tags: true
-      }).orderBy('updatedAt', 'desc').get();
-      if (result && result.data) {
-        const allStories = result.data;
+      // 加载已发布故事
+      const storiesResult = await db.collection('red_story').get();
+      const publishedStories = storiesResult.data || [];
 
-        // 数据验证和处理
-        const processedStories = allStories.map(story => ({
-          ...story,
-          title: story.title || '无标题',
-          content: story.content || '暂无内容',
-          author: story.author || '佚名',
-          tags: Array.isArray(story.tags) ? story.tags : [],
-          views: typeof story.views === 'number' ? story.views : 0,
-          status: story.status || 'draft'
-        }));
-        const publishedStories = processedStories.filter(story => story.status === 'published');
-        const draftStories = processedStories.filter(story => story.status === 'draft');
-        setStories(publishedStories);
-        setDrafts(draftStories);
+      // 加载草稿
+      const draftsResult = await db.collection('red_story_draft').get();
+      const draftStories = draftsResult.data || [];
+      setStories(publishedStories);
+      setDrafts(draftStories);
 
-        // 清空选择状态
-        setSelectedDrafts(new Set());
-        if (showRefresh) {
-          toast({
-            title: '刷新成功',
-            description: `已加载 ${processedStories.length} 个故事（${publishedStories.length} 个已发布，${draftStories.length} 个草稿）`,
-            duration: 3000
-          });
-        }
-      } else {
-        throw new Error('未获取到数据');
+      // 清空选择状态
+      setSelectedDrafts(new Set());
+      if (showRefresh) {
+        toast({
+          title: '刷新成功',
+          description: `已加载 ${publishedStories.length} 个已发布故事，${draftStories.length} 个草稿`,
+          duration: 3000
+        });
       }
     } catch (error) {
       console.error('加载数据失败:', error);
@@ -184,7 +153,64 @@ export default function AdminPage(props) {
     setSelectedDrafts(new Set());
   }, []);
 
-  // 批量操作函数
+  // 单个草稿发布
+  const handlePublishDraft = useCallback(async (draftId, event) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    const confirmed = window.confirm('确定要发布这个草稿吗？发布后将对所有用户可见。');
+    if (!confirmed) return;
+    try {
+      const tcb = await $w.cloud.getCloudInstance();
+      const db = tcb.database();
+
+      // 获取草稿数据
+      const draftResult = await db.collection('red_story_draft').doc(draftId).get();
+      const draftData = draftResult.data;
+      if (!draftData) {
+        throw new Error('草稿不存在');
+      }
+
+      // 创建发布数据
+      const publishData = {
+        ...draftData,
+        status: 'published',
+        publishedAt: new Date(),
+        updatedAt: new Date(),
+        createdAt: draftData.createdAt || new Date()
+      };
+
+      // 删除草稿中的敏感字段
+      delete publishData.is_draft;
+      delete publishData.draft_version;
+      delete publishData.original_id;
+
+      // 写入 red_story
+      const publishResult = await db.collection('red_story').add(publishData);
+
+      // 删除草稿
+      await db.collection('red_story_draft').doc(draftId).remove();
+      toast({
+        title: '发布成功',
+        description: '草稿已成功发布并删除',
+        variant: 'default'
+      });
+
+      // 跳转到详情页
+      handleNavigate('detail', {
+        id: publishResult.id
+      });
+    } catch (error) {
+      console.error('发布草稿失败:', error);
+      toast({
+        title: '发布失败',
+        description: error.message || '无法发布草稿，请重试',
+        variant: 'destructive'
+      });
+    }
+  }, [toast, handleNavigate]);
+
+  // 批量发布
   const handleBatchPublish = useCallback(async () => {
     if (selectedDrafts.size === 0) {
       toast({
@@ -194,7 +220,7 @@ export default function AdminPage(props) {
       });
       return;
     }
-    const confirmed = window.confirm(`确定要发布选中的 ${selectedDrafts.size} 个草稿吗？`);
+    const confirmed = window.confirm(`确定要发布选中的 ${selectedDrafts.size} 个草稿吗？发布后将对所有用户可见。`);
     if (!confirmed) return;
     setBatchProcessing(true);
     let successCount = 0;
@@ -203,15 +229,34 @@ export default function AdminPage(props) {
     try {
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
-
-      // 批量处理
       for (const draftId of selectedDrafts) {
         try {
-          await db.collection('red_story').doc(draftId).update({
+          // 获取草稿数据
+          const draftResult = await db.collection('red_story_draft').doc(draftId).get();
+          const draftData = draftResult.data;
+          if (!draftData) {
+            throw new Error(`草稿 ${draftId} 不存在`);
+          }
+
+          // 创建发布数据
+          const publishData = {
+            ...draftData,
             status: 'published',
             publishedAt: new Date(),
-            updatedAt: new Date()
-          });
+            updatedAt: new Date(),
+            createdAt: draftData.createdAt || new Date()
+          };
+
+          // 删除草稿中的敏感字段
+          delete publishData.is_draft;
+          delete publishData.draft_version;
+          delete publishData.original_id;
+
+          // 写入 red_story
+          await db.collection('red_story').add(publishData);
+
+          // 删除草稿
+          await db.collection('red_story_draft').doc(draftId).remove();
           successCount++;
         } catch (error) {
           console.error(`发布草稿 ${draftId} 失败:`, error);
@@ -221,14 +266,12 @@ export default function AdminPage(props) {
       }
 
       // 显示结果
-      if (successCount > 0) {
-        const message = `成功发布 ${successCount} 个草稿${failCount > 0 ? `，${failCount} 个失败` : ''}`;
-        toast({
-          title: '批量发布完成',
-          description: message,
-          variant: failCount > 0 ? 'destructive' : 'default'
-        });
-      }
+      const message = `成功发布 ${successCount} 个草稿${failCount > 0 ? `，${failCount} 个失败` : ''}`;
+      toast({
+        title: '批量发布完成',
+        description: message,
+        variant: failCount > 0 ? 'destructive' : 'default'
+      });
 
       // 清空选择并重新加载数据
       clearSelection();
@@ -244,6 +287,8 @@ export default function AdminPage(props) {
       setBatchProcessing(false);
     }
   }, [selectedDrafts, toast, clearSelection, loadData]);
+
+  // 批量删除
   const handleBatchDelete = useCallback(async () => {
     if (selectedDrafts.size === 0) {
       toast({
@@ -258,32 +303,26 @@ export default function AdminPage(props) {
     setBatchProcessing(true);
     let successCount = 0;
     let failCount = 0;
-    const failedItems = [];
     try {
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
-
-      // 批量处理
       for (const draftId of selectedDrafts) {
         try {
-          await db.collection('red_story').doc(draftId).remove();
+          await db.collection('red_story_draft').doc(draftId).remove();
           successCount++;
         } catch (error) {
           console.error(`删除草稿 ${draftId} 失败:`, error);
           failCount++;
-          failedItems.push(draftId);
         }
       }
 
       // 显示结果
-      if (successCount > 0) {
-        const message = `成功删除 ${successCount} 个草稿${failCount > 0 ? `，${failCount} 个失败` : ''}`;
-        toast({
-          title: '批量删除完成',
-          description: message,
-          variant: failCount > 0 ? 'destructive' : 'default'
-        });
-      }
+      const message = `成功删除 ${successCount} 个草稿${failCount > 0 ? `，${failCount} 个失败` : ''}`;
+      toast({
+        title: '批量删除完成',
+        description: message,
+        variant: failCount > 0 ? 'destructive' : 'default'
+      });
 
       // 清空选择并重新加载数据
       clearSelection();
@@ -300,80 +339,49 @@ export default function AdminPage(props) {
     }
   }, [selectedDrafts, toast, clearSelection, loadData]);
 
-  // 单个故事操作函数
-  const handleEditStory = useCallback((storyId, event) => {
+  // 单个草稿删除
+  const handleDeleteDraft = useCallback(async (draftId, event) => {
     if (event) {
       event.stopPropagation();
     }
-    handleNavigate('edit', {
-      id: storyId
-    });
-  }, [handleNavigate]);
-  const handleViewStory = useCallback((storyId, event) => {
-    if (event) {
-      event.stopPropagation();
-    }
-    handleNavigate('detail', {
-      id: storyId
-    });
-  }, [handleNavigate]);
-  const handleCreateStory = useCallback(() => {
-    handleNavigate('upload');
-  }, [handleNavigate]);
-  const handlePublishStory = useCallback(async (storyId, event) => {
-    if (event) {
-      event.stopPropagation();
-    }
-    try {
-      const tcb = await $w.cloud.getCloudInstance();
-      const db = tcb.database();
-      await db.collection('red_story').doc(storyId).update({
-        status: 'published',
-        publishedAt: new Date(),
-        updatedAt: new Date()
-      });
-      toast({
-        title: '发布成功',
-        description: '故事已成功发布'
-      });
-
-      // 重新加载数据
-      loadData(true);
-    } catch (error) {
-      console.error('发布失败:', error);
-      toast({
-        title: '发布失败',
-        description: '无法发布故事，请重试',
-        variant: 'destructive'
-      });
-    }
-  }, [toast, loadData]);
-  const handleDeleteStory = useCallback(async (storyId, event) => {
-    if (event) {
-      event.stopPropagation();
-    }
-    const confirmed = window.confirm('确定要删除这个故事吗？此操作不可恢复。');
+    const confirmed = window.confirm('确定要删除这个草稿吗？此操作不可恢复。');
     if (!confirmed) return;
     try {
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
-      await db.collection('red_story').doc(storyId).remove();
+      await db.collection('red_story_draft').doc(draftId).remove();
       toast({
         title: '删除成功',
-        description: '故事已成功删除'
+        description: '草稿已成功删除'
       });
 
       // 重新加载数据
       loadData(true);
     } catch (error) {
-      console.error('删除失败:', error);
+      console.error('删除草稿失败:', error);
       toast({
         title: '删除失败',
-        description: '无法删除故事，请重试',
+        description: '无法删除草稿，请重试',
         variant: 'destructive'
       });
     }
   }, [toast, loadData]);
+
+  // 编辑草稿
+  const handleEditDraft = useCallback((draftId, event) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    handleNavigate('edit', {
+      id: draftId,
+      type: 'draft'
+    });
+  }, [handleNavigate]);
+
+  // 创建新故事
+  const handleCreateStory = useCallback(() => {
+    handleNavigate('upload');
+  }, [handleNavigate]);
 
   // 刷新处理
   const handleRefresh = useCallback(() => {
@@ -407,6 +415,20 @@ export default function AdminPage(props) {
     if (!sidebarState.isDesktop) return 'ml-0';
     return sidebarState.isCollapsed ? 'md:ml-16' : 'md:ml-64';
   }, [sidebarState]);
+  const formatDate = useCallback(timestamp => {
+    if (!timestamp) return '未知时间';
+    try {
+      return new Date(timestamp).toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      return '日期格式错误';
+    }
+  }, []);
   if (!isAuthenticated) {
     return <AdminPasswordGate onAuthenticated={() => setIsAuthenticated(true)} />;
   }
@@ -517,7 +539,25 @@ export default function AdminPage(props) {
                   <div className="h-4 bg-slate-700 rounded w-2/3 mb-2"></div>
                   <div className="h-4 bg-slate-700 rounded w-1/2"></div>
                 </div>)}
-            </div> : error ? <ErrorState error={error} onRetry={() => loadData(true)} onClearSearch={clearSearch} isRetrying={refreshing} /> : <>
+            </div> : error ? <div className="text-center py-16">
+              <div className="w-24 h-24 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <RefreshCw className="w-12 h-12 text-red-500" />
+              </div>
+              <h3 className="text-2xl font-medium text-slate-400 mb-3">加载失败</h3>
+              <p className="text-slate-500 mb-8 max-w-md mx-auto">{error}</p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button onClick={() => loadData(true)} disabled={refreshing} className="bg-red-500 hover:bg-red-600">
+                  {refreshing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+                  重新加载
+                </Button>
+                <Button onClick={() => {
+              setSearchTerm('');
+              setFilterStatus('all');
+            }} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+                  清除搜索
+                </Button>
+              </div>
+            </div> : <>
               {/* 已发布故事 */}
               {(filterStatus === 'all' || filterStatus === 'published') && <div className="mb-8">
                   <h2 className="text-xl font-bold text-white mb-4 flex items-center">
@@ -528,18 +568,117 @@ export default function AdminPage(props) {
                       <BookOpen className="w-16 h-16 text-slate-600 mx-auto mb-4" />
                       <p className="text-slate-400">暂无已发布的故事</p>
                     </div> : <div className="space-y-4">
-                      {filteredStories.map(story => <StoryCard key={story._id} story={story} type="published" onEdit={handleEditStory} onView={handleViewStory} onDelete={handleDeleteStory} />)}
+                      {filteredStories.map(story => <Card key={story._id} className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 hover:border-green-500/50 transition-all duration-300">
+                          <CardContent className="p-6">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h3 className="text-lg font-semibold text-white mb-2">{story.title || '无标题'}</h3>
+                                <p className="text-slate-400 text-sm mb-3 line-clamp-2">{story.content || '暂无内容'}</p>
+                                <div className="flex items-center space-x-4 text-xs text-slate-500">
+                                  <span className="flex items-center">
+                                    <User className="w-3 h-3 mr-1" />
+                                    {story.author || '佚名'}
+                                  </span>
+                                  <span className="flex items-center">
+                                    <Calendar className="w-3 h-3 mr-1" />
+                                    {formatDate(story.updatedAt)}
+                                  </span>
+                                  <span className="flex items-center">
+                                    <Eye className="w-3 h-3 mr-1" />
+                                    {story.views || 0}次阅读
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2 ml-4">
+                                <Button onClick={e => handleNavigate('detail', {
+                        id: story._id
+                      })} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                <Button onClick={e => handleNavigate('edit', {
+                        id: story._id
+                      })} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+                                  <Edit3 className="w-4 h-4" />
+                                </Button>
+                                <Button onClick={e => handleDeleteDraft(story._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-red-400">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>)}
                     </div>}
                 </div>}
 
               {/* 草稿 */}
               {(filterStatus === 'all' || filterStatus === 'draft') && <div>
-                  <BatchOperations selectedCount={selectedDrafts.size} totalCount={filteredDrafts.length} isAllSelected={selectedDrafts.size === filteredDrafts.length && filteredDrafts.length > 0} onSelectAll={handleSelectAllDrafts} onBatchPublish={handleBatchPublish} onBatchDelete={handleBatchDelete} isProcessing={batchProcessing} />
+                  {/* 批量操作栏 */}
+                  {filteredDrafts.length > 0 && <div className="flex items-center justify-between mb-4 p-4 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/50">
+                      <h2 className="text-xl font-bold text-white flex items-center">
+                        <FileText className="w-5 h-5 mr-2 text-blue-500" />
+                        草稿箱 ({filteredDrafts.length})
+                      </h2>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-slate-400">
+                          已选择 {selectedDrafts.size} 个
+                        </span>
+                        <Button onClick={handleSelectAllDrafts} variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+                          {selectedDrafts.size === filteredDrafts.length ? <CheckSquare className="w-4 h-4 mr-2" /> : <Square className="w-4 h-4 mr-2" />}
+                          {selectedDrafts.size === filteredDrafts.length ? '取消全选' : '全选'}
+                        </Button>
+                        {selectedDrafts.size > 0 && <>
+                            <Button onClick={handleBatchPublish} disabled={batchProcessing} variant="outline" size="sm" className="border-green-600 text-green-400 hover:bg-green-600/10">
+                              {batchProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                              批量发布
+                            </Button>
+                            <Button onClick={handleBatchDelete} disabled={batchProcessing} variant="outline" size="sm" className="border-red-600 text-red-400 hover:bg-red-600/10">
+                              {batchProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                              批量删除
+                            </Button>
+                          </>}
+                      </div>
+                    </div>}
+
                   {filteredDrafts.length === 0 ? <div className="text-center py-8 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/30">
                       <FileText className="w-16 h-16 text-slate-600 mx-auto mb-4" />
                       <p className="text-slate-400">暂无草稿</p>
                     </div> : <div className="space-y-4">
-                      {filteredDrafts.map(draft => <StoryCard key={draft._id} story={draft} type="draft" selected={selectedDrafts.has(draft._id)} onSelect={handleSelectDraft} onEdit={handleEditStory} onPublish={handlePublishStory} onDelete={handleDeleteStory} showCheckbox />)}
+                      {filteredDrafts.map(draft => <Card key={draft._id} className={cn("bg-slate-800/50 backdrop-blur-sm border transition-all duration-300", selectedDrafts.has(draft._id) ? "border-blue-500/50 bg-blue-500/5" : "border-slate-700/50 hover:border-blue-500/50")}>
+                          <CardContent className="p-6">
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-start space-x-3 flex-1">
+                                <Button onClick={() => handleSelectDraft(draft._id)} variant="ghost" size="sm" className="mt-1 p-1">
+                                  {selectedDrafts.has(draft._id) ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4 text-slate-400" />}
+                                </Button>
+                                <div className="flex-1">
+                                  <h3 className="text-lg font-semibold text-white mb-2">{draft.title || '无标题'}</h3>
+                                  <p className="text-slate-400 text-sm mb-3 line-clamp-2">{draft.content || '暂无内容'}</p>
+                                  <div className="flex items-center space-x-4 text-xs text-slate-500">
+                                    <span className="flex items-center">
+                                      <User className="w-3 h-3 mr-1" />
+                                      {draft.author || '佚名'}
+                                    </span>
+                                    <span className="flex items-center">
+                                      <Calendar className="w-3 h-3 mr-1" />
+                                      {formatDate(draft.updatedAt)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-2 ml-4">
+                                <Button onClick={e => handleEditDraft(draft._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+                                  <Edit3 className="w-4 h-4" />
+                                </Button>
+                                <Button onClick={e => handlePublishDraft(draft._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-green-400">
+                                  <Send className="w-4 h-4" />
+                                </Button>
+                                <Button onClick={e => handleDeleteDraft(draft._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-red-400">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>)}
                     </div>}
                 </div>}
             </>}

@@ -1,10 +1,9 @@
 // @ts-ignore;
 import React from 'react';
 
-// @ts-ignore;
-import { SidebarProvider } from '@/components/SidebarStore';
+import { GlobalStateProvider } from '@/components/GlobalStateProvider';
 export default function App(props) {
-  return <SidebarProvider>
-      {props.children}
-    </SidebarProvider>;
+  return <GlobalStateProvider>
+      {/* 原有 App 内容保持不变 */}
+    </GlobalStateProvider>;
 }

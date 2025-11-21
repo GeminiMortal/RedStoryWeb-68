@@ -9,3 +9,4 @@ export * from './AdminPasswordGate.jsx';
 export * from './StoryCarousel.jsx';
 export * from './BatchOperations.jsx';
 export * from './ErrorState.jsx';
+export * from './GlobalStateProvider.jsx';

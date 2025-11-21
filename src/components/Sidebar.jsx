@@ -1,154 +1,103 @@
 // @ts-ignore;
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 // @ts-ignore;
-import { Home, BookOpen, Settings, Copyright, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
+import { Button } from '@/components/ui';
+// @ts-ignore;
+import { Home, BookOpen, PlusCircle, Settings, User, Menu, X, LogOut } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
+// @ts-ignore;
+import { useGlobalState } from './GlobalStateProvider';
 export function Sidebar({
   currentPage,
-  navigateTo,
-  onStateChange
+  navigateTo
 }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-
-  // 从 sessionStorage 读取侧边栏状态
-  useEffect(() => {
-    const savedCollapsed = sessionStorage.getItem('sidebarCollapsed');
-    if (savedCollapsed !== null) {
-      setIsCollapsed(savedCollapsed === 'true');
-    }
-  }, []);
-
-  // 保存侧边栏状态到 sessionStorage 并通知父组件
-  const updateCollapsedState = useCallback(collapsed => {
-    setIsTransitioning(true);
-    setIsCollapsed(collapsed);
-    sessionStorage.setItem('sidebarCollapsed', String(collapsed));
-
-    // 通知父组件状态变化
-    if (onStateChange) {
-      onStateChange({
-        isCollapsed: collapsed,
-        isDesktop: isDesktop
-      });
-    }
-
-    // 动画结束后重置过渡状态
-    setTimeout(() => {
-      setIsTransitioning(false);
-    }, 300);
-  }, [onStateChange, isDesktop]);
-
-  // 监听窗口大小变化
-  useEffect(() => {
-    const checkScreenSize = () => {
-      const isDesktopView = window.innerWidth >= 768;
-      setIsDesktop(isDesktopView);
-
-      // 桌面端默认不折叠，移动端默认关闭
-      if (isDesktopView) {
-        setIsMobileOpen(false);
-      } else {
-        // 移动端保持折叠状态，但不打开侧边栏
-        const savedCollapsed = sessionStorage.getItem('sidebarCollapsed');
-        if (savedCollapsed !== null) {
-          setIsCollapsed(savedCollapsed === 'true');
-        }
-      }
-
-      // 通知父组件屏幕尺寸变化
-      if (onStateChange) {
-        onStateChange({
-          isCollapsed: savedCollapsed === 'true',
-          isDesktop: isDesktopView
-        });
-      }
-    };
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, [onStateChange]);
-  const navItems = [{
+  const {
+    sidebarState,
+    setSidebarState
+  } = useGlobalState();
+  const menuItems = [{
     id: 'index',
-    label: '主页',
-    icon: Home,
-    pageId: 'index'
+    label: '首页',
+    icon: Home
+  }, {
+    id: 'stories',
+    label: '故事列表',
+    icon: BookOpen
+  }, {
+    id: 'upload',
+    label: '创作故事',
+    icon: PlusCircle
   }, {
     id: 'admin',
-    label: '管理',
-    icon: Settings,
-    pageId: 'admin'
+    label: '管理中心',
+    icon: Settings
+  }, {
+    id: 'profile',
+    label: '个人中心',
+    icon: User
   }];
   const toggleSidebar = () => {
-    updateCollapsedState(!isCollapsed);
+    setSidebarState(prev => ({
+      ...prev,
+      isOpen: !prev.isOpen
+    }));
   };
-  const toggleMobile = () => {
-    setIsMobileOpen(!isMobileOpen);
-  };
-  const handleNavigation = pageId => {
+  const handleNavClick = pageId => {
     navigateTo({
-      pageId,
-      params: {}
+      pageId
     });
-    setIsMobileOpen(false);
+    if (!sidebarState.isDesktop) {
+      setSidebarState(prev => ({
+        ...prev,
+        isOpen: false
+      }));
+    }
   };
-
-  // 移动端遮罩层
-  const MobileOverlay = () => <div className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300" onClick={toggleMobile} />;
+  const handleOverlayClick = () => {
+    if (!sidebarState.isDesktop) {
+      setSidebarState(prev => ({
+        ...prev,
+        isOpen: false
+      }));
+    }
+  };
   return <>
-      {/* 移动端菜单按钮 - 仅在桌面端显示 */}
-      <button onClick={toggleMobile} className={cn("fixed top-4 left-4 z-50 md:hidden bg-slate-800/90 backdrop-blur-sm p-2.5 rounded-xl border border-slate-700 shadow-lg hover:bg-slate-700/90 transition-all duration-200", "hidden")}>
-        <Menu className="w-5 h-5 text-white" />
-      </button>
-
-      {/* 移动端侧边栏 */}
-      {isMobileOpen && <MobileOverlay />}
+      {/* 移动端遮罩层 */}
+      {!sidebarState.isDesktop && sidebarState.isOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={handleOverlayClick} />}
       
-      {/* 侧边栏主体 - 桌面端固定显示，移动端可折叠 */}
-      <div className={cn("fixed left-0 top-0 h-full bg-slate-800/95 backdrop-blur-md border-r border-slate-700/50 flex flex-col transition-all duration-300 ease-in-out z-50", "md:translate-x-0", isMobileOpen ? "translate-x-0" : "-translate-x-full", isCollapsed && isDesktop ? "md:w-16" : "md:w-64", "w-64")}>
-        {/* Logo/标题区域 */}
-        <div className={cn("p-6 border-b border-slate-700/50 flex items-center justify-between transition-all duration-300", isCollapsed && isDesktop && "md:p-3 md:justify-center")}>
-          {!isCollapsed || !isDesktop ? <h1 className="text-xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent transition-opacity duration-300">
-              红色故事
-            </h1> : <BookOpen className="w-6 h-6 text-red-500 transition-transform duration-300 hover:scale-110" />}
+      {/* 侧边栏 */}
+      <aside className={cn("fixed left-0 top-0 h-full bg-slate-900/95 backdrop-blur-sm border-r border-slate-700 z-50 transition-transform duration-300 ease-in-out", sidebarState.isDesktop ? "translate-x-0" : sidebarState.isOpen ? "translate-x-0" : "-translate-x-full", sidebarState.isCollapsed && sidebarState.isDesktop ? "w-16" : "w-64")}>
+        <div className="flex flex-col h-full">
+          {/* 侧边栏头部 */}
+          <div className="flex items-center justify-between p-4 border-b border-slate-700">
+            {!sidebarState.isCollapsed && <h2 className="text-lg font-bold text-white">红色故事</h2>}
+            <Button onClick={toggleSidebar} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+              {sidebarState.isOpen || sidebarState.isDesktop ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </Button>
+          </div>
           
-          {/* 移动端关闭按钮 */}
-          <button onClick={toggleMobile} className="md:hidden text-slate-400 hover:text-white p-1 transition-colors duration-200">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* 导航菜单 */}
-        <nav className="flex-1 p-4">
-          <ul className="space-y-2">
-            {navItems.map(item => {
+          {/* 菜单项 */}
+          <nav className="flex-1 p-4">
+            {menuItems.map(item => {
             const Icon = item.icon;
             const isActive = currentPage === item.id;
-            return <li key={item.id}>
-                  <button onClick={() => handleNavigation(item.pageId)} className={cn("w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200", "hover:scale-105 hover:shadow-lg", isActive ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-md" : "text-slate-300 hover:bg-slate-700/50 hover:text-white", isCollapsed && isDesktop && "md:justify-center md:px-2")}>
-                    <Icon className="w-5 h-5 flex-shrink-0 transition-transform duration-200" />
-                    {(!isCollapsed || !isDesktop) && <span className="transition-opacity duration-300">{item.label}</span>}
-                  </button>
-                </li>;
+            return <Button key={item.id} onClick={() => handleNavClick(item.id)} variant="ghost" className={cn("w-full justify-start mb-2", sidebarState.isCollapsed && "justify-center px-2", isActive ? "bg-red-500/20 text-red-400" : "text-slate-400 hover:text-white")}>
+                <Icon className={cn("w-5 h-5", !sidebarState.isCollapsed && "mr-3")} />
+                {!sidebarState.isCollapsed && <span>{item.label}</span>}
+              </Button>;
           })}
-          </ul>
-        </nav>
-
-        {/* 版权信息 */}
-        <div className={cn("p-4 border-t border-slate-700/50 transition-all duration-300", isCollapsed && isDesktop && "md:p-2")}>
-          {!isCollapsed || !isDesktop ? <p className="text-xs text-slate-500 text-center transition-opacity duration-300">
-              © <span className="text-red-400">sut</span>·code2501
-            </p> : <Copyright className="w-4 h-4 text-slate-500 mx-auto transition-transform duration-300 hover:scale-110" />}
+          </nav>
+          
+          {/* 底部操作 */}
+          <div className="p-4 border-t border-slate-700">
+            <Button variant="ghost" className={cn("w-full justify-start text-slate-400 hover:text-white", sidebarState.isCollapsed && "justify-center px-2")}>
+              <LogOut className={cn("w-5 h-5", !sidebarState.isCollapsed && "mr-3")} />
+              {!sidebarState.isCollapsed && <span>退出登录</span>}
+            </Button>
+          </div>
         </div>
-
-        {/* 折叠按钮 - 仅桌面端显示 */}
-        {isDesktop && <button onClick={toggleSidebar} className={cn("absolute top-1/2 -right-3 transform -translate-y-1/2", "bg-slate-700 hover:from-red-500 hover:to-orange-500 text-white", "rounded-full p-1.5 shadow-lg border border-slate-600", "transition-all duration-200 hover:scale-110", isTransitioning && "animate-pulse")}>
-            {isCollapsed ? <ChevronRight className="w-4 h-4 transition-transform duration-200" /> : <ChevronLeft className="w-4 h-4 transition-transform duration-200" />}
-          </button>}
-      </div>
+      </aside>
     </>;
 }
