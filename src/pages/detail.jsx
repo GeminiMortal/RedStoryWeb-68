@@ -1,18 +1,16 @@
 // @ts-ignore;
 import React, { useState, useEffect } from 'react';
 // @ts-ignore;
-import { Button } from '@/components/ui';
+import { Button, Badge, useToast } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Edit, Share2, Heart, Clock, Calendar, MapPin, User, BookOpen } from 'lucide-react';
-// @ts-ignore;
-import { cn } from '@/lib/utils';
+import { ArrowLeft, Clock, User, Calendar, Eye, Share2, Heart, Bookmark, BookOpen } from 'lucide-react';
 
 // @ts-ignore;
 import { Sidebar } from '@/components/Sidebar';
 // @ts-ignore;
-import { LoadingSkeleton } from '@/components/LoadingSkeleton';
-// @ts-ignore;
 import { MobileBottomNav } from '@/components/MobileBottomNav';
+// @ts-ignore;
+
 export default function DetailPage(props) {
   const {
     $w
@@ -20,225 +18,262 @@ export default function DetailPage(props) {
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isLiked, setIsLiked] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const {
+    toast
+  } = useToast();
   const navigateTo = $w.utils.navigateTo;
+  const navigateBack = $w.utils.navigateBack;
 
-  // 修正：安全获取参数
-  const storyId = $w.page.dataset.params?.id;
+  // 从URL参数获取故事ID
+  const storyId = props.$w.page.dataset.params?.id;
   useEffect(() => {
-    if (!storyId) {
-      setError('未提供故事ID');
-      setLoading(false);
-      return;
+    if (storyId) {
+      loadStory();
+      checkBookmarkStatus();
     }
-    loadStory();
   }, [storyId]);
+  useEffect(() => {
+    // 监听滚动事件计算阅读进度
+    const handleScroll = () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const progress = Math.min(scrollTop / scrollHeight * 100, 100);
+      setReadingProgress(progress);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   const loadStory = async () => {
     try {
       setLoading(true);
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
-
-      // 修正：先尝试从主库获取
       const result = await db.collection('red_story').doc(storyId).get();
       if (result && result.data) {
-        if (result.data.status === 'published') {
-          setStory(result.data);
-        } else {
-          // 如果是草稿，尝试从草稿库获取
-          const draftResult = await db.collection('red_story_draft').doc(storyId).get();
-          if (draftResult && draftResult.data) {
-            setStory(draftResult.data);
-          } else {
-            setError('该故事尚未发布');
-          }
-        }
+        setStory(result.data);
+        // 增加阅读次数
+        await db.collection('red_story').doc(storyId).update({
+          views: (result.data.views || 0) + 1
+        });
       } else {
         setError('故事不存在');
       }
     } catch (err) {
       console.error('加载故事失败:', err);
-      setError(`加载失败: ${err.message || '未知错误'}`);
+      setError('加载失败，请稍后重试');
+      toast({
+        title: '加载失败',
+        description: '无法加载故事内容',
+        variant: 'destructive'
+      });
     } finally {
       setLoading(false);
     }
   };
-  const goBack = () => {
-    navigateTo({
-      pageId: 'index',
-      params: {}
-    });
+  const checkBookmarkStatus = () => {
+    const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+    setIsBookmarked(bookmarks.includes(storyId));
   };
-  const goToEdit = () => {
-    if (!storyId) return;
-    navigateTo({
-      pageId: 'edit',
-      params: {
-        id: storyId
-      }
-    });
+  const toggleBookmark = () => {
+    const bookmarks = JSON.parse(localStorage.getItem('bookmarks') || '[]');
+    if (isBookmarked) {
+      const newBookmarks = bookmarks.filter(id => id !== storyId);
+      localStorage.setItem('bookmarks', JSON.stringify(newBookmarks));
+      setIsBookmarked(false);
+      toast({
+        title: '已取消收藏',
+        description: '故事已从收藏夹移除'
+      });
+    } else {
+      bookmarks.push(storyId);
+      localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+      setIsBookmarked(true);
+      toast({
+        title: '收藏成功',
+        description: '故事已添加到收藏夹'
+      });
+    }
   };
-  const handleShare = async () => {
-    if (navigator.share && story) {
+  const shareStory = async () => {
+    if (navigator.share) {
       try {
         await navigator.share({
-          title: story.title,
-          text: (story.content || '').substring(0, 100) + '...',
+          title: story?.title || '红色故事',
+          text: story?.content?.substring(0, 100) + '...',
           url: window.location.href
         });
       } catch (err) {
         console.log('分享取消');
       }
     } else {
-      // 复制到剪贴板
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        toast({
-          title: '链接已复制',
-          description: '故事链接已复制到剪贴板'
-        });
-      } catch (err) {
-        console.error('复制失败', err);
-      }
+      // 复制链接到剪贴板
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: '链接已复制',
+        description: '故事链接已复制到剪贴板'
+      });
     }
-  };
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    // 这里可以添加收藏逻辑
   };
   const formatDate = timestamp => {
     if (!timestamp) return '未知时间';
     return new Date(timestamp).toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
-  const formatReadTime = readTime => {
-    if (!readTime) return '5分钟阅读';
-    return readTime;
+  const formatReadTime = content => {
+    if (!content) return '5分钟阅读';
+    const wordCount = content.length;
+    const readTime = Math.ceil(wordCount / 500);
+    return `${readTime}分钟阅读`;
   };
   if (loading) {
-    return <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white flex">
-        <Sidebar currentPage="detail" navigateTo={navigateTo} />
-        <div className="flex-1 transition-all duration-300 ease-in-out p-4 md:p-8">
-          <LoadingSkeleton type="detail" />
-        </div>
+    return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+        <Sidebar currentPage="index" navigateTo={navigateTo} />
+        <main className="transition-all duration-300 ease-in-out md:ml-16 lg:ml-64">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="animate-pulse">
+              <div className="h-8 bg-slate-700 rounded w-1/3 mb-4"></div>
+              <div className="h-64 bg-slate-700 rounded mb-6"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-slate-700 rounded"></div>
+                <div className="h-4 bg-slate-700 rounded w-5/6"></div>
+                <div className="h-4 bg-slate-700 rounded w-4/6"></div>
+              </div>
+            </div>
+          </div>
+        </main>
       </div>;
   }
   if (error || !story) {
-    return <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-        <Sidebar currentPage="detail" navigateTo={navigateTo} />
-        
-        {/* 移动端返回栏 */}
-        <div className="md:hidden bg-gray-800/90 backdrop-blur-sm border-b border-gray-700 px-4 py-3 flex items-center">
-          <button onClick={goBack} className="flex items-center text-gray-300 hover:text-white">
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            返回
-          </button>
-        </div>
-
-        <main className="max-w-4xl mx-auto p-4 md:p-8">
-          <div className="bg-red-900/20 border border-red-600/50 rounded-xl p-8 text-center animate-fade-in">
-            <BookOpen className="w-20 h-20 text-red-400 mx-auto mb-4 animate-bounce" />
-            <h2 className="text-2xl font-bold text-white mb-2">加载失败</h2>
-            <p className="text-gray-400 mb-6">{error || '故事不存在'}</p>
-            <div className="flex gap-3 justify-center">
-              <Button onClick={goBack} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700">
+    return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+        <Sidebar currentPage="index" navigateTo={navigateTo} />
+        <main className="transition-all duration-300 ease-in-out md:ml-16 lg:ml-64">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="text-center py-16">
+              <BookOpen className="w-24 h-24 text-slate-600 mx-auto mb-6" />
+              <h2 className="text-2xl font-bold text-slate-400 mb-4">{error || '故事不存在'}</h2>
+              <Button onClick={navigateBack} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white">
+                <ArrowLeft className="w-4 h-4 mr-2" />
                 返回首页
-              </Button>
-              <Button onClick={() => window.location.reload()} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white">
-                重新加载
               </Button>
             </div>
           </div>
         </main>
       </div>;
   }
-  return <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      <Sidebar currentPage="detail" navigateTo={navigateTo} />
-      
-      {/* 移动端返回栏 */}
-      <div className="md:hidden bg-gray-800/90 backdrop-blur-sm border-b border-gray-700 px-4 py-3 flex items-center">
-        <button onClick={goBack} className="flex items-center text-gray-300 hover:text-white">
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          返回
-        </button>
+  return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
+      {/* 阅读进度条 */}
+      <div className="fixed top-0 left-0 w-full h-1 bg-slate-700 z-50">
+        <div className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-300" style={{
+        width: `${readingProgress}%`
+      }} />
       </div>
 
-      <div className="flex-1 transition-all duration-300 ease-in-out">
-        <main className="max-w-4xl mx-auto p-4 md:p-8 pb-24 md:pb-8">
-          <article className="bg-gray-800/50 backdrop-blur-sm rounded-xl overflow-hidden border border-gray-700 shadow-2xl">
-            {story.image && <div className="relative h-48 md:h-64 lg:h-96">
-                <img src={story.image} alt={story.title} className="w-full h-full object-cover" onError={e => {
-              e.target.style.display = 'none';
-            }} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-              </div>}
-            
-            <div className="p-6 md:p-8">
-              <div className="mb-6 animate-fade-in">
-                <h1 className="text-2xl md:text-4xl font-bold text-white mb-4 leading-tight">
-                  {story.title || '无标题'}
-                </h1>
-                
-                <div className="flex flex-wrap items-center gap-3 md:gap-4 text-sm text-gray-400">
-                  {story.author && <span className="flex items-center bg-gray-700/50 px-3 py-1 rounded-full">
-                      <User className="w-4 h-4 mr-1" />
-                      {story.author}
-                    </span>}
-                  <span className="flex items-center bg-gray-700/50 px-3 py-1 rounded-full">
-                    <Calendar className="w-4 h-4 mr-1" />
-                    {formatDate(story.createdAt)}
-                  </span>
-                  <span className="flex items-center bg-gray-700/50 px-3 py-1 rounded-full">
-                    <Clock className="w-4 h-4 mr-1" />
-                    {formatReadTime(story.read_time)}
-                  </span>
-                  {story.location && <span className="flex items-center bg-gray-700/50 px-3 py-1 rounded-full">
-                      <MapPin className="w-4 h-4 mr-1" />
-                      {story.location}
-                    </span>}
-                </div>
+      <Sidebar currentPage="index" navigateTo={navigateTo} />
 
-                {story.tags && story.tags.length > 0 && <div className="flex flex-wrap gap-2 mt-4">
-                    {story.tags.map((tag, index) => <span key={index} className="px-3 py-1 bg-red-900/30 text-red-300 text-sm rounded-full border border-red-800/50 animate-fade-in" style={{
-                  animationDelay: `${index * 0.1}s`
-                }}>
+      <main className="transition-all duration-300 ease-in-out md:ml-16 lg:ml-64">
+        {/* 移动端返回按钮 - 简化，移除多余导航 */}
+        <div className="md:hidden sticky top-0 bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 px-4 py-3 flex items-center justify-between z-40">
+          <Button onClick={navigateBack} variant="ghost" size="sm" className="text-slate-300 hover:text-white">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            返回
+          </Button>
+          <div className="flex items-center space-x-2">
+            <Button onClick={toggleBookmark} variant="ghost" size="sm" className={isBookmarked ? 'text-red-500' : 'text-slate-400'}>
+              <Bookmark className="w-4 h-4" fill={isBookmarked ? 'currentColor' : 'none'} />
+            </Button>
+            <Button onClick={shareStory} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+              <Share2 className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* 文章头部 */}
+        <header className="relative">
+          {story.image && <div className="relative h-64 md:h-96 overflow-hidden">
+              <img src={story.image} alt={story.title} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent"></div>
+            </div>}
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10">
+            <div className="bg-slate-800/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-2xl">
+              <div className="flex items-center space-x-2 text-sm text-slate-400 mb-4">
+                <Calendar className="w-4 h-4" />
+                <span>{formatDate(story.createdAt)}</span>
+                <span>•</span>
+                <Clock className="w-4 h-4" />
+                <span>{formatReadTime(story.content)}</span>
+                <span>•</span>
+                <Eye className="w-4 h-4" />
+                <span>{story.views || 0}次阅读</span>
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
+                {story.title}
+              </h1>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <User className="w-5 h-5 text-slate-400" />
+                  <span className="text-slate-300">{story.author || '佚名'}</span>
+                </div>
+                {story.tags && story.tags.length > 0 && <div className="flex items-center space-x-2">
+                    {story.tags.map((tag, index) => <Badge key={index} variant="outline" className="border-red-500/30 text-red-400 text-sm bg-red-500/10">
                         {tag}
-                      </span>)}
+                      </Badge>)}
                   </div>}
               </div>
+            </div>
+          </div>
+        </header>
 
-              <div className="prose prose-invert max-w-none">
-                <p className="text-gray-300 leading-relaxed whitespace-pre-wrap text-base md:text-lg animate-fade-in">
-                  {story.content || '暂无内容'}
-                </p>
-              </div>
+        {/* 文章内容 */}
+        <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="prose prose-invert prose-lg max-w-none">
+            <div className="text-slate-300 leading-relaxed whitespace-pre-wrap font-serif text-lg">
+              {story.content}
+            </div>
+          </div>
 
-              <div className="flex flex-wrap gap-3 mt-8 pt-6 border-t border-gray-700">
-                <Button onClick={goBack} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white transition-all">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  返回
+          {/* 文章底部操作栏 */}
+          <div className="mt-12 pt-8 border-t border-slate-700">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Button onClick={toggleBookmark} variant="outline" className={isBookmarked ? 'border-red-500 text-red-500 bg-red-500/10' : 'border-slate-600 text-slate-300 hover:bg-slate-700'}>
+                  <Bookmark className="w-4 h-4 mr-2" fill={isBookmarked ? 'currentColor' : 'none'} />
+                  {isBookmarked ? '已收藏' : '收藏'}
                 </Button>
-                <Button onClick={goToEdit} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-red-500/25 transition-all duration-300">
-                  <Edit className="w-4 h-4 mr-2" />
-                  编辑
-                </Button>
-                <Button onClick={handleShare} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white transition-all">
+                <Button onClick={shareStory} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
                   <Share2 className="w-4 h-4 mr-2" />
                   分享
                 </Button>
-                <Button onClick={handleLike} variant={isLiked ? "default" : "outline"} className={cn("transition-all duration-200", isLiked ? "bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700" : "border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white")}>
-                  <Heart className={cn("w-4 h-4 mr-2", isLiked && "fill-current")} />
-                  {isLiked ? '已收藏' : '收藏'}
-                </Button>
               </div>
+              <Button onClick={navigateBack} variant="ghost" className="text-slate-400 hover:text-white">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                返回列表
+              </Button>
             </div>
-          </article>
-        </main>
-      </div>
+          </div>
+        </article>
 
+        {/* 桌面端底部操作栏 */}
+        <div className="hidden md:block fixed bottom-8 right-8 space-y-2">
+          <Button onClick={toggleBookmark} size="icon" className={isBookmarked ? 'bg-red-500 hover:bg-red-600' : 'bg-slate-700 hover:bg-slate-600'}>
+            <Bookmark className="w-4 h-4" fill={isBookmarked ? 'currentColor' : 'none'} />
+          </Button>
+          <Button onClick={shareStory} size="icon" className="bg-slate-700 hover:bg-slate-600">
+            <Share2 className="w-4 h-4" />
+          </Button>
+          <Button onClick={navigateBack} size="icon" className="bg-slate-700 hover:bg-slate-600">
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+        </div>
+      </main>
+
+      {/* 移动端底部导航 - 仅在移动端显示 */}
       <MobileBottomNav currentPage="detail" navigateTo={navigateTo} />
     </div>;
 }

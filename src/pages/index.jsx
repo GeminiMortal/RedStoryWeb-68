@@ -11,6 +11,8 @@ import { Sidebar } from '@/components/Sidebar';
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 // @ts-ignore;
 import { MobileBottomNav } from '@/components/MobileBottomNav';
+// @ts-ignore;
+import { StoryCarousel } from '@/components/StoryCarousel';
 export default function HomePage(props) {
   const {
     $w
@@ -20,7 +22,6 @@ export default function HomePage(props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [featuredStory, setFeaturedStory] = useState(null);
   const [filterTag, setFilterTag] = useState('');
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const navigateTo = $w.utils.navigateTo;
 
   // 获取所有标签
@@ -66,29 +67,12 @@ export default function HomePage(props) {
     if (!readTime) return '5分钟阅读';
     return readTime;
   };
-
-  // 计算主内容区域的边距
-  const getMainMargin = () => {
-    if (window.innerWidth < 768) {
-      return 'ml-0';
-    }
-    return isSidebarCollapsed ? 'md:ml-16' : 'md:ml-64';
-  };
   return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
       <Sidebar currentPage="index" navigateTo={navigateTo} />
 
-      {/* 主内容区域 - 动态边距 */}
-      <main className={["transition-all duration-300 ease-in-out", "pt-16 md:pt-0", "md:ml-16",
-    // 默认折叠状态
-    "lg:ml-64" // 默认展开状态
-    ].join(' ')}>
-        {/* 移动端顶部导航 */}
-        <div className="md:hidden bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 px-4 py-3 flex items-center justify-between">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
-            红色故事
-          </h1>
-        </div>
-
+      {/* 主内容区域 */}
+      <main className="transition-all duration-300 ease-in-out md:ml-16 lg:ml-64">
+        {/* 移动端顶部导航 - 移除，使用底部导航 */}
         {/* 桌面端头部 */}
         <header className="hidden md:block bg-slate-800/90 backdrop-blur-sm border-b border-slate-700">
           <div className="max-w-7xl mx-auto px-6 py-4">
@@ -112,6 +96,26 @@ export default function HomePage(props) {
             </div>
           </div>
         </header>
+
+        {/* 英雄区域 */}
+        <header className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-red-600/10 via-orange-600/10 to-transparent"></div>
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width=%2740%27%20height=%2740%27%20viewBox=%270%200%2040%2040%27%20xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cg%20fill=%27%239C92AC%27%20fill-opacity=%270.03%27%3E%3Cpath%20d=%27M0%2040L40%200H20L0%2020M40%2040V20L20%2040%27/%3E%3C/g%3E%3C/svg%3E')]"></div>
+          
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+            <div className="text-center">
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-red-400 via-orange-400 to-red-500 bg-clip-text text-transparent animate-pulse">
+                红色故事
+              </h1>
+              <p className="mt-4 text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                传承红色基因，讲述革命故事，让历史在新时代焕发光芒
+              </p>
+            </div>
+          </div>
+        </header>
+
+        {/* 轮播区域 */}
+        {!loading && stories.length > 0 && <StoryCarousel stories={stories} onNavigate={navigateTo} />}
 
         {/* 搜索和过滤区域 */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -138,61 +142,6 @@ export default function HomePage(props) {
             </div>
           </div>
         </div>
-
-        {/* 特色故事 */}
-        {featuredStory && !searchTerm && !filterTag && <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-            <div className="flex items-center mb-6">
-              <TrendingUp className="w-6 h-6 mr-2 text-red-500" />
-              <h2 className="text-2xl font-bold text-white">精选故事</h2>
-            </div>
-            <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/80 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50 hover:border-red-500/50 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-red-500/20">
-              <div className="grid md:grid-cols-2 gap-0">
-                {featuredStory.image && <div className="relative aspect-video md:aspect-auto">
-                    <img src={featuredStory.image} alt={featuredStory.title} className="w-full h-full object-cover transition-transform duration-500 hover:scale-110" onError={e => {
-                e.target.style.display = 'none';
-              }} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                  </div>}
-                <div className="p-8 flex flex-col justify-center">
-                  <CardHeader>
-                    <CardTitle className="text-2xl text-white mb-3 leading-tight">
-                      {featuredStory.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-slate-300 mb-4 line-clamp-3 leading-relaxed">
-                      {featuredStory.content}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 text-sm text-slate-400">
-                        <span className="flex items-center bg-slate-700/50 px-3 py-1 rounded-full">
-                          <User className="w-4 h-4 mr-1" />
-                          {featuredStory.author || '佚名'}
-                        </span>
-                        <span className="flex items-center bg-slate-700/50 px-3 py-1 rounded-full">
-                          <Clock className="w-4 h-4 mr-1" />
-                          {formatDate(featuredStory.createdAt)}
-                        </span>
-                        {featuredStory.read_time && <span className="flex items-center bg-slate-700/50 px-3 py-1 rounded-full">
-                            <Clock className="w-4 h-4 mr-1" />
-                            {featuredStory.read_time}
-                          </span>}
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => navigateTo({
-                    pageId: 'detail',
-                    params: {
-                      id: featuredStory._id
-                    }
-                  })} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20">
-                        <Eye className="w-4 h-4 mr-1" />
-                        阅读全文
-                      </Button>
-                    </div>
-                  </CardContent>
-                </div>
-              </div>
-            </div>
-          </div>}
 
         {/* 故事列表 */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
@@ -282,6 +231,7 @@ export default function HomePage(props) {
         </div>
       </main>
 
+      {/* 移动端底部导航 - 仅在移动端显示 */}
       <MobileBottomNav currentPage="index" navigateTo={navigateTo} />
     </div>;
 }

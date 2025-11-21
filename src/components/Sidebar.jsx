@@ -58,15 +58,15 @@ export function Sidebar({
   // 移动端遮罩层
   const MobileOverlay = () => <div className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300" onClick={toggleMobile} />;
   return <>
-      {/* 移动端菜单按钮 */}
-      <button onClick={toggleMobile} className="fixed top-4 left-4 z-50 md:hidden bg-slate-800/90 backdrop-blur-sm p-2.5 rounded-xl border border-slate-700 shadow-lg hover:bg-slate-700/90 transition-all duration-200">
+      {/* 移动端菜单按钮 - 仅在桌面端显示 */}
+      <button onClick={toggleMobile} className={cn("fixed top-4 left-4 z-50 md:hidden bg-slate-800/90 backdrop-blur-sm p-2.5 rounded-xl border border-slate-700 shadow-lg hover:bg-slate-700/90 transition-all duration-200", "hidden")}>
         <Menu className="w-5 h-5 text-white" />
       </button>
 
       {/* 移动端侧边栏 */}
       {isMobileOpen && <MobileOverlay />}
       
-      {/* 侧边栏主体 */}
+      {/* 侧边栏主体 - 桌面端固定显示，移动端可折叠 */}
       <div className={cn("fixed left-0 top-0 h-full bg-slate-800/95 backdrop-blur-md border-r border-slate-700/50 flex flex-col transition-all duration-300 ease-in-out z-50", "md:translate-x-0", isMobileOpen ? "translate-x-0" : "-translate-x-full", isCollapsed && isDesktop ? "md:w-16" : "md:w-64", "w-64")}>
         {/* Logo/标题区域 */}
         <div className={cn("p-6 border-b border-slate-700/50 flex items-center justify-between", isCollapsed && isDesktop && "md:p-3 md:justify-center")}>
