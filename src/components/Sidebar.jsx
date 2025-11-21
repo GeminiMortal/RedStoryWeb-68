@@ -11,16 +11,24 @@ export function Sidebar({
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
 
-  // 监听窗口大小变化，自动处理移动端状态
+  // 监听窗口大小变化
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
+    const checkScreenSize = () => {
+      const isDesktopView = window.innerWidth >= 768;
+      setIsDesktop(isDesktopView);
+
+      // 桌面端默认不折叠，移动端默认关闭
+      if (isDesktopView) {
         setIsMobileOpen(false);
+      } else {
+        setIsCollapsed(false);
       }
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
   const navItems = [{
     id: 'index',
@@ -51,22 +59,23 @@ export function Sidebar({
   const MobileOverlay = () => <div className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300" onClick={toggleMobile} />;
   return <>
       {/* 移动端菜单按钮 */}
-      <button onClick={toggleMobile} className="fixed top-4 left-4 z-50 md:hidden bg-gray-800 p-2 rounded-lg border border-gray-700 shadow-lg">
+      <button onClick={toggleMobile} className="fixed top-4 left-4 z-50 md:hidden bg-slate-800/90 backdrop-blur-sm p-2.5 rounded-xl border border-slate-700 shadow-lg hover:bg-slate-700/90 transition-all duration-200">
         <Menu className="w-5 h-5 text-white" />
       </button>
 
       {/* 移动端侧边栏 */}
       {isMobileOpen && <MobileOverlay />}
-      <div className={cn("fixed left-0 top-0 h-full bg-gray-800/95 backdrop-blur-sm border-r border-gray-700 flex flex-col transition-transform duration-300 ease-in-out z-50", "md:translate-x-0", isMobileOpen ? "translate-x-0" : "-translate-x-full", isCollapsed ? "md:w-16" : "md:w-64")}>
-        {/* Logo/标题 */}
-        <div className={cn("p-6 border-b border-gray-700/50 flex items-center justify-between", isCollapsed && "md:p-3")}>
-          {!isCollapsed && <h1 className="text-xl font-bold text-white">
+      
+      {/* 侧边栏主体 */}
+      <div className={cn("fixed left-0 top-0 h-full bg-slate-800/95 backdrop-blur-md border-r border-slate-700/50 flex flex-col transition-all duration-300 ease-in-out z-50", "md:translate-x-0", isMobileOpen ? "translate-x-0" : "-translate-x-full", isCollapsed && isDesktop ? "md:w-16" : "md:w-64", "w-64")}>
+        {/* Logo/标题区域 */}
+        <div className={cn("p-6 border-b border-slate-700/50 flex items-center justify-between", isCollapsed && isDesktop && "md:p-3 md:justify-center")}>
+          {!isCollapsed || !isDesktop ? <h1 className="text-xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
               红色故事
-            </h1>}
-          {isCollapsed && <BookOpen className="w-6 h-6 text-red-500 mx-auto" />}
+            </h1> : <BookOpen className="w-6 h-6 text-red-500" />}
           
           {/* 移动端关闭按钮 */}
-          <button onClick={toggleMobile} className="md:hidden text-gray-400 hover:text-white p-1">
+          <button onClick={toggleMobile} className="md:hidden text-slate-400 hover:text-white p-1">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -78,9 +87,9 @@ export function Sidebar({
             const Icon = item.icon;
             const isActive = currentPage === item.id;
             return <li key={item.id}>
-                  <button onClick={() => handleNavigation(item.pageId)} className={cn("w-full flex items-center space-x-3 px-3 py-3 rounded-lg text-sm font-medium transition-all duration-200", "hover:scale-105 hover:shadow-lg", isActive ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md" : "text-gray-300 hover:bg-gray-700/50 hover:text-white", isCollapsed && "justify-center px-2")}>
+                  <button onClick={() => handleNavigation(item.pageId)} className={cn("w-full flex items-center space-x-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200", "hover:scale-105 hover:shadow-lg", isActive ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-md" : "text-slate-300 hover:bg-slate-700/50 hover:text-white", isCollapsed && isDesktop && "md:justify-center md:px-2")}>
                     <Icon className="w-5 h-5 flex-shrink-0" />
-                    {!isCollapsed && <span>{item.label}</span>}
+                    {(!isCollapsed || !isDesktop) && <span>{item.label}</span>}
                   </button>
                 </li>;
           })}
@@ -88,17 +97,16 @@ export function Sidebar({
         </nav>
 
         {/* 版权信息 */}
-        <div className={cn("p-4 border-t border-gray-700/50", isCollapsed && "md:p-2")}>
-          {!isCollapsed && <p className="text-xs text-gray-500 text-center">
+        <div className={cn("p-4 border-t border-slate-700/50", isCollapsed && isDesktop && "md:p-2")}>
+          {!isCollapsed || !isDesktop ? <p className="text-xs text-slate-500 text-center">
               © <span className="text-red-400">sut</span>·code2501
-            </p>}
-          {isCollapsed && <Copyright className="w-4 h-4 text-gray-500 mx-auto" />}
+            </p> : <Copyright className="w-4 h-4 text-slate-500 mx-auto" />}
         </div>
 
         {/* 折叠按钮 - 仅桌面端显示 */}
-        <button onClick={toggleSidebar} className="absolute top-1/2 -right-3 transform -translate-y-1/2 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-red-500 hover:to-red-600 text-white rounded-full p-1.5 shadow-lg border border-gray-600 transition-all duration-200 hover:scale-110 hidden md:block">
-          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-        </button>
+        {isDesktop && <button onClick={toggleSidebar} className={cn("absolute top-1/2 -right-3 transform -translate-y-1/2", "bg-slate-700 hover:from-red-500 hover:to-orange-500 text-white", "rounded-full p-1.5 shadow-lg border border-slate-600", "transition-all duration-200 hover:scale-110")}>
+            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>}
       </div>
     </>;
 }
