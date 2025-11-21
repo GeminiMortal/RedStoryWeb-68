@@ -11,8 +11,6 @@ import { cn } from '@/lib/utils';
 import { StoryCarousel } from '@/components/StoryCarousel';
 // @ts-ignore;
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
-// @ts-ignore;
-import { useGlobalState } from '@/components/GlobalStateProvider';
 export default function DetailPage(props) {
   const {
     $w
@@ -116,5 +114,108 @@ export default function DetailPage(props) {
     return null;
   }
 
-  // ... 其余代码保持不变
+  // 渲染故事内容
+  const renderContent = content => {
+    if (!content) return null;
+    return content.split('\n').map((paragraph, index) => {
+      if (paragraph.trim() === '') return <br key={index} />;
+
+      // 处理图片标记 [img:url]
+      if (paragraph.startsWith('[img:') && paragraph.endsWith(']')) {
+        const imageUrl = paragraph.slice(5, -1);
+        return <img key={index} src={imageUrl} alt="故事图片" className="w-full rounded-lg my-4" />;
+      }
+
+      // 处理标题标记
+      if (paragraph.startsWith('# ')) {
+        return <h1 key={index} className="text-2xl font-bold my-4" style={{
+          fontSize: `${fontSize + 8}px`,
+          lineHeight
+        }}>{paragraph.slice(2)}</h1>;
+      }
+      if (paragraph.startsWith('## ')) {
+        return <h2 key={index} className="text-xl font-semibold my-3" style={{
+          fontSize: `${fontSize + 4}px`,
+          lineHeight
+        }}>{paragraph.slice(3)}</h2>;
+      }
+      return <p key={index} className="mb-4" style={{
+        fontSize: `${fontSize}px`,
+        lineHeight,
+        textIndent: '2em'
+      }}>{paragraph}</p>;
+    });
+  };
+  return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* 阅读进度条 */}
+        <div className="fixed top-0 left-0 right-0 h-1 bg-slate-700 z-50">
+          <div className="h-full bg-red-500 transition-all duration-300" style={{
+          width: `${readingProgress}%`
+        }} />
+        </div>
+
+        {/* 返回按钮 */}
+        <div className="flex items-center justify-between mb-6">
+          <Button onClick={() => navigateBack()} variant="ghost" className="text-slate-400 hover:text-white">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            返回
+          </Button>
+          
+          <div className="flex items-center space-x-2">
+            <Button onClick={() => setFontSize(Math.max(12, fontSize - 2))} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+              <ZoomOut className="w-4 h-4" />
+            </Button>
+            <span className="text-sm text-slate-400">{fontSize}px</span>
+            <Button onClick={() => setFontSize(Math.min(24, fontSize + 2))} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+              <ZoomIn className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* 故事内容 */}
+        <Card className="bg-slate-800 border-slate-700">
+          <CardContent className="p-8">
+            <h1 className="text-3xl font-bold text-white mb-4" style={{
+            fontSize: `${fontSize + 12}px`,
+            lineHeight
+          }}>{story.title}</h1>
+            
+            <div className="flex items-center space-x-4 text-sm text-slate-400 mb-6">
+              <span className="flex items-center"><User className="w-4 h-4 mr-1" />{story.author}</span>
+              <span className="flex items-center"><Clock className="w-4 h-4 mr-1" />{new Date(story.publishedAt).toLocaleDateString()}</span>
+              <span className="flex items-center"><Eye className="w-4 h-4 mr-1" />{story.views}次阅读</span>
+            </div>
+
+            <div className="prose prose-invert max-w-none" style={{
+            fontSize: `${fontSize}px`,
+            lineHeight
+          }}>
+              {renderContent(story.content)}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 底部操作栏 */}
+        <div className="flex items-center justify-between mt-8">
+          <Button onClick={() => navigateTo({
+          pageId: 'index'
+        })} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+            <Home className="w-4 h-4 mr-2" />
+            返回首页
+          </Button>
+          
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+              <Heart className="w-4 h-4 mr-2" />
+              收藏
+            </Button>
+            <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+              <Share2 className="w-4 h-4 mr-2" />
+              分享
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>;
 }

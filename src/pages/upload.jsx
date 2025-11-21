@@ -6,8 +6,6 @@ import { Button, Card, CardContent, CardHeader, CardTitle, Textarea, Input, useT
 import { Upload, Save, Send, Image, Tag, User, ArrowLeft } from 'lucide-react';
 
 // @ts-ignore;
-import { useGlobalState } from '@/components/GlobalStateProvider';
-// @ts-ignore;
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 export default function UploadPage(props) {
   const {
@@ -122,6 +120,71 @@ export default function UploadPage(props) {
       setPublishing(false);
     }
   }, [formData, toast, navigateTo]);
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+  const handleSubmit = e => {
+    e.preventDefault();
+  };
+  return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <Button onClick={navigateBack} variant="ghost" className="text-slate-400 hover:text-white">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            返回
+          </Button>
+          <h1 className="text-2xl font-bold text-white">创作新故事</h1>
+        </div>
 
-  // ... 其余代码保持不变
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white">故事信息</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">故事标题</label>
+                <Input type="text" placeholder="请输入故事标题" value={formData.title} onChange={e => handleInputChange('title', e.target.value)} className="bg-slate-700 border-slate-600 text-white placeholder-slate-400" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">作者</label>
+                <Input type="text" placeholder="请输入作者姓名" value={formData.author} onChange={e => handleInputChange('author', e.target.value)} className="bg-slate-700 border-slate-600 text-white placeholder-slate-400" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">故事内容</label>
+                <Textarea placeholder="请输入故事内容..." value={formData.content} onChange={e => handleInputChange('content', e.target.value)} rows={10} className="bg-slate-700 border-slate-600 text-white placeholder-slate-400" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">故事分类</label>
+                <select value={formData.category} onChange={e => handleInputChange('category', e.target.value)} className="w-full px-3 py-2 bg-slate-700 border-slate-600 text-white rounded-md">
+                  <option value="红色故事">红色故事</option>
+                  <option value="英雄事迹">英雄事迹</option>
+                  <option value="革命历史">革命历史</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">图片链接</label>
+                <Input type="url" placeholder="请输入图片URL" value={formData.imageUrl} onChange={e => handleInputChange('imageUrl', e.target.value)} className="bg-slate-700 border-slate-600 text-white placeholder-slate-400" />
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <Button type="button" onClick={saveToDraft} disabled={saving || publishing} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+                  {saving ? '保存中...' : '保存草稿'}
+                </Button>
+                <Button type="button" onClick={publishStory} disabled={saving || publishing} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600">
+                  {publishing ? '发布中...' : '立即发布'}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>;
 }

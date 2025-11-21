@@ -11,8 +11,6 @@ import { cn } from '@/lib/utils';
 import { StoryCarousel } from '@/components/StoryCarousel';
 // @ts-ignore;
 import { LoadingSkeleton } from '@/components/LoadingSkeleton';
-// @ts-ignore;
-import { useGlobalState } from '@/components/GlobalStateProvider';
 export default function HomePage(props) {
   const {
     $w
@@ -26,10 +24,6 @@ export default function HomePage(props) {
   const {
     toast
   } = useToast();
-  const {
-    sidebarState,
-    setSidebarState
-  } = useGlobalState();
   const navigateTo = $w.utils.navigateTo;
 
   // 统一的数据模型调用
