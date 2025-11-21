@@ -190,7 +190,7 @@ export default function HomePage(props) {
 
         {/* 轮播区域 */}
         {!loading && stories.length > 0 && <FadeIn delay={300}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
               <StoryCarousel stories={stories} onNavigate={navigateTo} />
             </div>
           </FadeIn>}
