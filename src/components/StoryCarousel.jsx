@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ChevronLeft, ChevronRight, Eye, Pause, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, Play, Pause } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
@@ -45,9 +45,9 @@ export function StoryCarousel({
     setIsPlaying(false); // 手动切换时暂停自动播放
     setTimeout(() => setIsPlaying(true), 10000); // 10秒后恢复自动播放
   }, []);
-  const toggleAutoPlay = useCallback(() => {
+  const toggleAutoPlay = () => {
     setIsPlaying(!isPlaying);
-  }, [isPlaying]);
+  };
   const handleStoryClick = storyId => {
     onNavigate('detail', {
       id: storyId
@@ -59,9 +59,9 @@ export function StoryCarousel({
       <div className="relative h-96 md:h-[500px] rounded-2xl overflow-hidden shadow-2xl">
         {/* 背景图片 */}
         <div className="absolute inset-0">
-          {carouselStories.map((story, index) => <div key={story._id} className={cn("absolute inset-0 transition-opacity duration-500", index === currentIndex ? "opacity-100" : "opacity-0")}>
+          {carouselStories.map((story, index) => <div key={story._id} className={cn("absolute inset-0 transition-all duration-700 ease-in-out", index === currentIndex ? "opacity-100 translate-x-0" : index < currentIndex ? "opacity-0 -translate-x-full" : "opacity-0 translate-x-full")}>
               <img src={story.image} alt={story.title} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent"></div>
             </div>)}
         </div>
 
@@ -69,17 +69,29 @@ export function StoryCarousel({
         <div className="absolute inset-0 flex items-end">
           <div className="w-full p-8 md:p-12">
             <div className="max-w-2xl">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
+              <div className="flex items-center space-x-2 mb-4">
+                <span className="text-sm text-red-400 font-semibold bg-red-500/20 px-3 py-1 rounded-full">
+                  精选故事
+                </span>
+                <span className="text-sm text-slate-300">
+                  {currentIndex + 1} / {carouselStories.length}
+                </span>
+              </div>
+              
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight line-clamp-2">
                 {currentStory.title}
               </h2>
+              
               <p className="text-slate-200 text-lg mb-6 line-clamp-3">
                 {currentStory.content}
               </p>
+              
               <div className="flex items-center space-x-4">
                 <Button onClick={() => handleStoryClick(currentStory._id)} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105">
                   <Eye className="w-4 h-4 mr-2" />
                   阅读全文
                 </Button>
+                
                 <div className="flex items-center space-x-2 text-sm text-slate-300">
                   <span>{currentStory.author || '佚名'}</span>
                   <span>•</span>
@@ -91,15 +103,16 @@ export function StoryCarousel({
         </div>
 
         {/* 控制按钮 */}
-        <button onClick={goToPrevious} className="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-800/50 hover:bg-slate-700/70 backdrop-blur-sm text-white p-3 rounded-full transition-all duration-200 hover:scale-110">
+        <button onClick={goToPrevious} className="absolute left-4 top-1/2 -translate-y-1/2 bg-slate-800/70 hover:bg-slate-700/90 backdrop-blur-sm text-white p-3 rounded-full transition-all duration-200 hover:scale-110">
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <button onClick={goToNext} className="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-800/50 hover:bg-slate-700/70 backdrop-blur-sm text-white p-3 rounded-full transition-all duration-200 hover:scale-110">
+        
+        <button onClick={goToNext} className="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-800/70 hover:bg-slate-700/90 backdrop-blur-sm text-white p-3 rounded-full transition-all duration-200 hover:scale-110">
           <ChevronRight className="w-6 h-6" />
         </button>
 
         {/* 自动播放控制按钮 */}
-        <button onClick={toggleAutoPlay} className="absolute top-4 right-4 bg-slate-800/50 hover:bg-slate-700/70 backdrop-blur-sm text-white p-2 rounded-full transition-all duration-200">
+        <button onClick={toggleAutoPlay} className="absolute top-4 right-4 bg-slate-800/70 hover:bg-slate-700/90 backdrop-blur-sm text-white p-2 rounded-full transition-all duration-200">
           {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
         </button>
 
@@ -109,15 +122,8 @@ export function StoryCarousel({
         </div>
 
         {/* 自动播放状态指示 */}
-        <div className="absolute bottom-4 right-4 text-xs text-slate-300 bg-slate-800/50 backdrop-blur-sm px-2 py-1 rounded-full">
-          {currentIndex + 1} / {carouselStories.length}
-        </div>
-
-        {/* 移动端滑动提示 */}
-        <div className="absolute bottom-4 right-4 md:hidden">
-          <div className="text-xs text-slate-300 bg-slate-800/50 backdrop-blur-sm px-3 py-1 rounded-full">
-            左右滑动切换
-          </div>
+        <div className="absolute bottom-4 right-4 text-xs text-slate-300 bg-slate-800/70 backdrop-blur-sm px-3 py-1 rounded-full">
+          {isPlaying ? '自动播放中' : '已暂停'}
         </div>
       </div>
     </div>;

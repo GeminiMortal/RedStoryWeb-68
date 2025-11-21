@@ -72,7 +72,6 @@ export default function HomePage(props) {
 
       {/* 主内容区域 */}
       <main className="transition-all duration-300 ease-in-out md:ml-16 lg:ml-64">
-        {/* 移动端顶部导航 - 移除，使用底部导航 */}
         {/* 桌面端头部 */}
         <header className="hidden md:block bg-slate-800/90 backdrop-blur-sm border-b border-slate-700">
           <div className="max-w-7xl mx-auto px-6 py-4">
@@ -114,7 +113,7 @@ export default function HomePage(props) {
           </div>
         </header>
 
-        {/* 轮播区域 */}
+        {/* 轮播区域 - 已集成自动播放功能 */}
         {!loading && stories.length > 0 && <StoryCarousel stories={stories} onNavigate={navigateTo} />}
 
         {/* 搜索和过滤区域 */}
