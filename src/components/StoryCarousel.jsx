@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, Pause, Play } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
@@ -14,30 +14,40 @@ export function StoryCarousel({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
 
   // 过滤有图片的故事作为轮播项
   const carouselStories = stories.filter(story => story.image).slice(0, 5);
   if (carouselStories.length === 0) return null;
 
-  // 自动播放
+  // 自动播放逻辑
   useEffect(() => {
-    if (!isAutoPlay || isHovered) return;
+    if (!isAutoPlay || isHovered || !isPlaying) return;
     const timer = setInterval(() => {
       setCurrentIndex(prev => (prev + 1) % carouselStories.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [isAutoPlay, isHovered, carouselStories.length]);
+  }, [isAutoPlay, isHovered, isPlaying, carouselStories.length]);
 
   // 切换轮播
   const goToPrevious = useCallback(() => {
     setCurrentIndex(prev => (prev - 1 + carouselStories.length) % carouselStories.length);
+    setIsPlaying(false); // 手动切换时暂停自动播放
+    setTimeout(() => setIsPlaying(true), 10000); // 10秒后恢复自动播放
   }, [carouselStories.length]);
   const goToNext = useCallback(() => {
     setCurrentIndex(prev => (prev + 1) % carouselStories.length);
+    setIsPlaying(false); // 手动切换时暂停自动播放
+    setTimeout(() => setIsPlaying(true), 10000); // 10秒后恢复自动播放
   }, [carouselStories.length]);
   const goToSlide = useCallback(index => {
     setCurrentIndex(index);
+    setIsPlaying(false); // 手动切换时暂停自动播放
+    setTimeout(() => setIsPlaying(true), 10000); // 10秒后恢复自动播放
   }, []);
+  const toggleAutoPlay = useCallback(() => {
+    setIsPlaying(!isPlaying);
+  }, [isPlaying]);
   const handleStoryClick = storyId => {
     onNavigate('detail', {
       id: storyId
@@ -88,9 +98,19 @@ export function StoryCarousel({
           <ChevronRight className="w-6 h-6" />
         </button>
 
+        {/* 自动播放控制按钮 */}
+        <button onClick={toggleAutoPlay} className="absolute top-4 right-4 bg-slate-800/50 hover:bg-slate-700/70 backdrop-blur-sm text-white p-2 rounded-full transition-all duration-200">
+          {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+        </button>
+
         {/* 指示器 */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
           {carouselStories.map((_, index) => <button key={index} onClick={() => goToSlide(index)} className={cn("w-2 h-2 rounded-full transition-all duration-300", index === currentIndex ? "bg-red-500 w-8" : "bg-slate-400/50 hover:bg-slate-300/70")} />)}
+        </div>
+
+        {/* 自动播放状态指示 */}
+        <div className="absolute bottom-4 right-4 text-xs text-slate-300 bg-slate-800/50 backdrop-blur-sm px-2 py-1 rounded-full">
+          {currentIndex + 1} / {carouselStories.length}
         </div>
 
         {/* 移动端滑动提示 */}

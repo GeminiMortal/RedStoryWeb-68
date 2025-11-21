@@ -13,6 +13,20 @@ export function Sidebar({
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
 
+  // 从 sessionStorage 读取侧边栏状态
+  useEffect(() => {
+    const savedCollapsed = sessionStorage.getItem('sidebarCollapsed');
+    if (savedCollapsed !== null) {
+      setIsCollapsed(savedCollapsed === 'true');
+    }
+  }, []);
+
+  // 保存侧边栏状态到 sessionStorage
+  const updateCollapsedState = collapsed => {
+    setIsCollapsed(collapsed);
+    sessionStorage.setItem('sidebarCollapsed', String(collapsed));
+  };
+
   // 监听窗口大小变化
   useEffect(() => {
     const checkScreenSize = () => {
@@ -23,7 +37,11 @@ export function Sidebar({
       if (isDesktopView) {
         setIsMobileOpen(false);
       } else {
-        setIsCollapsed(false);
+        // 移动端保持折叠状态，但不打开侧边栏
+        const savedCollapsed = sessionStorage.getItem('sidebarCollapsed');
+        if (savedCollapsed !== null) {
+          setIsCollapsed(savedCollapsed === 'true');
+        }
       }
     };
     checkScreenSize();
@@ -42,7 +60,7 @@ export function Sidebar({
     pageId: 'admin'
   }];
   const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
+    updateCollapsedState(!isCollapsed);
   };
   const toggleMobile = () => {
     setIsMobileOpen(!isMobileOpen);
