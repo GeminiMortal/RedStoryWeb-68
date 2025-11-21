@@ -56,8 +56,8 @@ export default function DetailPage(props) {
   } = useSidebar();
   const navigateTo = $w.utils.navigateTo;
 
-  // 获取故事ID
-  const storyId = props.page.dataset.params?.id || '1';
+  // 安全获取故事ID - 修复 dataset 读取错误
+  const storyId = props.page?.dataset?.params?.id || '1';
 
   // 从 localStorage 加载字体设置
   useEffect(() => {
