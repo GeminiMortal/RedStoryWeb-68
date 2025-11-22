@@ -1,9 +1,9 @@
 // @ts-ignore;
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 // @ts-ignore;
 import { Button, Input, Textarea, useToast } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Save, Upload, Tag, MapPin, Clock, User, BookOpen, Send } from 'lucide-react';
+import { ArrowLeft, Save, Upload, Tag, MapPin, Clock, User, BookOpen, Send, Image as ImageIcon, X, FileImage } from 'lucide-react';
 
 // @ts-ignore;
 import { Sidebar } from '@/components/Sidebar';
@@ -27,6 +27,9 @@ export default function UploadPage(props) {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [tagInput, setTagInput] = useState('');
+  const [imagePreview, setImagePreview] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef(null);
   const {
     toast
   } = useToast();
@@ -39,6 +42,86 @@ export default function UploadPage(props) {
     const englishWords = (content.match(/[a-zA-Z]+/g) || []).length;
     const readTime = Math.max(1, Math.ceil(chineseChars / 500 + englishWords / 200));
     return `${readTime}分钟阅读`;
+  };
+
+  // 处理本地图片上传
+  const handleImageUpload = async event => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // 检查文件类型
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: '文件类型错误',
+        description: '请选择图片文件',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // 检查文件大小 (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: '文件过大',
+        description: '图片大小不能超过5MB',
+        variant: 'destructive'
+      });
+      return;
+    }
+    try {
+      setUploadingImage(true);
+
+      // 创建预览
+      const reader = new FileReader();
+      reader.onload = e => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+
+      // 模拟上传到云存储 (实际项目中需要替换为真实的云存储上传)
+      // 这里使用base64作为演示，实际应该上传到云存储并获取URL
+      const base64 = await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.readAsDataURL(file);
+      });
+
+      // 更新故事数据
+      setStory(prev => ({
+        ...prev,
+        image: base64
+      }));
+      toast({
+        title: '上传成功',
+        description: '图片已成功上传'
+      });
+    } catch (error) {
+      console.error('图片上传失败:', error);
+      toast({
+        title: '上传失败',
+        description: '图片上传失败，请重试',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // 移除图片
+  const removeImage = () => {
+    setImagePreview('');
+    setStory(prev => ({
+      ...prev,
+      image: ''
+    }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // 触发文件选择
+  const triggerFileSelect = () => {
+    fileInputRef.current?.click();
   };
 
   // 保存草稿（只存储草稿数据库）
@@ -261,16 +344,53 @@ export default function UploadPage(props) {
                 </div>
               </div>
 
-              {/* 图片URL */}
+              {/* 图片上传 */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  <Upload className="w-4 h-4 inline mr-1" />
-                  图片URL
+                  <ImageIcon className="w-4 h-4 inline mr-1" />
+                  封面图片
                 </label>
-                <Input value={story.image} onChange={e => setStory({
-                ...story,
-                image: e.target.value
-              })} placeholder="请输入图片URL" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+                
+                {/* 图片预览区域 */}
+                {imagePreview ? <div className="relative mb-4">
+                    <div className="relative w-full h-64 bg-gray-700/50 rounded-xl overflow-hidden border-2 border-dashed border-gray-600">
+                      <img src={imagePreview} alt="图片预览" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
+                        <Button onClick={triggerFileSelect} variant="outline" size="sm" className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30">
+                          <Upload className="w-4 h-4 mr-2" />
+                          更换图片
+                        </Button>
+                      </div>
+                      <button onClick={removeImage} className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-600 text-white p-2 rounded-full transition-colors duration-200">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div> : <div className="border-2 border-dashed border-gray-600 rounded-xl p-8 text-center hover:border-red-500/50 transition-colors duration-300 mb-4">
+                    <FileImage className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                    <p className="text-gray-400 mb-4">点击或拖拽上传封面图片</p>
+                    <Button onClick={triggerFileSelect} disabled={uploadingImage} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white transition-all">
+                      <Upload className="w-4 h-4 mr-2" />
+                      {uploadingImage ? '上传中...' : '选择图片'}
+                    </Button>
+                    <p className="text-xs text-gray-500 mt-2">支持 JPG、PNG 格式，大小不超过 5MB</p>
+                  </div>}
+
+                {/* 隐藏的文件输入 */}
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+
+                {/* URL输入作为备选方案 */}
+                <div className="mt-4">
+                  <label className="block text-xs text-gray-400 mb-2">或输入图片URL</label>
+                  <Input value={story.image && !imagePreview ? story.image : ''} onChange={e => {
+                  setStory(prev => ({
+                    ...prev,
+                    image: e.target.value
+                  }));
+                  if (!e.target.value) {
+                    setImagePreview('');
+                  }
+                }} placeholder="请输入图片URL" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+                </div>
               </div>
 
               {/* 内容 */}
