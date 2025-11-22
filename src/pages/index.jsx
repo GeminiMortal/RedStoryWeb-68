@@ -139,13 +139,7 @@ export default function HomePage(props) {
                     {allTags.map(tag => <option key={tag} value={tag}>{tag}</option>)}
                   </select>
                 </div>}
-              <Button onClick={() => navigateTo({
-              pageId: 'upload',
-              params: {}
-            })} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-0.5 button-press">
-                <Plus className="w-4 h-4 mr-2" />
-                新建故事
-              </Button>
+              {/* 移除了搜索框边上的添加按钮 */}
             </div>
           </div>
         </div>

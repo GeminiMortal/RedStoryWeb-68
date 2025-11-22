@@ -373,10 +373,7 @@ export default function AdminPage(props) {
                   <option value="draft">草稿</option>
                 </select>
               </div>
-              <Button onClick={handleCreateStory} disabled={navigating} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600">
-                {navigating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-                新建故事
-              </Button>
+              {/* 移除了搜索框边上的添加按钮 */}
             </div>
           </div>
         </div>
