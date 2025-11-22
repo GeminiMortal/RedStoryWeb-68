@@ -521,8 +521,23 @@ export default function DetailPage(props) {
 
       <Sidebar currentPage="index" navigateTo={navigateTo} onStateChange={setSidebarState} />
 
-      {/* 主内容区域 - 响应式边距 */}
-      <main className={cn("transition-all duration-300 ease-in-out", getMainMargin())}>
+      {/* 主内容区域 - 应用index界面的布局关系 */}
+      <main className={cn("content-transition sidebar-transition md:ml-16 lg:ml-64 animate-fade-in", getMainMargin())}>
+        {/* 桌面端头部 */}
+        <header className="hidden md:block bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 animate-slide-in">
+          <div className="max-w-4xl mx-auto px-6 py-4">
+            <div className="flex justify-between items-center">
+              <h1 className="text-xl font-bold text-white">故事详情</h1>
+              <div className="flex items-center space-x-4">
+                <Button onClick={() => handleNavigate('index')} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all">
+                  <Home className="w-4 h-4 mr-2" />
+                  返回首页
+                </Button>
+              </div>
+            </div>
+          </div>
+        </header>
+
         {/* 移动端返回按钮 */}
         <div className="md:hidden sticky top-0 bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 px-4 py-3 flex items-center justify-between z-40">
           <Button onClick={handleNavigateBack} disabled={navigating} variant="ghost" size="sm" className="text-slate-300 hover:text-white">

@@ -251,85 +251,94 @@ export default function UploadPage(props) {
       params: {}
     });
   };
-  return <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+  return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
       <Sidebar currentPage="upload" navigateTo={navigateTo} />
-      
-      {/* 移动端返回栏 */}
-      <div className="md:hidden bg-gray-800/90 backdrop-blur-sm border-b border-gray-700 px-4 py-3 flex items-center">
-        <button onClick={goBack} className="flex items-center text-gray-300 hover:text-white">
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          返回
-        </button>
-      </div>
 
-      <div className="flex-1 transition-all duration-300 ease-in-out">
-        <header className="hidden md:block bg-gray-800/90 backdrop-blur-sm border-b border-gray-700">
+      {/* 主内容区域 - 应用index界面的布局关系 */}
+      <main className="content-transition sidebar-transition md:ml-16 lg:ml-64 animate-fade-in">
+        {/* 桌面端头部 */}
+        <header className="hidden md:block bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 animate-slide-in">
           <div className="max-w-4xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
+            <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-white">创建新故事</h1>
+              <div className="flex items-center space-x-4">
+                <Button onClick={goBack} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  返回首页
+                </Button>
+              </div>
             </div>
           </div>
         </header>
 
-        <main className="max-w-4xl mx-auto p-4 md:p-8 pb-24 md:pb-8">
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 p-6 shadow-2xl animate-fade-in">
+        {/* 移动端返回栏 */}
+        <div className="md:hidden bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 px-4 py-3 flex items-center">
+          <button onClick={goBack} className="flex items-center text-slate-300 hover:text-white">
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            返回
+          </button>
+        </div>
+
+        {/* 主要内容区域 */}
+        <div className="max-w-4xl mx-auto p-4 md:p-8 pb-24 md:pb-8">
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 shadow-2xl animate-fade-in">
             <div className="space-y-6">
               {/* 标题 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   <BookOpen className="w-4 h-4 inline mr-1" />
                   标题 *
                 </label>
                 <Input value={story.title} onChange={e => setStory({
                 ...story,
                 title: e.target.value
-              })} placeholder="请输入故事标题" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+              })} placeholder="请输入故事标题" className="bg-slate-700/50 border-slate-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
 
               {/* 上传者 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   <User className="w-4 h-4 inline mr-1" />
                   上传者
                 </label>
                 <Input value={story.author} onChange={e => setStory({
                 ...story,
                 author: e.target.value
-              })} placeholder="请输入上传者姓名" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+              })} placeholder="请输入上传者姓名" className="bg-slate-700/50 border-slate-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
 
               {/* 地点 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   <MapPin className="w-4 h-4 inline mr-1" />
                   故事地点
                 </label>
                 <Input value={story.location} onChange={e => setStory({
                 ...story,
                 location: e.target.value
-              })} placeholder="请输入故事发生地点" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+              })} placeholder="请输入故事发生地点" className="bg-slate-700/50 border-slate-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
 
               {/* 阅读时间 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   <Clock className="w-4 h-4 inline mr-1" />
                   阅读时间
                 </label>
                 <Input value={story.read_time} onChange={e => setStory({
                 ...story,
                 read_time: e.target.value
-              })} placeholder="例如：5分钟阅读" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+              })} placeholder="例如：5分钟阅读" className="bg-slate-700/50 border-slate-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
 
               {/* 标签 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   <Tag className="w-4 h-4 inline mr-1" />
                   标签
                 </label>
                 <div className="flex gap-2 mb-2">
-                  <Input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleAddTag()} placeholder="添加标签" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+                  <Input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleAddTag()} placeholder="添加标签" className="bg-slate-700/50 border-slate-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
                   <Button onClick={handleAddTag} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all">
                     添加
                   </Button>
@@ -346,14 +355,14 @@ export default function UploadPage(props) {
 
               {/* 图片上传 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-slate-300 mb-2">
                   <ImageIcon className="w-4 h-4 inline mr-1" />
                   封面图片
                 </label>
                 
                 {/* 图片预览区域 */}
                 {imagePreview ? <div className="relative mb-4">
-                    <div className="relative w-full h-64 bg-gray-700/50 rounded-xl overflow-hidden border-2 border-dashed border-gray-600">
+                    <div className="relative w-full h-64 bg-slate-700/50 rounded-xl overflow-hidden border-2 border-dashed border-slate-600">
                       <img src={imagePreview} alt="图片预览" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
                         <Button onClick={triggerFileSelect} variant="outline" size="sm" className="bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30">
@@ -365,14 +374,14 @@ export default function UploadPage(props) {
                         <X className="w-4 h-4" />
                       </button>
                     </div>
-                  </div> : <div className="border-2 border-dashed border-gray-600 rounded-xl p-8 text-center hover:border-red-500/50 transition-colors duration-300 mb-4">
-                    <FileImage className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                    <p className="text-gray-400 mb-4">点击或拖拽上传封面图片</p>
-                    <Button onClick={triggerFileSelect} disabled={uploadingImage} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white transition-all">
+                  </div> : <div className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-red-500/50 transition-colors duration-300 mb-4">
+                    <FileImage className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+                    <p className="text-slate-400 mb-4">点击或拖拽上传封面图片</p>
+                    <Button onClick={triggerFileSelect} disabled={uploadingImage} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all">
                       <Upload className="w-4 h-4 mr-2" />
                       {uploadingImage ? '上传中...' : '选择图片'}
                     </Button>
-                    <p className="text-xs text-gray-500 mt-2">支持 JPG、PNG 格式，大小不超过 5MB</p>
+                    <p className="text-xs text-slate-500 mt-2">支持 JPG、PNG 格式，大小不超过 5MB</p>
                   </div>}
 
                 {/* 隐藏的文件输入 */}
@@ -380,7 +389,7 @@ export default function UploadPage(props) {
 
                 {/* URL输入作为备选方案 */}
                 <div className="mt-4">
-                  <label className="block text-xs text-gray-400 mb-2">或输入图片URL</label>
+                  <label className="block text-xs text-slate-400 mb-2">或输入图片URL</label>
                   <Input value={story.image && !imagePreview ? story.image : ''} onChange={e => {
                   setStory(prev => ({
                     ...prev,
@@ -389,21 +398,21 @@ export default function UploadPage(props) {
                   if (!e.target.value) {
                     setImagePreview('');
                   }
-                }} placeholder="请输入图片URL" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+                }} placeholder="请输入图片URL" className="bg-slate-700/50 border-slate-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
                 </div>
               </div>
 
               {/* 内容 */}
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">故事内容 *</label>
+                <label className="block text-sm font-medium text-slate-300 mb-2">故事内容 *</label>
                 <Textarea value={story.content} onChange={e => setStory({
                 ...story,
                 content: e.target.value
-              })} placeholder="请输入故事内容..." rows={10} className="bg-gray-700/50 border-gray-600 text-white resize-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+              })} placeholder="请输入故事内容..." rows={10} className="bg-slate-700/50 border-slate-600 text-white resize-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
 
               {/* 操作按钮 */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-700">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-700">
                 <Button onClick={handleSaveDraft} disabled={saving} variant="outline" className="border-blue-600 text-blue-400 hover:bg-blue-600/10 transition-all">
                   <Save className="w-4 h-4 mr-2" />
                   {saving ? '保存中...' : '保存草稿'}
@@ -412,14 +421,14 @@ export default function UploadPage(props) {
                   <Send className="w-4 h-4 mr-2" />
                   {publishing ? '发布中...' : '发布'}
                 </Button>
-                <Button onClick={goBack} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white transition-all">
+                <Button onClick={goBack} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all">
                   取消
                 </Button>
               </div>
             </div>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
 
       <MobileBottomNav currentPage="upload" navigateTo={navigateTo} />
     </div>;
