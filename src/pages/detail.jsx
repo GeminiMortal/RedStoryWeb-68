@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge, useToast } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Calendar, User, MapPin, Clock, Eye, Heart, Share2, BookOpen, Tag, Loader2, Home } from 'lucide-react';
+import { ArrowLeft, Calendar, User, MapPin, Clock, Eye, Heart, Share2, BookOpen, Tag, Loader2, Home, AlertCircle } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
@@ -17,9 +17,11 @@ export default function DetailPage(props) {
   } = props;
   const [story, setStory] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [navigating, setNavigating] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [retryCount, setRetryCount] = useState(0);
   const {
     toast
   } = useToast();
@@ -69,59 +71,109 @@ export default function DetailPage(props) {
     }
   };
 
-  // 加载故事详情
-  const loadStoryDetail = async () => {
+  // 增强的故事详情加载函数
+  const loadStoryDetail = async (isRetry = false) => {
     if (!storyId) {
-      toast({
-        title: '错误',
-        description: '故事ID不存在',
-        variant: 'destructive'
-      });
+      setError('故事ID不存在');
       setLoading(false);
       return;
     }
     try {
-      setLoading(true);
+      if (!isRetry) {
+        setLoading(true);
+        setError(null);
+      }
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
 
+      // 验证故事ID格式
+      if (!storyId || typeof storyId !== 'string' || storyId.trim() === '') {
+        throw new Error('无效的故事ID');
+      }
+
       // 获取故事详情
       const result = await db.collection('red_story').doc(storyId).get();
-      if (result && result.data) {
-        const storyData = result.data;
-        setStory(storyData);
-        setLikeCount(storyData.likes || 0);
+      if (!result || !result.data) {
+        throw new Error('故事不存在或已被删除');
+      }
+      const storyData = result.data;
 
-        // 更新阅读量
-        try {
-          await db.collection('red_story').doc(storyId).update({
-            views: (storyData.views || 0) + 1,
-            updatedAt: new Date()
-          });
-        } catch (updateError) {
-          console.error('更新阅读量失败:', updateError);
-        }
-      } else {
+      // 验证故事数据完整性
+      if (!storyData.title && !storyData.content) {
+        throw new Error('故事内容不完整');
+      }
+
+      // 设置故事数据
+      setStory(storyData);
+      setLikeCount(storyData.likes || 0);
+      setError(null);
+
+      // 更新阅读量（异步执行，不阻塞页面加载）
+      updateViewCount(storyId, storyData.views || 0).catch(updateError => {
+        console.warn('更新阅读量失败:', updateError);
+      });
+
+      // 记录访问日志
+      logStoryAccess(storyId, storyData).catch(logError => {
+        console.warn('记录访问日志失败:', logError);
+      });
+    } catch (error) {
+      console.error('加载故事详情失败:', error);
+      const errorMessage = error.message || '加载故事详情时出现未知错误';
+      setError(errorMessage);
+      if (!isRetry) {
         toast({
-          title: '故事不存在',
-          description: '未找到指定的故事',
+          title: '加载失败',
+          description: errorMessage,
           variant: 'destructive'
         });
       }
-    } catch (error) {
-      console.error('加载故事详情失败:', error);
-      toast({
-        title: '加载失败',
-        description: '无法加载故事详情',
-        variant: 'destructive'
-      });
     } finally {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    loadStoryDetail();
-  }, [storyId]);
+
+  // 更新阅读量
+  const updateViewCount = async (storyId, currentViews) => {
+    try {
+      const tcb = await $w.cloud.getCloudInstance();
+      const db = tcb.database();
+      await db.collection('red_story').doc(storyId).update({
+        views: currentViews + 1,
+        lastViewedAt: new Date(),
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('更新阅读量失败:', error);
+      throw error;
+    }
+  };
+
+  // 记录访问日志
+  const logStoryAccess = async (storyId, storyData) => {
+    try {
+      const tcb = await $w.cloud.getCloudInstance();
+      const db = tcb.database();
+
+      // 可以选择记录到访问日志集合
+      await db.collection('story_access_log').add({
+        storyId: storyId,
+        storyTitle: storyData.title || '无标题',
+        accessedAt: new Date(),
+        userAgent: navigator.userAgent,
+        referrer: document.referrer
+      });
+    } catch (error) {
+      console.warn('记录访问日志失败:', error);
+      // 不抛出错误，避免影响主要功能
+    }
+  };
+
+  // 重试加载
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+    loadStoryDetail(true);
+  };
 
   // 点赞功能
   const handleLike = async () => {
@@ -223,18 +275,40 @@ export default function DetailPage(props) {
     }
     return story.content;
   };
+
+  // 组件挂载时加载故事
+  useEffect(() => {
+    loadStoryDetail();
+  }, [storyId, retryCount]);
+
+  // 加载状态
   if (loading) {
     return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         <Sidebar currentPage="detail" navigateTo={navigateTo} />
         <main className="content-transition sidebar-transition md:ml-16 lg:ml-64 animate-fade-in">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="animate-pulse">
-              <div className="h-8 bg-slate-700 rounded w-3/4 mb-6"></div>
-              <div className="h-64 bg-slate-700 rounded mb-6"></div>
+            <div className="animate-pulse space-y-6">
+              {/* 标题骨架屏 */}
+              <div className="text-center space-y-4">
+                <div className="h-10 bg-slate-700 rounded w-3/4 mx-auto"></div>
+                <div className="flex justify-center space-x-4">
+                  <div className="h-6 bg-slate-700 rounded w-20"></div>
+                  <div className="h-6 bg-slate-700 rounded w-24"></div>
+                  <div className="h-6 bg-slate-700 rounded w-16"></div>
+                  <div className="h-6 bg-slate-700 rounded w-20"></div>
+                </div>
+              </div>
+              
+              {/* 封面图骨架屏 */}
+              <div className="aspect-video bg-slate-700 rounded-xl"></div>
+              
+              {/* 内容骨架屏 */}
               <div className="space-y-4">
                 <div className="h-4 bg-slate-700 rounded"></div>
                 <div className="h-4 bg-slate-700 rounded w-5/6"></div>
                 <div className="h-4 bg-slate-700 rounded w-4/6"></div>
+                <div className="h-4 bg-slate-700 rounded w-3/4"></div>
+                <div className="h-4 bg-slate-700 rounded w-5/6"></div>
               </div>
             </div>
           </div>
@@ -242,6 +316,34 @@ export default function DetailPage(props) {
         <MobileBottomNav currentPage="detail" navigateTo={navigateTo} />
       </div>;
   }
+
+  // 错误状态
+  if (error) {
+    return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <AlertCircle className="w-24 h-24 text-red-500 mx-auto mb-6 animate-bounce" />
+          <h2 className="text-2xl font-bold text-slate-400 mb-4">加载失败</h2>
+          <p className="text-slate-500 mb-2">{error}</p>
+          <p className="text-slate-600 text-sm mb-8">故事ID: {storyId}</p>
+          <div className="space-x-4">
+            <Button onClick={handleRetry} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+              <Loader2 className="w-4 h-4 mr-2" />
+              重试
+            </Button>
+            <Button onClick={handleNavigateBack} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              返回
+            </Button>
+            <Button onClick={() => handleNavigate('index')} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600">
+              <Home className="w-4 h-4 mr-2" />
+              首页
+            </Button>
+          </div>
+        </div>
+      </div>;
+  }
+
+  // 故事不存在
   if (!story) {
     return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center">
         <div className="text-center">
@@ -279,7 +381,10 @@ export default function DetailPage(props) {
                   {getDisplayTitle()}
                 </h1>
               </div>
-              {/* 移除了编辑按钮 */}
+              {/* 故事ID显示（开发调试用，生产环境可移除） */}
+              <div className="text-xs text-slate-500 font-mono">
+                ID: {storyId?.substring(0, 8)}...
+              </div>
             </div>
           </div>
         </header>
