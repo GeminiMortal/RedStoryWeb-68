@@ -1,0 +1,261 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>红色故事 - 传承红色记忆</title>
+    <meta name="description" content="红色故事平台，传承红色记忆，弘扬革命精神">
+    <meta name="keywords" content="红色故事,革命历史,爱国主义教育">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/src/main.jsx" as="script">
+    <link rel="preload" href="/src/index.css" as="style">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="">
+    <meta property="og:title" content="红色故事 - 传承红色记忆">
+    <meta property="og:description" content="红色故事平台，传承红色记忆，弘扬革命精神">
+    <meta property="og:image" content="">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="">
+    <meta property="twitter:title" content="红色故事 - 传承红色记忆">
+    <meta property="twitter:description" content="红色故事平台，传承红色记忆，弘扬革命精神">
+    <meta property="twitter:image" content="">
+    
+    <!-- Theme color -->
+    <meta name="theme-color" content="#dc2626">
+    
+    <!-- PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="红色故事">
+    
+    <!-- Loading styles -->
+    <style>
+        /* Loading screen styles */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        .loading-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #dc2626, #ea580c);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            animation: pulse 2s infinite;
+        }
+        
+        .loading-text {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #dc2626, #ea580c);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .loading-subtitle {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(220, 38, 38, 0.3);
+            border-top: 3px solid #dc2626;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Hide loading screen when app loads */
+        .loaded #loading-screen {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        /* Error fallback styles */
+        .error-fallback {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .error-icon {
+            font-size: 64px;
+            margin-bottom: 24px;
+        }
+        
+        .error-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: #dc2626;
+        }
+        
+        .error-message {
+            font-size: 16px;
+            color: #94a3b8;
+            margin-bottom: 32px;
+            max-width: 400px;
+        }
+        
+        .error-button {
+            background: linear-gradient(135deg, #dc2626, #ea580c);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .error-button:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-logo">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6.5 2H20V22H6.5A2.5 2.5 0 0 1 4 19.5V4.5A2.5 2.5 0 0 1 6.5 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <div class="loading-text">红色故事</div>
+        <div class="loading-subtitle">传承红色记忆，弘扬革命精神</div>
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- App Container -->
+    <div id="root"></div>
+
+    <!-- Error Fallback -->
+    <div id="error-fallback" class="error-fallback" style="display: none;">
+        <div class="error-icon">📖</div>
+        <div class="error-title">页面加载失败</div>
+        <div class="error-message">
+            抱歉，页面加载时出现错误。请检查网络连接或稍后重试。
+        </div>
+        <button class="error-button" onclick="window.location.reload()">
+            重新加载
+        </button>
+    </div>
+
+    <!-- Error Handling Script -->
+    <script>
+        // Global error handling
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+            showErrorFallback();
+        });
+
+        // Unhandled promise rejection handling
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+            showErrorFallback();
+        });
+
+        // Show error fallback
+        function showErrorFallback() {
+            const loadingScreen = document.getElementById('loading-screen');
+            const errorFallback = document.getElementById('error-fallback');
+            
+            if (loadingScreen) loadingScreen.style.display = 'none';
+            if (errorFallback) errorFallback.style.display = 'flex';
+        }
+
+        // Hide loading screen when app loads
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(function() {
+                        loadingScreen.style.display = 'none';
+                        document.body.classList.add('loaded');
+                    }, 500);
+                }
+            }, 1000); // Minimum loading time for better UX
+        });
+
+        // Service Worker registration for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(function(registrationError) {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+
+        // Performance monitoring
+        window.addEventListener('load', function() {
+            if ('performance' in window) {
+                const perfData = performance.getEntriesByType('navigation')[0];
+                console.log('Page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+            }
+        });
+    </script>
+
+    <!-- Main App Script -->
+    <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- Fallback for older browsers -->
+    <script nomodule>
+        document.getElementById('error-fallback').style.display = 'flex';
+        document.getElementById('loading-screen').style.display = 'none';
+    </script>
+</body>
+</html>
