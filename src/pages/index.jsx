@@ -22,10 +22,33 @@ export default function HomePage(props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [featuredStory, setFeaturedStory] = useState(null);
   const [filterTag, setFilterTag] = useState('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigateTo = $w.utils.navigateTo;
 
   // 获取所有标签
   const allTags = [...new Set(stories.flatMap(story => story.tags || []))];
+
+  // 监听侧边栏折叠状态
+  useEffect(() => {
+    const checkSidebarState = () => {
+      const savedCollapsed = sessionStorage.getItem('sidebarCollapsed');
+      setSidebarCollapsed(savedCollapsed === 'true');
+    };
+    checkSidebarState();
+
+    // 监听 sessionStorage 变化
+    const handleStorageChange = () => {
+      checkSidebarState();
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    // 定期检查状态变化（因为直接修改 sessionStorage 不会触发 storage 事件）
+    const interval = setInterval(checkSidebarState, 500);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
   useEffect(() => {
     loadStories();
   }, []);
@@ -67,11 +90,23 @@ export default function HomePage(props) {
     if (!readTime) return '5分钟阅读';
     return readTime;
   };
+
+  // 动态计算主内容区域的左边距
+  const getMainContentClasses = () => {
+    const baseClasses = "content-transition sidebar-transition animate-fade-in";
+    if (sidebarCollapsed) {
+      // 侧边栏折叠时：中等屏幕及以上使用 ml-16 (64px)
+      return `${baseClasses} md:ml-16`;
+    } else {
+      // 侧边栏展开时：中等屏幕及以上使用 ml-64 (256px)
+      return `${baseClasses} md:ml-64`;
+    }
+  };
   return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
       <Sidebar currentPage="index" navigateTo={navigateTo} />
 
-      {/* 主内容区域 - 优化响应式布局 */}
-      <main className="main-content-area transition-all duration-300 ease-in-out">
+      {/* 主内容区域 - 修复左边距问题 */}
+      <main className={getMainContentClasses()}>
         {/* 桌面端头部 */}
         <header className="hidden md:block bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 animate-slide-in">
           <div className="max-w-7xl mx-auto px-6 py-4">
