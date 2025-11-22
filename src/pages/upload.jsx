@@ -42,11 +42,34 @@ export default function UploadPage(props) {
   const [imagePreview, setImagePreview] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [loadError, setLoadError] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const fileInputRef = useRef(null);
   const {
     toast
   } = useToast();
   const navigateTo = $w.utils.navigateTo;
+
+  // 监听侧边栏折叠状态
+  useEffect(() => {
+    const checkSidebarState = () => {
+      const savedCollapsed = sessionStorage.getItem('sidebarCollapsed');
+      setSidebarCollapsed(savedCollapsed === 'true');
+    };
+    checkSidebarState();
+
+    // 监听 sessionStorage 变化
+    const handleStorageChange = () => {
+      checkSidebarState();
+    };
+    window.addEventListener('storage', handleStorageChange);
+
+    // 定期检查状态变化
+    const interval = setInterval(checkSidebarState, 500);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   // 实时验证单个字段
   const validateFieldRealTime = (fieldName, value) => {
@@ -354,11 +377,21 @@ export default function UploadPage(props) {
     window.location.reload();
   };
 
+  // 动态计算主内容区域的左边距
+  const getMainContentClasses = () => {
+    const baseClasses = "content-transition sidebar-transition animate-fade-in";
+    if (sidebarCollapsed) {
+      return `${baseClasses} md:ml-16`;
+    } else {
+      return `${baseClasses} md:ml-64`;
+    }
+  };
+
   // 如果有加载错误，显示错误组件
   if (loadError) {
     return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         <Sidebar currentPage="upload" navigateTo={navigateTo} />
-        <main className="content-transition sidebar-transition md:ml-16 lg:ml-64 animate-fade-in">
+        <main className={getMainContentClasses()}>
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <LoadingError error={loadError} onRetry={handleRetry} onGoHome={goBack} />
           </div>
@@ -369,8 +402,8 @@ export default function UploadPage(props) {
   return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
       <Sidebar currentPage="upload" navigateTo={navigateTo} />
 
-      {/* 主内容区域 */}
-      <main className="content-transition sidebar-transition md:ml-16 lg:ml-64 animate-fade-in">
+      {/* 主内容区域 - 修复左边距问题 */}
+      <main className={getMainContentClasses()}>
         {/* 桌面端头部 */}
         <header className="hidden md:block bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 animate-slide-in">
           <div className="max-w-4xl mx-auto px-6 py-4">
