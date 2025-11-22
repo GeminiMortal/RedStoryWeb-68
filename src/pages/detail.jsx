@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge, useToast } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Calendar, User, MapPin, Clock, Eye, Heart, Share2, BookOpen, Tag, Loader2, Home, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, User, MapPin, Clock, Eye, Heart, Share2, BookOpen, Tag, Loader2, Home, AlertCircle, CheckCircle } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
@@ -22,6 +22,7 @@ export default function DetailPage(props) {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
+  const [isPublished, setIsPublished] = useState(false);
   const {
     toast
   } = useToast();
@@ -71,8 +72,8 @@ export default function DetailPage(props) {
     }
   };
 
-  // 增强的故事详情加载函数
-  const loadStoryDetail = async (isRetry = false) => {
+  // 优化的故事详情加载函数 - 只读取已发布的故事
+  const loadPublishedStoryDetail = async (isRetry = false) => {
     if (!storyId) {
       setError('故事ID不存在');
       setLoading(false);
@@ -91,12 +92,15 @@ export default function DetailPage(props) {
         throw new Error('无效的故事ID');
       }
 
-      // 获取故事详情
-      const result = await db.collection('red_story').doc(storyId).get();
-      if (!result || !result.data) {
-        throw new Error('故事不存在或已被删除');
+      // 优化的数据库查询：只获取已发布的故事
+      const result = await db.collection('red_story').where({
+        _id: storyId,
+        status: 'published' // 只查询已发布的故事
+      }).get();
+      if (!result || !result.data || result.data.length === 0) {
+        throw new Error('故事不存在或尚未发布');
       }
-      const storyData = result.data;
+      const storyData = result.data[0];
 
       // 验证故事数据完整性
       if (!storyData.title && !storyData.content) {
@@ -106,6 +110,7 @@ export default function DetailPage(props) {
       // 设置故事数据
       setStory(storyData);
       setLikeCount(storyData.likes || 0);
+      setIsPublished(storyData.status === 'published');
       setError(null);
 
       // 更新阅读量（异步执行，不阻塞页面加载）
@@ -117,6 +122,15 @@ export default function DetailPage(props) {
       logStoryAccess(storyId, storyData).catch(logError => {
         console.warn('记录访问日志失败:', logError);
       });
+
+      // 显示成功提示
+      if (!isRetry) {
+        toast({
+          title: '加载成功',
+          description: '故事内容已加载',
+          variant: 'default'
+        });
+      }
     } catch (error) {
       console.error('加载故事详情失败:', error);
       const errorMessage = error.message || '加载故事详情时出现未知错误';
@@ -155,13 +169,15 @@ export default function DetailPage(props) {
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
 
-      // 可以选择记录到访问日志集合
+      // 记录到访问日志集合
       await db.collection('story_access_log').add({
         storyId: storyId,
         storyTitle: storyData.title || '无标题',
+        storyStatus: storyData.status,
         accessedAt: new Date(),
         userAgent: navigator.userAgent,
-        referrer: document.referrer
+        referrer: document.referrer,
+        ip: 'client-side' // 客户端无法获取真实IP
       });
     } catch (error) {
       console.warn('记录访问日志失败:', error);
@@ -172,12 +188,12 @@ export default function DetailPage(props) {
   // 重试加载
   const handleRetry = () => {
     setRetryCount(prev => prev + 1);
-    loadStoryDetail(true);
+    loadPublishedStoryDetail(true);
   };
 
   // 点赞功能
   const handleLike = async () => {
-    if (!story) return;
+    if (!story || !isPublished) return;
     try {
       const newLikedState = !liked;
       const newLikeCount = newLikedState ? likeCount + 1 : likeCount - 1;
@@ -276,9 +292,39 @@ export default function DetailPage(props) {
     return story.content;
   };
 
+  // 获取故事状态显示
+  const getStatusDisplay = () => {
+    if (!story) return '';
+    switch (story.status) {
+      case 'published':
+        return '已发布';
+      case 'draft':
+        return '草稿';
+      case 'archived':
+        return '已归档';
+      default:
+        return '未知状态';
+    }
+  };
+
+  // 获取状态颜色
+  const getStatusColor = () => {
+    if (!story) return 'text-slate-400';
+    switch (story.status) {
+      case 'published':
+        return 'text-green-400';
+      case 'draft':
+        return 'text-yellow-400';
+      case 'archived':
+        return 'text-slate-400';
+      default:
+        return 'text-slate-400';
+    }
+  };
+
   // 组件挂载时加载故事
   useEffect(() => {
-    loadStoryDetail();
+    loadPublishedStoryDetail();
   }, [storyId, retryCount]);
 
   // 加载状态
@@ -343,13 +389,13 @@ export default function DetailPage(props) {
       </div>;
   }
 
-  // 故事不存在
+  // 故事不存在或未发布
   if (!story) {
     return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center">
         <div className="text-center">
           <BookOpen className="w-24 h-24 text-slate-600 mx-auto mb-6 animate-bounce" />
           <h2 className="text-2xl font-bold text-slate-400 mb-4">故事不存在</h2>
-          <p className="text-slate-500 mb-8">抱歉，未找到指定的故事内容</p>
+          <p className="text-slate-500 mb-8">抱歉，未找到指定的故事内容或故事尚未发布</p>
           <div className="space-x-4">
             <Button onClick={handleNavigateBack} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -380,10 +426,18 @@ export default function DetailPage(props) {
                 <h1 className="text-xl font-bold text-white truncate max-w-md">
                   {getDisplayTitle()}
                 </h1>
+                {/* 发布状态指示器 */}
+                {isPublished && <CheckCircle className="w-5 h-5 text-green-400" />}
               </div>
-              {/* 故事ID显示（开发调试用，生产环境可移除） */}
-              <div className="text-xs text-slate-500 font-mono">
-                ID: {storyId?.substring(0, 8)}...
+              <div className="flex items-center space-x-4">
+                {/* 故事ID显示（开发调试用，生产环境可移除） */}
+                <div className="text-xs text-slate-500 font-mono">
+                  ID: {storyId?.substring(0, 8)}...
+                </div>
+                {/* 状态标签 */}
+                <Badge variant="outline" className={cn("border", getStatusColor())}>
+                  {getStatusDisplay()}
+                </Badge>
               </div>
             </div>
           </div>
@@ -453,11 +507,11 @@ export default function DetailPage(props) {
               <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-slate-700/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-6">
-                    <Button onClick={handleLike} variant="ghost" className={cn("flex items-center space-x-2 transition-all duration-200", liked ? "text-red-400 hover:text-red-300" : "text-slate-400 hover:text-red-400")}>
+                    <Button onClick={handleLike} disabled={!isPublished} variant="ghost" className={cn("flex items-center space-x-2 transition-all duration-200", !isPublished ? "text-slate-600 cursor-not-allowed" : liked ? "text-red-400 hover:text-red-300" : "text-slate-400 hover:text-red-400")}>
                       <Heart className={cn("w-5 h-5", liked && "fill-current")} />
                       <span>{likeCount}</span>
                     </Button>
-                    <Button onClick={handleShare} variant="ghost" className="text-slate-400 hover:text-white transition-all duration-200">
+                    <Button onClick={handleShare} disabled={!isPublished} variant="ghost" className={cn("transition-all duration-200", !isPublished ? "text-slate-600 cursor-not-allowed" : "text-slate-400 hover:text-white")}>
                       <Share2 className="w-5 h-5 mr-2" />
                       分享
                     </Button>
@@ -532,6 +586,15 @@ export default function DetailPage(props) {
                         阅读时长
                       </span>
                       <span className="text-white font-semibold">{formatReadTime(story.content)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400 flex items-center">
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        发布状态
+                      </span>
+                      <span className={cn("font-semibold", getStatusColor())}>
+                        {getStatusDisplay()}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
