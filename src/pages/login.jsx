@@ -148,15 +148,6 @@ export default function LoginPage(props) {
             </Button>
           </div>
         </div>
-
-        {/* 提示信息 */}
-        <div className="mt-6 text-center animate-fade-in" style={{
-        animationDelay: '0.3s'
-      }}>
-          <p className="text-xs text-slate-500">
-            默认账号：admin / admin123
-          </p>
-        </div>
       </div>
     </div>;
 }
