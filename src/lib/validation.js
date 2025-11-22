@@ -162,6 +162,125 @@ export function validateStoryData(data, isUpdate = false) {
 }
 
 /**
+ * 检查故事是否可以发布
+ * @param {Object} data - 故事数据
+ * @returns {Object} 检查结果 { canPublish, missingFields, errors }
+ */
+export function checkStoryPublishability(data) {
+  const missingFields = [];
+  const errors = {};
+  
+  // 检查必填字段
+  const requiredFields = [
+    { name: 'title', label: '故事标题' },
+    { name: 'content', label: '故事内容' },
+    { name: 'author', label: '上传者' },
+    { name: 'read_time', label: '阅读时间' }
+  ];
+  
+  requiredFields.forEach(field => {
+    const value = data[field.name];
+    if (!value || !value.toString().trim()) {
+      missingFields.push(field.label);
+      errors[field.name] = `${field.label}不能为空`;
+    }
+  });
+  
+  // 检查内容长度
+  if (data.content && data.content.trim()) {
+    if (data.content.length < 10) {
+      errors.content = '故事内容长度不能少于10个字符';
+      if (!missingFields.includes('故事内容')) {
+        missingFields.push('故事内容');
+      }
+    }
+  }
+  
+  // 检查标题长度
+  if (data.title && data.title.trim()) {
+    if (data.title.length > 100) {
+      errors.title = '标题长度不能超过100个字符';
+    }
+  }
+  
+  // 检查上传者长度
+  if (data.author && data.author.trim()) {
+    if (data.author.length > 50) {
+      errors.author = '上传者名称长度不能超过50个字符';
+    }
+  }
+  
+  // 检查阅读时间格式
+  if (data.read_time && data.read_time.trim()) {
+    if (!/^\d+分钟$/.test(data.read_time)) {
+      errors.read_time = '阅读时间格式不正确，应为"X分钟"';
+    }
+  }
+  
+  return {
+    canPublish: missingFields.length === 0 && Object.keys(errors).length === 0,
+    missingFields,
+    errors
+  };
+}
+
+/**
+ * 获取故事完整性状态
+ * @param {Object} data - 故事数据
+ * @returns {Object} 完整性状态 { completeness, percentage, missingFields }
+ */
+export function getStoryCompleteness(data) {
+  const totalFields = 6; // 总字段数：title, content, author, read_time, location, date
+  const completedFields = [];
+  const missingFields = [];
+  
+  // 检查各个字段
+  if (data.title && data.title.trim()) {
+    completedFields.push('title');
+  } else {
+    missingFields.push('故事标题');
+  }
+  
+  if (data.content && data.content.trim()) {
+    completedFields.push('content');
+  } else {
+    missingFields.push('故事内容');
+  }
+  
+  if (data.author && data.author.trim()) {
+    completedFields.push('author');
+  } else {
+    missingFields.push('上传者');
+  }
+  
+  if (data.read_time && data.read_time.trim()) {
+    completedFields.push('read_time');
+  } else {
+    missingFields.push('阅读时间');
+  }
+  
+  // 地点和时间时期为可选字段
+  if (data.location && data.location.trim()) {
+    completedFields.push('location');
+  }
+  
+  if (data.date && data.date.trim()) {
+    completedFields.push('date');
+  }
+  
+  const percentage = Math.round((completedFields.length / totalFields) * 100);
+  
+  return {
+    completeness: percentage,
+    percentage,
+    completedFields: completedFields.length,
+    totalFields,
+    missingFields,
+    canPublish: missingFields.length === 0
+  };
+}
+
+/**
  * 实时验证单个字段
  * @param {string} fieldName - 字段名
  * @param {any} value - 字段值

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { useToast } from '@/components/ui';
 // @ts-ignore;
-import { BookOpen, AlertCircle, ArrowLeft, Save, Send, Eye, Loader2, Home } from 'lucide-react';
+import { BookOpen, AlertCircle, ArrowLeft, Save, Send, Eye, Loader2, Home, CheckCircle, Info } from 'lucide-react';
 
 // @ts-ignore;
 import { Sidebar } from '@/components/Sidebar';
@@ -14,7 +14,7 @@ import { ErrorAlert, LoadingError } from '@/components/ErrorAlert';
 // @ts-ignore;
 import { ValidatedInput, ValidatedTextarea, ValidatedTagInput } from '@/components/FieldValidation';
 // @ts-ignore;
-import { validateStoryData, validateField, calculateReadTime, sanitizeStoryData } from '@/lib/validation';
+import { validateStoryData, validateField, calculateReadTime, sanitizeStoryData, checkStoryPublishability, getStoryCompleteness } from '@/lib/validation';
 export default function EditPage(props) {
   const {
     $w
@@ -46,6 +46,11 @@ export default function EditPage(props) {
   const [storyId, setStoryId] = useState(null);
   const [draftId, setDraftId] = useState(null);
   const [editMode, setEditMode] = useState(false);
+  const [completeness, setCompleteness] = useState({
+    percentage: 0,
+    canPublish: false,
+    missingFields: []
+  });
   const {
     toast
   } = useToast();
@@ -87,6 +92,12 @@ export default function EditPage(props) {
       clearInterval(interval);
     };
   }, []);
+
+  // 实时更新完整性状态
+  useEffect(() => {
+    const completenessData = getStoryCompleteness(storyData);
+    setCompleteness(completenessData);
+  }, [storyData]);
 
   // 动态计算主内容区域的左边距
   const getMainContentClasses = () => {
@@ -266,6 +277,17 @@ export default function EditPage(props) {
 
   // 发布故事
   const handlePublish = async () => {
+    // 检查发布条件
+    const publishCheck = checkStoryPublishability(storyData);
+    if (!publishCheck.canPublish) {
+      toast({
+        title: '无法发布',
+        description: `请完善以下必填信息：${publishCheck.missingFields.join('、')}`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
     // 标记所有字段为已触摸
     const allFieldsTouched = Object.keys(storyData).reduce((acc, key) => {
       acc[key] = true;
@@ -455,6 +477,38 @@ export default function EditPage(props) {
 
         {/* 主要内容区域 */}
         <div className="max-w-4xl mx-auto p-4 md:p-8 pb-24 md:pb-8">
+          {/* 完整性状态指示器 */}
+          <div className="mb-6 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4 shadow-lg">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-white flex items-center">
+                <Info className="w-5 h-5 mr-2 text-blue-400" />
+                故事完整性
+              </h3>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-slate-300">{completeness.percentage}%</span>
+                {completeness.canPublish ? <CheckCircle className="w-5 h-5 text-green-400" /> : <AlertCircle className="w-5 h-5 text-yellow-400" />}
+              </div>
+            </div>
+            
+            {/* 进度条 */}
+            <div className="w-full bg-slate-700 rounded-full h-2 mb-3">
+              <div className={`h-2 rounded-full transition-all duration-300 ${completeness.canPublish ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-blue-500 to-cyan-500'}`} style={{
+              width: `${completeness.percentage}%`
+            }}></div>
+            </div>
+            
+            {/* 状态文本 */}
+            <div className="text-sm">
+              {completeness.canPublish ? <p className="text-green-400 flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-1" />
+                  故事信息完整，可以发布
+                </p> : <p className="text-yellow-400 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-1" />
+                  还需要完善：{completeness.missingFields.join('、')}
+                </p>}
+            </div>
+          </div>
+
           {loading ? <div className="animate-pulse space-y-6">
               <div className="h-10 bg-slate-700 rounded w-3/4"></div>
               <div className="h-12 bg-slate-700 rounded"></div>
@@ -493,9 +547,9 @@ export default function EditPage(props) {
                     {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                     {saving ? '保存中...' : '保存草稿'}
                   </button>
-                  <button onClick={handlePublish} disabled={publishing} className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 disabled:from-red-800 disabled:to-orange-800 disabled:cursor-not-allowed text-white rounded-xl shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105 button-press">
+                  <button onClick={handlePublish} disabled={publishing || !completeness.canPublish} className={`flex items-center justify-center px-6 py-3 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 button-press ${completeness.canPublish ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 disabled:from-red-800 disabled:to-orange-800' : 'bg-slate-600 hover:bg-slate-700 disabled:cursor-not-allowed'}`}>
                     {publishing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-                    {publishing ? '发布中...' : '发布'}
+                    {publishing ? '发布中...' : completeness.canPublish ? '发布' : '完善信息后可发布'}
                   </button>
                   <button onClick={handlePreview} disabled={previewing} className="flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-300 transform hover:scale-105 button-press">
                     {previewing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Eye className="w-4 h-4 mr-2" />}
