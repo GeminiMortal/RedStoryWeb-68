@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { Home, BookOpen, Plus, User, Settings, Search, Heart, Menu, X } from 'lucide-react';
+import { Home, BookOpen, Plus, User, Settings, Search, Heart, Menu, X, ChevronUp, ChevronDown } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
-export function MobileBottomNav({
+// 移动端底部导航栏组件
+export function MobileBottomNavigation({
   currentPage = 'index',
   navigateTo,
   className
@@ -97,8 +98,8 @@ export function MobileBottomNav({
     </nav>;
 }
 
-// 移动端顶部导航栏
-export function MobileTopNav({
+// 移动端顶部导航栏组件
+export function MobileTopNavigation({
   title,
   showBack = false,
   showSearch = false,
@@ -137,7 +138,7 @@ export function MobileTopNav({
     </header>;
 }
 
-// 移动端搜索栏
+// 移动端搜索栏组件
 export function MobileSearchBar({
   value,
   onChange,
@@ -179,7 +180,7 @@ export function MobileSearchBar({
     </div>;
 }
 
-// 移动端抽屉菜单
+// 移动端抽屉菜单组件
 export function MobileDrawer({
   isOpen,
   onClose,
@@ -228,7 +229,7 @@ export function MobileDrawer({
     </div>;
 }
 
-// 移动端标签栏
+// 移动端标签栏组件
 export function MobileTabBar({
   tabs,
   activeTab,
@@ -247,8 +248,8 @@ export function MobileTabBar({
     </div>;
 }
 
-// 移动端浮动操作按钮
-export function MobileFAB({
+// 移动端浮动操作按钮组件
+export function MobileFloatingActionButton({
   icon: Icon,
   onClick,
   position = 'bottom-right',
@@ -277,7 +278,7 @@ export function MobileFAB({
     </Button>;
 }
 
-// 移动端页面容器
+// 移动端页面容器组件
 export function MobilePageContainer({
   children,
   showBack = false,
@@ -287,11 +288,33 @@ export function MobilePageContainer({
 }) {
   return <div className={cn("min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white", className)}>
       {/* 顶部导航 */}
-      <MobileTopNav title={title} showBack={showBack} onBack={onBack} />
+      <MobileTopNavigation title={title} showBack={showBack} onBack={onBack} />
       
       {/* 主内容 */}
       <main className="pt-16 pb-20 px-4">
         {children}
       </main>
     </div>;
+}
+
+// 移动端导航状态管理Hook
+export function useMobileNavigation() {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
+  const openSearch = () => setIsSearchOpen(true);
+  const closeSearch = () => setIsSearchOpen(false);
+  const openDrawer = () => setIsDrawerOpen(true);
+  const closeDrawer = () => setIsDrawerOpen(false);
+  const changeTab = tabId => setActiveTab(tabId);
+  return {
+    isSearchOpen,
+    isDrawerOpen,
+    activeTab,
+    openSearch,
+    closeSearch,
+    openDrawer,
+    closeDrawer,
+    changeTab
+  };
 }

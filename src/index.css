@@ -76,40 +76,109 @@
   }
 }
 
-/* 全局动画和过渡效果 */
+/* 移动端优化样式 */
 @layer utilities {
-  /* 基础动画 */
-  .animate-fade-in {
-    animation: fadeIn 0.6s ease-out forwards;
+  /* 触摸友好的最小尺寸 */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
   }
   
-  .animate-slide-in {
-    animation: slideIn 0.5s ease-out forwards;
+  /* 移动端安全区域 */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
   }
   
-  .animate-scale-in {
-    animation: scaleIn 0.3s ease-out forwards;
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
   }
   
-  .animate-bounce-in {
-    animation: bounceIn 0.6s ease-out forwards;
+  .safe-area-left {
+    padding-left: env(safe-area-inset-left);
   }
   
-  .animate-pulse-slow {
-    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  .safe-area-right {
+    padding-right: env(safe-area-inset-right);
   }
   
-  /* 按钮交互效果 */
-  .button-press {
-    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  /* 移动端滚动优化 */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
   }
   
-  .button-press:active {
-    transform: scale(0.95);
+  /* 移动端输入优化 */
+  .mobile-input {
+    font-size: 16px; /* 防止iOS缩放 */
+    -webkit-appearance: none;
+    border-radius: 0;
   }
   
-  .button-press:hover {
-    transform: translateY(-1px);
+  /* 移动端按钮优化 */
+  .mobile-button {
+    min-height: 48px;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  /* 移动端卡片优化 */
+  .mobile-card {
+    border-radius: 16px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .mobile-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* 移动端模态框 */
+  .mobile-modal {
+    border-radius: 20px 20px 0 0;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  /* 移动端导航栏 */
+  .mobile-nav {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background: rgba(15, 23, 42, 0.8);
+    border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+  }
+  
+  /* 加载动画优化 */
+  .loading-pulse {
+    animation: loading-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes loading-pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  
+  /* 渐变动画 */
+  .gradient-animate {
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+  }
+  
+  @keyframes gradient-shift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
   }
   
   /* 卡片悬停效果 */
@@ -118,60 +187,17 @@
   }
   
   .card-hover:hover {
-    transform: translateY(-4px);
+    transform: translateY(-4px) scale(1.02);
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   }
   
-  /* 悬停提升效果 */
-  .hover-lift {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* 按钮按压效果 */
+  .button-press {
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
-  .hover-lift:hover {
-    transform: translateY(-2px);
-  }
-  
-  /* 渐变动画 */
-  .gradient-animate {
-    background-size: 200% 200%;
-    animation: gradientShift 4s ease infinite;
-  }
-  
-  /* 文本渐变 */
-  .text-gradient-animate {
-    background-size: 200% 200%;
-    animation: gradientShift 3s ease infinite;
-  }
-  
-  /* 骨架屏加载动画 */
-  .skeleton-loading {
-    background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
-    background-size: 200% 100%;
-    animation: skeletonLoading 1.5s infinite;
-  }
-  
-  /* 滚动条样式 */
-  .scrollbar-thin {
-    scrollbar-width: thin;
-    scrollbar-color: #64748b #1e293b;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-track {
-    background: #1e293b;
-    border-radius: 3px;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: #64748b;
-    border-radius: 3px;
-  }
-  
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+  .button-press:active {
+    transform: scale(0.95);
   }
   
   /* 文本截断 */
@@ -196,41 +222,157 @@
     -webkit-line-clamp: 3;
   }
   
-  /* 响应式间距 */
-  .responsive-padding {
-    padding: clamp(1rem, 4vw, 2rem);
+  /* 淡入动画 */
+  .animate-fade-in {
+    animation: fade-in 0.6s ease-out;
   }
   
-  .responsive-margin {
-    margin: clamp(1rem, 4vw, 2rem);
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
   
-  /* 移动端优化 */
-  .mobile-safe-area {
-    padding-bottom: env(safe-area-inset-bottom);
+  /* 滑入动画 */
+  .animate-slide-in {
+    animation: slide-in 0.5s ease-out;
   }
   
-  .mobile-safe-area-top {
-    padding-top: env(safe-area-inset-top);
+  @keyframes slide-in {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
   }
   
-  /* 触摸优化 */
-  .touch-target {
-    min-height: 44px;
-    min-width: 44px;
+  /* 弹跳动画 */
+  .animate-bounce {
+    animation: bounce 1s infinite;
+  }
+  
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(-25%);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: none;
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+  
+  /* 脉冲动画 */
+  .animate-pulse-slow {
+    animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulse-slow {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.8;
+    }
+  }
+  
+  /* 浮动动画 */
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  
+  /* 旋转动画 */
+  .animate-spin-slow {
+    animation: spin-slow 3s linear infinite;
+  }
+  
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* 缩放动画 */
+  .animate-scale-in {
+    animation: scale-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  /* 滑出动画 */
+  .animate-slide-out {
+    animation: slide-out 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+  
+  @keyframes slide-out {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+  }
+  
+  /* 背景模糊效果 */
+  .backdrop-blur-strong {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  
+  /* 渐变边框 */
+  .gradient-border {
+    position: relative;
+    background: linear-gradient(45deg, #ef4444, #f97316, #eab308);
+    padding: 2px;
+    border-radius: 12px;
+  }
+  
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: rgb(15, 23, 42);
+    border-radius: 10px;
+    z-index: -1;
   }
   
   /* 玻璃态效果 */
   .glass-effect {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-  
-  .glass-dark {
-    background: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
   }
   
   /* 阴影层次 */
@@ -243,213 +385,62 @@
   }
   
   .shadow-strong {
-    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15), 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.15), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
   
-  /* 焦点状态 */
-  .focus-ring {
-    @apply focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500;
+  /* 移动端优化 */
+  @media (max-width: 768px) {
+    .mobile-optimized {
+      padding: 1rem;
+    }
+    
+    .mobile-text {
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+    
+    .mobile-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 2rem;
+    }
+    
+    .mobile-spacing {
+      gap: 0.75rem;
+    }
+    
+    .mobile-card-spacing {
+      margin-bottom: 1rem;
+    }
   }
   
-  .focus-ring-inset {
-    @apply focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500/20;
+  /* 高分辨率屏幕优化 */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .high-dpi-optimized {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
   }
   
-  /* 加载状态 */
-  .loading-dots::after {
-    content: '';
-    animation: loadingDots 1.5s infinite;
+  /* 深色模式优化 */
+  @media (prefers-color-scheme: dark) {
+    .auto-dark {
+      color-scheme: dark;
+    }
   }
   
-  /* 模态框动画 */
-  .modal-enter {
-    animation: modalEnter 0.3s ease-out forwards;
+  /* 减少动画偏好 */
+  @media (prefers-reduced-motion: reduce) {
+    .reduce-motion {
+      animation: none !important;
+      transition: none !important;
+    }
   }
   
-  .modal-exit {
-    animation: modalExit 0.2s ease-in forwards;
-  }
-  
-  /* 侧边栏过渡 */
-  .sidebar-transition {
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .content-transition {
-    transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-}
-
-/* 动画定义 */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes bounceIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.3);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.05);
-  }
-  70% {
-    transform: scale(0.9);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes gradientShift {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes skeletonLoading {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-@keyframes loadingDots {
-  0%, 20% {
-    content: '';
-  }
-  40% {
-    content: '.';
-  }
-  60% {
-    content: '..';
-  }
-  80%, 100% {
-    content: '...';
-  }
-}
-
-@keyframes modalEnter {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes modalExit {
-  from {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.95) translateY(-10px);
-  }
-}
-
-/* 响应式断点优化 */
-@media (max-width: 640px) {
-  .mobile-optimized {
-    padding: 0.75rem;
-  }
-  
-  .mobile-text-sm {
-    font-size: 0.875rem;
-    line-height: 1.25rem;
-  }
-  
-  .mobile-spacing {
-    gap: 0.75rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .tablet-optimized {
-    padding: 1rem;
-  }
-}
-
-/* 高对比度模式支持 */
-@media (prefers-contrast: high) {
-  .card-hover:hover {
-    border: 2px solid currentColor;
-  }
-  
-  .button-press:focus {
-    outline: 2px solid currentColor;
-    outline-offset: 2px;
-  }
-}
-
-/* 减少动画模式支持 */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-/* 暗色主题优化 */
-@media (prefers-color-scheme: dark) {
-  .auto-dark {
-    color-scheme: dark;
-  }
-}
-
-/* 打印样式 */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-  
-  .print-friendly {
-    background: white !important;
-    color: black !important;
+  /* 高对比度模式 */
+  @media (prefers-contrast: high) {
+    .high-contrast {
+      border: 2px solid;
+    }
   }
 }
