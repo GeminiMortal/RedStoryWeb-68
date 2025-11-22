@@ -187,14 +187,7 @@ export default function LoginPage(props) {
               {loading ? '登录中...' : '登录'}
             </Button>
 
-            {/* 提示信息 */}
-            <div className="text-center">
-              <p className="text-xs text-slate-500 mb-2">测试账号：</p>
-              <div className="text-xs text-slate-400 space-y-1">
-                <p>管理员：admin / admin123</p>
-                <p>普通用户：user / user123</p>
-              </div>
-            </div>
+            {/* 移除了密码提示信息 */}
           </div>
         </div>
 
