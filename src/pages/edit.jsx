@@ -185,8 +185,8 @@ export default function EditPage(props) {
     }
     if (!storyData.author.trim()) {
       toast({
-        title: '作者不能为空',
-        description: '请输入作者名称',
+        title: '上传者不能为空',
+        description: '请输入上传者名称',
         variant: 'destructive'
       });
       return false;
@@ -409,9 +409,9 @@ export default function EditPage(props) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">
-                    作者 <span className="text-red-500">*</span>
+                    上传者 <span className="text-red-500">*</span>
                   </label>
-                  <input type="text" value={storyData.author} onChange={e => handleInputChange('author', e.target.value)} placeholder="请输入作者名称" className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300" />
+                  <input type="text" value={storyData.author} onChange={e => handleInputChange('author', e.target.value)} placeholder="请输入上传者名称" className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300" />
                 </div>
               </CardContent>
             </Card>

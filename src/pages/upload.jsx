@@ -126,16 +126,16 @@ export default function UploadPage(props) {
               })} placeholder="请输入故事标题" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
 
-              {/* 作者 */}
+              {/* 上传者 */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   <User className="w-4 h-4 inline mr-1" />
-                  作者
+                  上传者
                 </label>
                 <Input value={story.author} onChange={e => setStory({
                 ...story,
                 author: e.target.value
-              })} placeholder="请输入作者姓名" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+              })} placeholder="请输入上传者姓名" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
               </div>
 
               {/* 地点 */}
