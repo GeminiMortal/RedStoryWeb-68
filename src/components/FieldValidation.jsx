@@ -56,7 +56,7 @@ export function ValidatedInput({
         </label>}
       
       <div className="relative">
-        {children || <input type={type} value={value} onChange={onChange} onBlur={onBlur} placeholder={placeholder} className={cn("w-full px-4 py-3 bg-slate-700/50 border rounded-xl text-white placeholder-slate-400 transition-all duration-300", "focus:outline-none focus:ring-2 focus:ring-red-500/20", hasError ? "border-red-500 focus:border-red-500" : hasSuccess ? "border-green-500 focus:border-green-500" : "border-slate-600 focus:border-red-500")} {...props} />}
+        {children || <input type={type} value={value} onChange={onChange} onBlur={onBlur} placeholder={placeholder} className={cn("w-full px-4 py-3 bg-slate-700/50 border rounded-xl text-white placeholder-slate-400 transition-all duration-300 touch-target", "focus:outline-none focus:ring-2 focus:ring-red-500/20", hasError ? "border-red-500 focus:border-red-500 shadow-red-500/20 shadow-lg" : hasSuccess ? "border-green-500 focus:border-green-500 shadow-green-500/20 shadow-lg" : "border-slate-600 focus:border-red-500 hover:border-slate-500")} {...props} />}
       </div>
       
       <FieldValidation fieldName={fieldName} value={value} error={error} touched={touched} />
@@ -91,9 +91,9 @@ export function ValidatedTextarea({
         </label>}
       
       <div className="relative">
-        <textarea value={value} onChange={onChange} onBlur={onBlur} placeholder={placeholder} rows={rows} maxLength={maxLength} className={cn("w-full px-4 py-3 bg-slate-700/50 border rounded-xl text-white placeholder-slate-400 transition-all duration-300 resize-none", "focus:outline-none focus:ring-2 focus:ring-red-500/20", hasError ? "border-red-500 focus:border-red-500" : hasSuccess ? "border-green-500 focus:border-green-500" : "border-slate-600 focus:border-red-500")} {...props} />
+        <textarea value={value} onChange={onChange} onBlur={onBlur} placeholder={placeholder} rows={rows} maxLength={maxLength} className={cn("w-full px-4 py-3 bg-slate-700/50 border rounded-xl text-white placeholder-slate-400 transition-all duration-300 resize-none touch-target", "focus:outline-none focus:ring-2 focus:ring-red-500/20", hasError ? "border-red-500 focus:border-red-500 shadow-red-500/20 shadow-lg" : hasSuccess ? "border-green-500 focus:border-green-500 shadow-green-500/20 shadow-lg" : "border-slate-600 focus:border-red-500 hover:border-slate-500")} {...props} />
         
-        {showCharCount && <div className={cn("absolute bottom-2 right-2 text-xs", isNearLimit ? "text-red-400" : "text-slate-400")}>
+        {showCharCount && <div className={cn("absolute bottom-2 right-2 text-xs px-2 py-1 rounded-md", isNearLimit ? "text-red-400 bg-red-500/10" : "text-slate-400 bg-slate-700/50")}>
             {charCount}/{maxLength}
           </div>}
       </div>
@@ -126,7 +126,7 @@ export function ValidatedTagInput({
       
       {/* 标签显示 */}
       {value.length > 0 && <div className="flex flex-wrap gap-2">
-          {value.map((tag, index) => <span key={index} className="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-sm flex items-center gap-1">
+          {value.map((tag, index) => <span key={index} className="px-3 py-1 bg-red-500/20 text-red-400 rounded-full text-sm flex items-center gap-1 hover:bg-red-500/30 transition-colors">
               {tag}
               <button type="button" onClick={() => {
           const newTags = value.filter((_, i) => i !== index);
@@ -135,7 +135,7 @@ export function ValidatedTagInput({
               value: newTags
             }
           });
-        }} className="hover:text-red-300 transition-colors">
+        }} className="hover:text-red-300 transition-colors touch-target">
                 ×
               </button>
             </span>)}
@@ -167,11 +167,11 @@ export function ValidatedTagInput({
           e.target.value = '';
         }
       }
-    }} onBlur={onBlur} placeholder={placeholder} disabled={value.length >= maxTags} className={cn("w-full px-4 py-2 bg-slate-700/50 border rounded-lg text-white placeholder-slate-400 transition-all duration-300", "focus:outline-none focus:ring-2 focus:ring-red-500/20", hasError ? "border-red-500 focus:border-red-500" : hasSuccess ? "border-green-500 focus:border-green-500" : "border-slate-600 focus:border-red-500", value.length >= maxTags && "opacity-50 cursor-not-allowed")} />
+    }} onBlur={onBlur} placeholder={placeholder} disabled={value.length >= maxTags} className={cn("w-full px-4 py-2 bg-slate-700/50 border rounded-lg text-white placeholder-slate-400 transition-all duration-300 touch-target", "focus:outline-none focus:ring-2 focus:ring-red-500/20", hasError ? "border-red-500 focus:border-red-500 shadow-red-500/20 shadow-lg" : hasSuccess ? "border-green-500 focus:border-green-500 shadow-green-500/20 shadow-lg" : "border-slate-600 focus:border-red-500 hover:border-slate-500", value.length >= maxTags && "opacity-50 cursor-not-allowed")} />
       
       <FieldValidation fieldName={fieldName} value={value} error={error} touched={touched} />
       
-      {value.length >= maxTags && <p className="text-xs text-yellow-400">
+      {value.length >= maxTags && <p className="text-xs text-yellow-400 bg-yellow-500/10 px-2 py-1 rounded-md">
           标签数量已达上限 ({maxTags}个)
         </p>}
     </div>;

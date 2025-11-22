@@ -108,7 +108,7 @@ export default function HomePage(props) {
       {/* 主内容区域 - 修复左边距问题 */}
       <main className={getMainContentClasses()}>
         {/* 桌面端头部 */}
-        <header className="hidden md:block bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 animate-slide-in">
+        <header className="hidden md:block bg-slate-800/90 backdrop-blur-sm border-b border-slate-700/50 sticky top-0 z-30 animate-slide-in shadow-soft">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex justify-between items-center">
               <h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent text-gradient-animate">
@@ -117,7 +117,7 @@ export default function HomePage(props) {
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                  <input type="text" placeholder="搜索故事..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300" />
+                  <input type="text" placeholder="搜索故事..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300 w-64" />
                 </div>
                 <Button onClick={() => navigateTo({
                 pageId: 'upload',
@@ -165,16 +165,15 @@ export default function HomePage(props) {
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <input type="text" placeholder="搜索故事标题或内容..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300" />
+                <input type="text" placeholder="搜索故事标题或内容..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300 touch-target" />
               </div>
               {allTags.length > 0 && <div className="relative">
                   <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                  <select value={filterTag} onChange={e => setFilterTag(e.target.value)} className="pl-10 pr-8 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300">
+                  <select value={filterTag} onChange={e => setFilterTag(e.target.value)} className="pl-10 pr-8 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300 touch-target">
                     <option value="">所有标签</option>
                     {allTags.map(tag => <option key={tag} value={tag}>{tag}</option>)}
                   </select>
                 </div>}
-              {/* 移除了搜索框边上的添加按钮 */}
             </div>
           </div>
         </div>
@@ -216,7 +215,7 @@ export default function HomePage(props) {
                 {filteredStories.map((story, index) => <div key={story._id} className="group animate-fade-in" style={{
               animationDelay: `${index * 100}ms`
             }}>
-                    <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 rounded-2xl overflow-hidden shadow-xl card-hover">
+                    <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 rounded-2xl overflow-hidden shadow-xl card-hover hover-lift h-full">
                       {story.image && <div className="aspect-video overflow-hidden relative">
                           <img src={story.image} alt={story.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onError={e => {
                     e.target.style.display = 'none';
@@ -255,7 +254,7 @@ export default function HomePage(props) {
                       params: {
                         id: story._id
                       }
-                    })} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 button-press">
+                    })} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 button-press touch-target">
                             <Eye className="w-4 h-4" />
                           </Button>
                         </div>
