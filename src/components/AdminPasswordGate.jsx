@@ -6,7 +6,8 @@ import { BookOpen, Lock } from 'lucide-react';
 // @ts-ignore;
 import { LoginForm } from '@/components/LoginForm';
 export function AdminPasswordGate({
-  onAuthenticated
+  onAuthenticated,
+  navigateTo
 }) {
   // 处理登录验证
   const handleLogin = async formData => {
@@ -21,9 +22,17 @@ export function AdminPasswordGate({
     }
   };
 
-  // 返回首页
+  // 返回首页 - 修复导航方式
   const handleGoHome = () => {
-    window.location.href = '/';
+    if (navigateTo) {
+      navigateTo({
+        pageId: 'index',
+        params: {}
+      });
+    } else {
+      // 兜底方案
+      window.location.href = '/';
+    }
   };
   return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center p-4">
       {/* 背景装饰 */}
