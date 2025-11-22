@@ -50,7 +50,14 @@ export default function LoginPage(props) {
 
       // 简单的登录验证逻辑（实际项目中应该调用后端API）
       if (formData.username === 'admin' && formData.password === 'admin123') {
-        // 登录成功
+        // 登录成功，保存登录状态
+        const loginData = {
+          username: 'admin',
+          role: 'admin',
+          loginTime: Date.now(),
+          isAuthenticated: true
+        };
+        localStorage.setItem('adminLoginState', JSON.stringify(loginData));
         toast({
           title: '登录成功',
           description: '欢迎回来，管理员！'
@@ -62,7 +69,14 @@ export default function LoginPage(props) {
           params: {}
         });
       } else if (formData.username === 'user' && formData.password === 'user123') {
-        // 登录成功
+        // 登录成功，保存登录状态
+        const loginData = {
+          username: 'user',
+          role: 'user',
+          loginTime: Date.now(),
+          isAuthenticated: true
+        };
+        localStorage.setItem('userLoginState', JSON.stringify(loginData));
         toast({
           title: '登录成功',
           description: '欢迎回来！'
@@ -114,7 +128,7 @@ export default function LoginPage(props) {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl animate-pulse" style={{
         animationDelay: '1s'
       }}></div>
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" style={{
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" style={{
         animationDelay: '2s'
       }}></div>
       </div>

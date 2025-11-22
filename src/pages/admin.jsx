@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button, Card, CardContent, CardHeader, CardTitle, useToast } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Edit3, Trash2, Eye, Plus, Search, Filter, BookOpen, Clock, User, Calendar, Send, Loader2, Home, FileText, CheckSquare, Square } from 'lucide-react';
+import { ArrowLeft, Edit3, Trash2, Eye, Plus, Search, Filter, BookOpen, Clock, User as UserIcon, Calendar, Send, Loader2, Home, FileText, CheckSquare, Square, LogOut } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
@@ -18,6 +18,7 @@ export default function AdminPage(props) {
     $w
   } = props;
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loginUser, setLoginUser] = useState(null);
   const [stories, setStories] = useState([]);
   const [drafts, setDrafts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -31,6 +32,64 @@ export default function AdminPage(props) {
   } = useToast();
   const navigateTo = $w.utils.navigateTo;
   const navigateBack = $w.utils.navigateBack;
+
+  // 检查登录状态
+  useEffect(() => {
+    checkAdminLoginStatus();
+  }, []);
+  const checkAdminLoginStatus = () => {
+    try {
+      const adminLoginState = localStorage.getItem('adminLoginState');
+      if (adminLoginState) {
+        const loginData = JSON.parse(adminLoginState);
+        // 检查登录状态是否有效（24小时内）
+        const now = Date.now();
+        const loginTime = loginData.loginTime;
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+        if (loginData.isAuthenticated && now - loginTime < twentyFourHours) {
+          setIsAuthenticated(true);
+          setLoginUser(loginData);
+          return;
+        } else {
+          // 登录状态过期，清除本地存储
+          localStorage.removeItem('adminLoginState');
+        }
+      }
+    } catch (error) {
+      console.error('检查登录状态失败:', error);
+      localStorage.removeItem('adminLoginState');
+    }
+    setIsAuthenticated(false);
+    setLoginUser(null);
+  };
+
+  // 退出登录
+  const handleLogout = () => {
+    const confirmed = window.confirm('确定要退出登录吗？');
+    if (confirmed) {
+      try {
+        localStorage.removeItem('adminLoginState');
+        setIsAuthenticated(false);
+        setLoginUser(null);
+        toast({
+          title: '已退出登录',
+          description: '您已成功退出管理中心'
+        });
+        // 跳转到首页
+        navigateTo({
+          pageId: 'index',
+          params: {}
+        });
+      } catch (error) {
+        console.error('退出登录失败:', error);
+        toast({
+          title: '退出失败',
+          description: '退出登录时出现错误',
+          variant: 'destructive'
+        });
+      }
+    }
+  };
 
   // 优化的导航函数
   const handleNavigate = async (pageId, params = {}) => {
@@ -326,7 +385,7 @@ export default function AdminPage(props) {
     });
   };
   if (!isAuthenticated) {
-    return <AdminPasswordGate onAuthenticated={() => setIsAuthenticated(true)} />;
+    return <AdminPasswordGate onAuthenticated={() => setIsAuthenticated(true)} navigateTo={navigateTo} />;
   }
   return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
       <Sidebar currentPage="admin" navigateTo={navigateTo} />
@@ -347,7 +406,17 @@ export default function AdminPage(props) {
                   管理中心
                 </h1>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-4">
+                {/* 用户信息显示 */}
+                {loginUser && <div className="flex items-center space-x-2 text-sm text-slate-300">
+                    <UserIcon className="w-4 h-4" />
+                    <span>{loginUser.username}</span>
+                  </div>}
+                {/* 退出按钮 */}
+                <Button onClick={handleLogout} variant="outline" size="sm" className="border-red-600 text-red-400 hover:bg-red-600/10 transition-all duration-200">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  退出
+                </Button>
                 <Button onClick={handleCreateStory} disabled={navigating} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600">
                   {navigating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
                   新建故事
