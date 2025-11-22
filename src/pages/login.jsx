@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Shield, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Shield, AlertCircle, CheckCircle, Home } from 'lucide-react';
 
 // @ts-ignore;
 import { PageHeader, BreadcrumbNav } from '@/components/Navigation';
@@ -169,6 +169,20 @@ export default function LoginPage(props) {
 
           <LoginForm formData={formData} onInputChange={handleInputChange} onSubmit={handleSubmit} showPassword={showPassword} onTogglePassword={togglePasswordVisibility} loading={loading} error={error} onClearError={clearError} />
 
+          {/* 返回主界面按钮 */}
+          <div className="mt-6 pt-6 border-t border-gray-700">
+            <div className="text-center">
+              <p className="text-sm text-gray-400 mb-4">不是管理员？</p>
+              <Button onClick={() => navigateTo({
+              pageId: 'index',
+              params: {}
+            })} variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300">
+                <Home className="w-4 h-4 mr-2" />
+                返回主界面
+              </Button>
+            </div>
+          </div>
+
           {/* 底部提示 */}
           <div className="mt-6 pt-6 border-t border-gray-700">
             <div className="text-center text-sm text-gray-400">
@@ -178,7 +192,7 @@ export default function LoginPage(props) {
           </div>
         </div>
 
-        {/* 返回首页 */}
+        {/* 底部返回首页 */}
         <div className="mt-6 text-center">
           <Button onClick={() => navigateTo({
           pageId: 'index',
