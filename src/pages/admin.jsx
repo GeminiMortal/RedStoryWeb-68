@@ -26,10 +26,6 @@ export default function AdminPage(props) {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedDrafts, setSelectedDrafts] = useState(new Set());
   const [batchProcessing, setBatchProcessing] = useState(false);
-  const [sidebarState, setSidebarState] = useState({
-    isCollapsed: false,
-    isDesktop: true
-  });
   const {
     toast
   } = useToast();
@@ -329,22 +325,16 @@ export default function AdminPage(props) {
       minute: '2-digit'
     });
   };
-
-  // 计算主内容区域的边距
-  const getMainMargin = () => {
-    if (!sidebarState.isDesktop) return 'ml-0';
-    return sidebarState.isCollapsed ? 'md:ml-16' : 'md:ml-64';
-  };
   if (!isAuthenticated) {
     return <AdminPasswordGate onAuthenticated={() => setIsAuthenticated(true)} />;
   }
   return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-      <Sidebar currentPage="admin" navigateTo={navigateTo} onStateChange={setSidebarState} />
+      <Sidebar currentPage="admin" navigateTo={navigateTo} />
 
-      {/* 主内容区域 - 响应式边距 */}
-      <main className={cn("transition-all duration-300 ease-in-out", getMainMargin())}>
+      {/* 主内容区域 - 与index界面完全一致的布局关系 */}
+      <main className="content-transition sidebar-transition md:ml-16 lg:ml-64 animate-fade-in">
         {/* 页面头部 */}
-        <header className="bg-slate-800/90 backdrop-blur-sm border-b border-slate-700">
+        <header className="bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 animate-slide-in">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
@@ -369,7 +359,7 @@ export default function AdminPage(props) {
 
         {/* 搜索和过滤区域 */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-slate-700/50">
+          <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-slate-700/50 hover-lift">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
@@ -394,7 +384,7 @@ export default function AdminPage(props) {
         {/* 统计信息 */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50">
+            <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 rounded-2xl overflow-hidden shadow-xl card-hover">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -405,7 +395,7 @@ export default function AdminPage(props) {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50">
+            <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 rounded-2xl overflow-hidden shadow-xl card-hover">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -416,7 +406,7 @@ export default function AdminPage(props) {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50">
+            <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 rounded-2xl overflow-hidden shadow-xl card-hover">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -440,55 +430,61 @@ export default function AdminPage(props) {
                 </div>)}
             </div> : <>
               {/* 已发布故事 */}
-              {(filterStatus === 'all' || filterStatus === 'published') && <div className="mb-8">
+              {(filterStatus === 'all' || filterStatus === 'published') && <div className="mb-8 animate-fade-in">
                   <h2 className="text-xl font-bold text-white mb-4 flex items-center">
                     <BookOpen className="w-5 h-5 mr-2 text-green-500" />
                     已发布故事 ({filteredStories.length})
                   </h2>
                   {filteredStories.length === 0 ? <div className="text-center py-8 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/30">
-                      <BookOpen className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                      <BookOpen className="w-16 h-16 text-slate-600 mx-auto mb-4 animate-bounce" />
                       <p className="text-slate-400">暂无已发布的故事</p>
                     </div> : <div className="space-y-4">
-                      {filteredStories.map(story => <Card key={story._id} className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 hover:border-green-500/50 transition-all duration-300">
-                          <CardContent className="p-6">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <h3 className="text-lg font-semibold text-white mb-2">{story.title || '无标题'}</h3>
-                                <p className="text-slate-400 text-sm mb-3 line-clamp-2">{story.content || '暂无内容'}</p>
-                                <div className="flex items-center space-x-4 text-xs text-slate-500">
-                                  <span className="flex items-center">
-                                    <User className="w-3 h-3 mr-1" />
-                                    {story.author || '佚名'}
-                                  </span>
-                                  <span className="flex items-center">
-                                    <Calendar className="w-3 h-3 mr-1" />
-                                    {formatDate(story.updatedAt)}
-                                  </span>
-                                  <span className="flex items-center">
-                                    <Eye className="w-3 h-3 mr-1" />
-                                    {story.views || 0}次阅读
-                                  </span>
+                      {filteredStories.map((story, index) => <div key={story._id} className="group animate-fade-in" style={{
+                animationDelay: `${index * 100}ms`
+              }}>
+                          <Card className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 rounded-2xl overflow-hidden shadow-xl card-hover hover:border-green-500/50 transition-all duration-300">
+                            <CardContent className="p-6">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-green-400 transition-colors duration-300">{story.title || '无标题'}</h3>
+                                  <p className="text-slate-400 text-sm mb-3 line-clamp-2">{story.content || '暂无内容'}</p>
+                                  <div className="flex items-center space-x-4 text-xs text-slate-500">
+                                    <span className="flex items-center bg-slate-700/50 px-2 py-1 rounded-full">
+                                      <User className="w-3 h-3 mr-1" />
+                                      {story.author || '佚名'}
+                                    </span>
+                                    <span className="flex items-center bg-slate-700/50 px-2 py-1 rounded-full">
+                                      <Calendar className="w-3 h-3 mr-1" />
+                                      {formatDate(story.updatedAt)}
+                                    </span>
+                                    <span className="flex items-center bg-slate-700/50 px-2 py-1 rounded-full">
+                                      <Eye className="w-3 h-3 mr-1" />
+                                      {story.views || 0}次阅读
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-2 ml-4">
+                                  <Button onClick={e => handleViewStory(story._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-white transition-all duration-200 button-press">
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                  <Button onClick={e => handleEditStory(story._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-white transition-all duration-200 button-press">
+                                    <Edit3 className="w-4 h-4" />
+                                  </Button>
+                                  <Button onClick={e => handleDeleteStory(story._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-red-400 transition-all duration-200 button-press">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
                                 </div>
                               </div>
-                              <div className="flex items-center space-x-2 ml-4">
-                                <Button onClick={e => handleViewStory(story._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                                <Button onClick={e => handleEditStory(story._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                                  <Edit3 className="w-4 h-4" />
-                                </Button>
-                                <Button onClick={e => handleDeleteStory(story._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-red-400">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>)}
+                            </CardContent>
+                          </Card>
+                        </div>)}
                     </div>}
                 </div>}
 
               {/* 草稿 */}
-              {(filterStatus === 'all' || filterStatus === 'draft') && <div>
+              {(filterStatus === 'all' || filterStatus === 'draft') && <div className="animate-fade-in" style={{
+            animationDelay: '0.2s'
+          }}>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-bold text-white flex items-center">
                       <FileText className="w-5 h-5 mr-2 text-blue-500" />
@@ -498,16 +494,16 @@ export default function AdminPage(props) {
                         <span className="text-sm text-slate-400">
                           已选择 {selectedDrafts.size} 个
                         </span>
-                        <Button onClick={handleSelectAllDrafts} variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+                        <Button onClick={handleSelectAllDrafts} variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:bg-slate-700 transition-all duration-200">
                           {selectedDrafts.size === filteredDrafts.length ? <CheckSquare className="w-4 h-4 mr-2" /> : <Square className="w-4 h-4 mr-2" />}
                           {selectedDrafts.size === filteredDrafts.length ? '取消全选' : '全选'}
                         </Button>
                         {selectedDrafts.size > 0 && <>
-                            <Button onClick={handleBatchPublish} disabled={batchProcessing} variant="outline" size="sm" className="border-green-600 text-green-400 hover:bg-green-600/10">
+                            <Button onClick={handleBatchPublish} disabled={batchProcessing} variant="outline" size="sm" className="border-green-600 text-green-400 hover:bg-green-600/10 transition-all duration-200">
                               {batchProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
                               批量发布
                             </Button>
-                            <Button onClick={handleBatchDelete} disabled={batchProcessing} variant="outline" size="sm" className="border-red-600 text-red-400 hover:bg-red-600/10">
+                            <Button onClick={handleBatchDelete} disabled={batchProcessing} variant="outline" size="sm" className="border-red-600 text-red-400 hover:bg-red-600/10 transition-all duration-200">
                               {batchProcessing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
                               批量删除
                             </Button>
@@ -515,45 +511,49 @@ export default function AdminPage(props) {
                       </div>}
                   </div>
                   {filteredDrafts.length === 0 ? <div className="text-center py-8 bg-slate-800/30 backdrop-blur-sm rounded-xl border border-slate-700/30">
-                      <FileText className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                      <FileText className="w-16 h-16 text-slate-600 mx-auto mb-4 animate-bounce" />
                       <p className="text-slate-400">暂无草稿</p>
                     </div> : <div className="space-y-4">
-                      {filteredDrafts.map(draft => <Card key={draft._id} className={cn("bg-slate-800/50 backdrop-blur-sm border transition-all duration-300", selectedDrafts.has(draft._id) ? "border-blue-500/50 bg-blue-500/5" : "border-slate-700/50 hover:border-blue-500/50")}>
-                          <CardContent className="p-6">
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-start space-x-3 flex-1">
-                                <Button onClick={() => handleSelectDraft(draft._id)} variant="ghost" size="sm" className="mt-1 p-1">
-                                  {selectedDrafts.has(draft._id) ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4 text-slate-400" />}
-                                </Button>
-                                <div className="flex-1">
-                                  <h3 className="text-lg font-semibold text-white mb-2">{draft.title || '无标题'}</h3>
-                                  <p className="text-slate-400 text-sm mb-3 line-clamp-2">{draft.content || '暂无内容'}</p>
-                                  <div className="flex items-center space-x-4 text-xs text-slate-500">
-                                    <span className="flex items-center">
-                                      <User className="w-3 h-3 mr-1" />
-                                      {draft.author || '佚名'}
-                                    </span>
-                                    <span className="flex items-center">
-                                      <Calendar className="w-3 h-3 mr-1" />
-                                      {formatDate(draft.updatedAt)}
-                                    </span>
+                      {filteredDrafts.map((draft, index) => <div key={draft._id} className="group animate-fade-in" style={{
+                animationDelay: `${index * 100 + 200}ms`
+              }}>
+                          <Card className={cn("bg-slate-800/50 backdrop-blur-sm border rounded-2xl overflow-hidden shadow-xl transition-all duration-300", selectedDrafts.has(draft._id) ? "border-blue-500/50 bg-blue-500/5" : "border-slate-700/50 hover:border-blue-500/50")}>
+                            <CardContent className="p-6">
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-start space-x-3 flex-1">
+                                  <Button onClick={() => handleSelectDraft(draft._id)} variant="ghost" size="sm" className="mt-1 p-1">
+                                    {selectedDrafts.has(draft._id) ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4 text-slate-400" />}
+                                  </Button>
+                                  <div className="flex-1">
+                                    <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-blue-400 transition-colors duration-300">{draft.title || '无标题'}</h3>
+                                    <p className="text-slate-400 text-sm mb-3 line-clamp-2">{draft.content || '暂无内容'}</p>
+                                    <div className="flex items-center space-x-4 text-xs text-slate-500">
+                                      <span className="flex items-center bg-slate-700/50 px-2 py-1 rounded-full">
+                                        <User className="w-3 h-3 mr-1" />
+                                        {draft.author || '佚名'}
+                                      </span>
+                                      <span className="flex items-center bg-slate-700/50 px-2 py-1 rounded-full">
+                                        <Calendar className="w-3 h-3 mr-1" />
+                                        {formatDate(draft.updatedAt)}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
+                                <div className="flex items-center space-x-2 ml-4">
+                                  <Button onClick={e => handleEditStory(draft._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-white transition-all duration-200 button-press">
+                                    <Edit3 className="w-4 h-4" />
+                                  </Button>
+                                  <Button onClick={e => handlePublishStory(draft._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-green-400 transition-all duration-200 button-press">
+                                    <Send className="w-4 h-4" />
+                                  </Button>
+                                  <Button onClick={e => handleDeleteStory(draft._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-red-400 transition-all duration-200 button-press">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
                               </div>
-                              <div className="flex items-center space-x-2 ml-4">
-                                <Button onClick={e => handleEditStory(draft._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                                  <Edit3 className="w-4 h-4" />
-                                </Button>
-                                <Button onClick={e => handlePublishStory(draft._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-green-400">
-                                  <Send className="w-4 h-4" />
-                                </Button>
-                                <Button onClick={e => handleDeleteStory(draft._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-red-400">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>)}
+                            </CardContent>
+                          </Card>
+                        </div>)}
                     </div>}
                 </div>}
             </>}
@@ -562,11 +562,11 @@ export default function AdminPage(props) {
         {/* 快速导航 */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
           <div className="flex justify-center space-x-4">
-            <Button onClick={() => handleNavigate('index')} disabled={navigating} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+            <Button onClick={() => handleNavigate('index')} disabled={navigating} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 transition-all duration-200">
               {navigating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Home className="w-4 h-4 mr-2" />}
               返回首页
             </Button>
-            <Button onClick={handleCreateStory} disabled={navigating} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600">
+            <Button onClick={handleCreateStory} disabled={navigating} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105 button-press">
               {navigating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
               新建故事
             </Button>
