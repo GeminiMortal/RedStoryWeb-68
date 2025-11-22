@@ -6,88 +6,236 @@
       {
         "name": "story_id",
         "title": "故事ID",
-        "type": "String"
+        "type": "String",
+        "required": true,
+        "unique": true,
+        "minLength": 3,
+        "maxLength": 50,
+        "pattern": "^[a-zA-Z0-9_]+$"
       },
       {
         "name": "title",
         "title": "故事标题",
-        "type": "String"
+        "type": "String",
+        "required": true,
+        "minLength": 1,
+        "maxLength": 100
       },
       {
         "name": "content",
         "title": "故事内容",
-        "type": "MultiLineString"
+        "type": "MultiLineString",
+        "required": true,
+        "minLength": 10,
+        "maxLength": 5000
       },
       {
         "name": "image",
         "title": "配图",
-        "type": "Image"
+        "type": "Image",
+        "required": false,
+        "maxSize": "5MB",
+        "allowedFormats": ["jpg", "jpeg", "png", "webp"]
       },
       {
         "name": "date",
         "title": "时间时期",
-        "type": "String"
+        "type": "String",
+        "required": true,
+        "minLength": 1,
+        "maxLength": 50
       },
       {
         "name": "location",
         "title": "发生地点",
-        "type": "String"
+        "type": "String",
+        "required": true,
+        "minLength": 1,
+        "maxLength": 100
       },
       {
         "name": "author",
         "title": "作者",
-        "type": "String"
+        "type": "String",
+        "required": true,
+        "minLength": 1,
+        "maxLength": 50
       },
       {
         "name": "read_time",
         "title": "阅读时间",
-        "type": "String"
+        "type": "String",
+        "required": true,
+        "pattern": "^\\d+分钟$"
       },
       {
         "name": "tags",
         "title": "标签",
         "type": "Array",
+        "required": true,
         "items": {
-          "type": "String"
-        }
+          "type": "String",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "minItems": 1,
+        "maxItems": 10
       },
       {
         "name": "status",
         "title": "状态",
-        "type": "String"
-      },
-      {
-        "name": "order",
-        "title": "排序",
-        "type": "Number"
+        "type": "String",
+        "required": true,
+        "enum": ["draft", "reviewing", "approved", "rejected"]
       },
       {
         "name": "is_draft",
         "title": "是否为草稿",
-        "type": "Boolean"
+        "type": "Boolean",
+        "required": true,
+        "default": true
       },
       {
         "name": "draft_version",
         "title": "草稿版本号",
-        "type": "Number"
+        "type": "Number",
+        "required": true,
+        "min": 1,
+        "default": 1
       },
       {
         "name": "original_id",
         "title": "原始故事ID",
-        "type": "String"
+        "type": "String",
+        "required": false,
+        "maxLength": 50
+      },
+      {
+        "name": "draftOwner",
+        "title": "草稿所有者",
+        "type": "String",
+        "required": true,
+        "minLength": 1,
+        "maxLength": 100
+      },
+      {
+        "name": "lastSavedAt",
+        "title": "最后保存时间",
+        "type": "Date",
+        "format": "timestamp-ms",
+        "required": true
+      },
+      {
+        "name": "autoSave",
+        "title": "自动保存",
+        "type": "Boolean",
+        "required": false,
+        "default": true
+      },
+      {
+        "name": "reviewNotes",
+        "title": "审核备注",
+        "type": "String",
+        "required": false,
+        "maxLength": 500
       },
       {
         "name": "createdAt",
         "title": "创建时间",
         "type": "Date",
-        "format": "timestamp-ms"
+        "format": "timestamp-ms",
+        "required": true
       },
       {
         "name": "updatedAt",
         "title": "更新时间",
         "type": "Date",
-        "format": "timestamp-ms"
+        "format": "timestamp-ms",
+        "required": true
       }
-    ]
+    ],
+    "validationRules": {
+      "beforeCreate": [
+        "validateRequiredFields",
+        "validateStoryIdUnique",
+        "validateContentLength",
+        "validateImageFormat",
+        "validateDraftOwner"
+      ],
+      "beforeUpdate": [
+        "validateContentLength",
+        "validateImageFormat",
+        "validateDraftOwner",
+        "validateVersionIncrement"
+      ],
+      "beforeDelete": [
+        "validateDeletePermission",
+        "validateDraftOwner"
+      ],
+      "beforePublish": [
+        "validateDraftComplete",
+        "validateReviewStatus"
+      ]
+    },
+    "errorHandling": {
+      "onValidationError": {
+        "code": "DRAFT_VALIDATION_ERROR",
+        "message": "草稿数据验证失败",
+        "details": "请检查草稿数据的格式和约束条件"
+      },
+      "onVersionConflict": {
+        "code": "VERSION_CONFLICT",
+        "message": "版本冲突",
+        "details": "草稿版本已更新，请刷新后重试"
+      },
+      "onOwnerMismatch": {
+        "code": "OWNER_MISMATCH",
+        "message": "所有者不匹配",
+        "details": "您不是此草稿的所有者，无法执行此操作"
+      },
+      "onAutoSaveError": {
+        "code": "AUTO_SAVE_ERROR",
+        "message": "自动保存失败",
+        "details": "草稿自动保存失败，请手动保存"
+      }
+    },
+    "indexes": [
+      {
+        "name": "story_id_unique",
+        "fields": ["story_id"],
+        "unique": true
+      },
+      {
+        "name": "draftOwner_index",
+        "fields": ["draftOwner"]
+      },
+      {
+        "name": "status_index",
+        "fields": ["status"]
+      },
+      {
+        "name": "lastSavedAt_index",
+        "fields": ["lastSavedAt"]
+      },
+      {
+        "name": "original_id_index",
+        "fields": ["original_id"]
+      },
+      {
+        "name": "draft_version_index",
+        "fields": ["draft_version"]
+      }
+    ],
+    "cleanupRules": {
+      "autoCleanup": {
+        "enabled": true,
+        "interval": "7d",
+        "condition": "lastSavedAt < now() - 7d AND status = 'draft'"
+      },
+      "manualCleanup": {
+        "enabled": true,
+        "permission": "admin"
+      }
+    }
   }
   

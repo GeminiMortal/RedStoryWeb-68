@@ -12,6 +12,10 @@
       "read_time": "8分钟",
       "tags": ["革命精神", "井冈山", "红色教育"],
       "status": "published",
+      "view_count": 1250,
+      "like_count": 89,
+      "share_count": 23,
+      "seo_keywords": ["井冈山精神", "革命精神", "红色教育"],
       "createdAt": 1705276800000,
       "updatedAt": 1705276800000
     },
@@ -27,6 +31,10 @@
       "read_time": "10分钟",
       "tags": ["长征", "革命精神", "红军"],
       "status": "published",
+      "view_count": 980,
+      "like_count": 76,
+      "share_count": 18,
+      "seo_keywords": ["长征精神", "红军", "革命精神"],
       "createdAt": 1705190400000,
       "updatedAt": 1705190400000
     },
@@ -42,6 +50,10 @@
       "read_time": "12分钟",
       "tags": ["延安精神", "革命圣地", "红色教育"],
       "status": "published",
+      "view_count": 756,
+      "like_count": 54,
+      "share_count": 12,
+      "seo_keywords": ["延安精神", "革命圣地", "红色教育"],
       "createdAt": 1705104000000,
       "updatedAt": 1705104000000
     },
@@ -57,6 +69,10 @@
       "read_time": "9分钟",
       "tags": ["西柏坡精神", "革命精神", "红色教育"],
       "status": "published",
+      "view_count": 432,
+      "like_count": 38,
+      "share_count": 8,
+      "seo_keywords": ["西柏坡精神", "革命精神", "两个务必"],
       "createdAt": 1705017600000,
       "updatedAt": 1705017600000
     },
@@ -72,6 +88,10 @@
       "read_time": "15分钟",
       "tags": ["抗美援朝", "爱国主义", "国际主义"],
       "status": "published",
+      "view_count": 623,
+      "like_count": 67,
+      "share_count": 15,
+      "seo_keywords": ["抗美援朝精神", "爱国主义", "国际主义"],
       "createdAt": 1704931200000,
       "updatedAt": 1704931200000
     },
@@ -87,6 +107,10 @@
       "read_time": "6分钟",
       "tags": ["雷锋精神", "为人民服务", "社会主义核心价值观"],
       "status": "published",
+      "view_count": 892,
+      "like_count": 102,
+      "share_count": 28,
+      "seo_keywords": ["雷锋精神", "为人民服务", "社会主义核心价值观"],
       "createdAt": 1704844800000,
       "updatedAt": 1704844800000
     },
@@ -102,6 +126,10 @@
       "read_time": "20分钟",
       "tags": ["改革开放", "创新精神", "中国特色社会主义"],
       "status": "published",
+      "view_count": 445,
+      "like_count": 41,
+      "share_count": 9,
+      "seo_keywords": ["改革开放精神", "创新精神", "中国特色社会主义"],
       "createdAt": 1704758400000,
       "updatedAt": 1704758400000
     },
@@ -117,6 +145,10 @@
       "read_time": "18分钟",
       "tags": ["抗疫精神", "生命至上", "命运与共"],
       "status": "published",
+      "view_count": 567,
+      "like_count": 73,
+      "share_count": 19,
+      "seo_keywords": ["抗疫精神", "生命至上", "命运与共"],
       "createdAt": 1704672000000,
       "updatedAt": 1704672000000
     }

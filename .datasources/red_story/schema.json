@@ -6,67 +6,194 @@
       {
         "name": "story_id",
         "title": "故事ID",
-        "type": "String"
+        "type": "String",
+        "required": true,
+        "unique": true,
+        "minLength": 3,
+        "maxLength": 50,
+        "pattern": "^[a-zA-Z0-9_]+$"
       },
       {
         "name": "title",
         "title": "故事标题",
-        "type": "String"
+        "type": "String",
+        "required": true,
+        "minLength": 1,
+        "maxLength": 100
       },
       {
         "name": "content",
         "title": "故事内容",
-        "type": "MultiLineString"
+        "type": "MultiLineString",
+        "required": true,
+        "minLength": 10,
+        "maxLength": 5000
       },
       {
         "name": "image",
         "title": "配图",
-        "type": "Image"
+        "type": "Image",
+        "required": false,
+        "maxSize": "5MB",
+        "allowedFormats": ["jpg", "jpeg", "png", "webp"]
       },
       {
         "name": "date",
         "title": "时间时期",
-        "type": "String"
+        "type": "String",
+        "required": true,
+        "minLength": 1,
+        "maxLength": 50
       },
       {
         "name": "location",
         "title": "发生地点",
-        "type": "String"
+        "type": "String",
+        "required": true,
+        "minLength": 1,
+        "maxLength": 100
       },
       {
         "name": "author",
         "title": "作者",
-        "type": "String"
+        "type": "String",
+        "required": true,
+        "minLength": 1,
+        "maxLength": 50
       },
       {
         "name": "read_time",
         "title": "阅读时间",
-        "type": "String"
+        "type": "String",
+        "required": true,
+        "pattern": "^\\d+分钟$"
       },
       {
         "name": "tags",
         "title": "标签",
         "type": "Array",
+        "required": true,
         "items": {
-          "type": "String"
-        }
+          "type": "String",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "minItems": 1,
+        "maxItems": 10
       },
       {
         "name": "status",
         "title": "状态",
-        "type": "String"
+        "type": "String",
+        "required": true,
+        "enum": ["draft", "published", "archived", "deleted"]
+      },
+      {
+        "name": "view_count",
+        "title": "浏览次数",
+        "type": "Number",
+        "required": false,
+        "min": 0,
+        "default": 0
+      },
+      {
+        "name": "like_count",
+        "title": "点赞次数",
+        "type": "Number",
+        "required": false,
+        "min": 0,
+        "default": 0
+      },
+      {
+        "name": "share_count",
+        "title": "分享次数",
+        "type": "Number",
+        "required": false,
+        "min": 0,
+        "default": 0
+      },
+      {
+        "name": "seo_keywords",
+        "title": "SEO关键词",
+        "type": "Array",
+        "required": false,
+        "items": {
+          "type": "String",
+          "minLength": 1,
+          "maxLength": 30
+        },
+        "maxItems": 5
       },
       {
         "name": "createdAt",
         "title": "创建时间",
         "type": "Date",
-        "format": "timestamp-ms"
+        "format": "timestamp-ms",
+        "required": true
       },
       {
         "name": "updatedAt",
         "title": "更新时间",
         "type": "Date",
-        "format": "timestamp-ms"
+        "format": "timestamp-ms",
+        "required": true
+      }
+    ],
+    "validationRules": {
+      "beforeCreate": [
+        "validateRequiredFields",
+        "validateStoryIdUnique",
+        "validateContentLength",
+        "validateImageFormat"
+      ],
+      "beforeUpdate": [
+        "validateContentLength",
+        "validateImageFormat",
+        "validateStatusTransition"
+      ],
+      "beforeDelete": [
+        "validateDeletePermission",
+        "validateRelatedData"
+      ]
+    },
+    "errorHandling": {
+      "onValidationError": {
+        "code": "VALIDATION_ERROR",
+        "message": "数据验证失败",
+        "details": "请检查输入数据的格式和约束条件"
+      },
+      "onDuplicateError": {
+        "code": "DUPLICATE_ERROR",
+        "message": "数据重复",
+        "details": "故事ID已存在，请使用唯一的故事ID"
+      },
+      "onPermissionError": {
+        "code": "PERMISSION_ERROR",
+        "message": "权限不足",
+        "details": "您没有权限执行此操作"
+      }
+    },
+    "indexes": [
+      {
+        "name": "story_id_unique",
+        "fields": ["story_id"],
+        "unique": true
+      },
+      {
+        "name": "status_index",
+        "fields": ["status"]
+      },
+      {
+        "name": "createdAt_index",
+        "fields": ["createdAt"]
+      },
+      {
+        "name": "tags_index",
+        "fields": ["tags"]
+      },
+      {
+        "name": "view_count_index",
+        "fields": ["view_count"]
       }
     ]
   }
