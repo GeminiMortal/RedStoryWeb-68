@@ -1,237 +1,150 @@
 // @ts-ignore;
-import React, { useState } from 'react';
+import React from 'react';
 // @ts-ignore;
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui';
 // @ts-ignore;
-import { Clock, User, Eye, Heart, Share2, MapPin, Calendar, Tag, Loader2 } from 'lucide-react';
+import { Edit, Trash2, Eye, Clock, Calendar, User, Heart, Share2 } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
 export function StoryCard({
   story,
-  onNavigate,
-  onLike,
-  onShare,
-  className,
-  showActions = true,
-  compact = false
+  type = 'published',
+  onEdit,
+  onDelete,
+  onView,
+  index = 0
 }) {
-  const [imageLoading, setImageLoading] = useState(true);
-  const [imageError, setImageError] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(story.like_count || 0);
-  const [isLiking, setIsLiking] = useState(false);
   const formatDate = timestamp => {
     if (!timestamp) return '未知时间';
     return new Date(timestamp).toLocaleDateString('zh-CN', {
       year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+      month: '2-digit',
+      day: '2-digit'
     });
   };
-  const formatReadTime = readTime => {
-    if (!readTime) return '5分钟阅读';
-    return readTime;
-  };
-  const handleLike = async () => {
-    if (isLiking) return;
-    try {
-      setIsLiking(true);
-      const newLikedState = !liked;
-      const newLikeCount = newLikedState ? likeCount + 1 : likeCount - 1;
-      setLiked(newLikedState);
-      setLikeCount(newLikeCount);
-      if (onLike) {
-        await onLike(story._id, newLikedState);
+  const formatRelativeTime = timestamp => {
+    if (!timestamp) return '未知时间';
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diffMs = now - past;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) {
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      if (diffHours === 0) {
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        return `${diffMinutes}分钟前`;
       }
-    } catch (error) {
-      console.error('点赞操作失败:', error);
-      // 恢复状态
-      setLiked(liked);
-      setLikeCount(likeCount);
-    } finally {
-      setIsLiking(false);
-    }
-  };
-  const handleShare = async () => {
-    if (onShare) {
-      await onShare(story);
+      return `${diffHours}小时前`;
+    } else if (diffDays === 1) {
+      return '昨天';
+    } else if (diffDays < 7) {
+      return `${diffDays}天前`;
     } else {
-      // 默认分享行为
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: story.title || '红色故事',
-            text: story.content?.substring(0, 100) + '...' || '分享一个红色故事',
-            url: window.location.href
-          });
-        } catch (error) {
-          console.log('分享取消或失败');
-        }
-      } else {
-        // 复制链接到剪贴板
-        try {
-          await navigator.clipboard.writeText(window.location.href);
-          // 这里可以添加 toast 提示
-        } catch (error) {
-          console.error('复制链接失败:', error);
-        }
-      }
+      return formatDate(timestamp);
     }
   };
-  const handleCardClick = () => {
-    if (onNavigate) {
-      onNavigate('detail', {
-        id: story._id
-      });
-    }
+  const truncateContent = (content, maxLength = 100) => {
+    if (!content) return '暂无内容';
+    return content.length > maxLength ? content.substring(0, maxLength) + '...' : content;
   };
-  if (compact) {
-    return <Card className={cn("bg-slate-800/60 backdrop-blur-sm border-slate-700/50 rounded-xl overflow-hidden shadow-soft hover:shadow-medium transition-all duration-300 cursor-pointer group mobile-card", className)} onClick={handleCardClick}>
-        <div className="flex items-center p-4 space-x-4">
-          {/* 缩略图 */}
-          <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-slate-700/50">
-            {story.image && !imageError ? <img src={story.image} alt={story.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" onLoad={() => setImageLoading(false)} onError={() => setImageError(true)} /> : <div className="w-full h-full flex items-center justify-center">
-                <Tag className="w-6 h-6 text-slate-500" />
-              </div>}
-          </div>
+  return <div className={cn("group animate-fade-in card-hover", "bg-slate-800/50 backdrop-blur-sm border border-slate-700/50", "rounded-2xl overflow-hidden shadow-xl", "transition-all duration-300 hover:border-red-500/50", "hover:shadow-2xl hover:shadow-red-500/10", "mobile-card", "relative")} style={{
+    animationDelay: `${index * 100}ms`
+  }}>
+      {/* 状态指示器 */}
+      <div className={cn("absolute top-3 right-3 z-10", "px-2 py-1 rounded-full text-xs font-medium", "backdrop-blur-sm border", type === 'published' ? "bg-green-500/20 border-green-500/30 text-green-400" : "bg-blue-500/20 border-blue-500/30 text-blue-400")}>
+        {type === 'published' ? '已发布' : '草稿'}
+      </div>
+
+      {/* 图片区域 */}
+      {story.image && <div className="aspect-video overflow-hidden relative">
+          <img src={story.image} alt={story.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onError={e => {
+        e.target.style.display = 'none';
+      }} />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           
-          {/* 内容 */}
-          <div className="flex-1 min-w-0">
-            <h3 className="text-white font-medium line-clamp-1 group-hover:text-red-400 transition-colors duration-200">
-              {story.title || '无标题'}
-            </h3>
-            <p className="text-slate-400 text-sm line-clamp-2 mt-1">
-              {story.content || '暂无内容'}
-            </p>
-            <div className="flex items-center space-x-3 mt-2 text-xs text-slate-500">
-              <span className="flex items-center">
-                <User className="w-3 h-3 mr-1" />
-                {story.author || '佚名'}
-              </span>
-              <span className="flex items-center">
-                <Eye className="w-3 h-3 mr-1" />
-                {story.views || 0}
-              </span>
-            </div>
-          </div>
-          
-          {/* 操作按钮 */}
-          {showActions && <div className="flex-shrink-0 flex space-x-1">
-              <Button variant="ghost" size="sm" onClick={e => {
-            e.stopPropagation();
-            handleLike();
-          }} className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 button-press">
-                <Heart className={cn("w-4 h-4", liked && "fill-current text-red-400")} />
-              </Button>
-              <Button variant="ghost" size="sm" onClick={e => {
-            e.stopPropagation();
-            handleShare();
-          }} className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200 button-press">
-                <Share2 className="w-4 h-4" />
-              </Button>
-            </div>}
-        </div>
-      </Card>;
-  }
-  return <Card className={cn("bg-slate-800/60 backdrop-blur-sm border-slate-700/50 rounded-2xl overflow-hidden shadow-soft hover:shadow-medium transition-all duration-300 cursor-pointer group card-hover mobile-card", className)} onClick={handleCardClick}>
-      {/* 封面图片 */}
-      {story.image && <div className="aspect-video overflow-hidden relative bg-slate-700/50">
-          {imageLoading && <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="w-8 h-8 text-slate-500 animate-spin" />
-            </div>}
-          {!imageError ? <img src={story.image} alt={story.title} className={cn("w-full h-full object-cover transition-all duration-500 group-hover:scale-110", imageLoading ? "opacity-0" : "opacity-100")} onLoad={() => setImageLoading(false)} onError={() => setImageError(true)} /> : <div className="w-full h-full flex items-center justify-center">
-              <Tag className="w-12 h-12 text-slate-500" />
-            </div>}
-          
-          {/* 悬停覆盖层 */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="absolute bottom-4 left-4 right-4">
-              <div className="flex items-center justify-between">
-                <div className="flex space-x-2">
-                  {story.tags?.slice(0, 2).map((tag, idx) => <Badge key={idx} variant="outline" className="border-white/30 text-white bg-white/20 backdrop-blur-sm text-xs">
-                      {tag}
-                    </Badge>)}
-                </div>
-                <div className="flex space-x-2">
-                  <Button variant="ghost" size="sm" onClick={e => {
-                e.stopPropagation();
-                handleLike();
-              }} className="p-2 text-white hover:text-red-400 hover:bg-red-500/20 transition-all duration-200 button-press">
-                    <Heart className={cn("w-4 h-4", liked && "fill-current text-red-400")} />
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={e => {
-                e.stopPropagation();
-                handleShare();
-              }} className="p-2 text-white hover:text-blue-400 hover:bg-blue-500/20 transition-all duration-200 button-press">
-                    <Share2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
+          {/* 悬停操作按钮 */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="flex space-x-2">
+              {type === 'published' && <button onClick={() => onView(story._id)} className="bg-white/20 backdrop-blur-sm text-white p-2 rounded-full hover:bg-white/30 transition-all duration-200 button-press">
+                  <Eye className="w-4 h-4" />
+                </button>}
+              <button onClick={() => onEdit(story._id, type === 'draft')} className="bg-blue-500/20 backdrop-blur-sm text-blue-400 p-2 rounded-full hover:bg-blue-500/30 transition-all duration-200 button-press">
+                <Edit className="w-4 h-4" />
+              </button>
+              <button onClick={() => onDelete(story._id, type === 'draft')} className="bg-red-500/20 backdrop-blur-sm text-red-400 p-2 rounded-full hover:bg-red-500/30 transition-all duration-200 button-press">
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>}
 
-      <CardHeader className="p-6 pb-4">
-        <CardTitle className="text-white text-xl line-clamp-2 group-hover:text-red-400 transition-colors duration-300 font-semibold">
-          {story.title || '无标题'}
-        </CardTitle>
-      </CardHeader>
-
-      <CardContent className="px-6 pb-6 pt-0">
-        {/* 内容预览 */}
-        <p className="text-slate-400 text-sm mb-4 line-clamp-3 leading-relaxed">
-          {story.content || '暂无内容'}
-        </p>
-        
-        {/* 标签 */}
-        {story.tags && story.tags.length > 0 && <div className="flex flex-wrap gap-2 mb-4">
-            {story.tags.slice(0, 3).map((tag, idx) => <Badge key={idx} variant="outline" className="border-red-500/30 text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors duration-200 text-xs">
-                <Tag className="w-3 h-3 mr-1" />
-                {tag}
-              </Badge>)}
-          </div>}
-
-        {/* 元信息 */}
-        <div className="space-y-3">
-          {/* 作者和日期 */}
-          <div className="flex items-center justify-between text-sm text-slate-500">
-            <div className="flex items-center space-x-4">
-              <span className="flex items-center bg-slate-700/50 px-3 py-1.5 rounded-full">
-                <User className="w-4 h-4 mr-2" />
-                {story.author || '佚名'}
+      <CardHeader className={cn("p-5 pb-3", story.image && "pt-4")}>
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <CardTitle className="text-white text-lg line-clamp-2 group-hover:text-red-400 transition-colors duration-300 mb-2">
+              {story.title || (type === 'draft' ? '无标题草稿' : '无标题')}
+            </CardTitle>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-slate-400">
+              <span className="flex items-center gap-1 bg-slate-700/50 px-2 py-1 rounded-full">
+                <User className="w-3 h-3" />
+                {story.author || story.draftOwner || '佚名'}
               </span>
-              <span className="flex items-center bg-slate-700/50 px-3 py-1.5 rounded-full">
-                <Calendar className="w-4 h-4 mr-2" />
-                {formatDate(story.createdAt)}
+              <span className="flex items-center gap-1 bg-slate-700/50 px-2 py-1 rounded-full">
+                <Calendar className="w-3 h-3" />
+                {formatRelativeTime(story.createdAt || story.lastSavedAt)}
               </span>
-            </div>
-            <span className="flex items-center bg-slate-700/50 px-3 py-1.5 rounded-full">
-              <Clock className="w-4 h-4 mr-2" />
-              {formatReadTime(story.read_time)}
-            </span>
-          </div>
-          
-          {/* 地点和统计 */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-sm text-slate-500">
-              {story.location && <span className="flex items-center">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  {story.location}
+              {story.read_time && <span className="flex items-center gap-1 bg-slate-700/50 px-2 py-1 rounded-full">
+                  <Clock className="w-3 h-3" />
+                  {story.read_time}
                 </span>}
-            </div>
-            <div className="flex items-center space-x-4 text-sm text-slate-500">
-              <span className="flex items-center">
-                <Eye className="w-4 h-4 mr-1" />
-                {story.views || 0}
-              </span>
-              <span className="flex items-center">
-                <Heart className="w-4 h-4 mr-1" />
-                {likeCount}
-              </span>
             </div>
           </div>
         </div>
+      </CardHeader>
+      
+      <CardContent className="px-5 pb-5">
+        <p className="text-slate-300 text-sm mb-4 line-clamp-3 leading-relaxed">
+          {truncateContent(story.content)}
+        </p>
+        
+        {story.tags && story.tags.length > 0 && <div className="flex flex-wrap gap-1 mb-4">
+            {story.tags.slice(0, 3).map((tag, index) => <span key={index} className={cn("px-2 py-1 text-xs rounded-full transition-all duration-200", "hover:scale-105 cursor-pointer", type === 'published' ? "bg-red-900/30 text-red-300 hover:bg-red-900/50 border border-red-500/20" : "bg-blue-900/30 text-blue-300 hover:bg-blue-900/50 border border-blue-500/20")}>
+                {tag}
+              </span>)}
+          </div>}
+
+        {/* 统计信息 */}
+        {type === 'published' && <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
+            <div className="flex items-center space-x-3">
+              <span className="flex items-center gap-1">
+                <Eye className="w-3 h-3" />
+                {story.views || 0}
+              </span>
+              <span className="flex items-center gap-1">
+                <Heart className="w-3 h-3" />
+                {story.likes || 0}
+              </span>
+            </div>
+            <span className="text-slate-600">
+              {formatDate(story.updatedAt)}
+            </span>
+          </div>}
+
+        {/* 操作按钮 */}
+        <div className="flex gap-2">
+          {type === 'published' && <Button size="sm" variant="outline" onClick={() => onView(story._id)} className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-200 button-press flex-1">
+              <Eye className="w-3 h-3 mr-1" />
+              查看
+            </Button>}
+          <Button size="sm" onClick={() => onEdit(story._id, type === 'draft')} className="bg-blue-600 hover:bg-blue-700 transition-all duration-200 button-press flex-1">
+            <Edit className="w-3 h-3 mr-1" />
+            编辑
+          </Button>
+          <Button size="sm" variant="destructive" onClick={() => onDelete(story._id, type === 'draft')} className="bg-red-600 hover:bg-red-700 transition-all duration-200 button-press">
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
       </CardContent>
-    </Card>;
+    </div>;
 }
