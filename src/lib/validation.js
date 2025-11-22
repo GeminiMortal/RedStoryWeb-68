@@ -3,7 +3,7 @@
 // 与后端 red_story schema 保持一致
 
 /**
- * 验证故事数据
+ * 验证故事数据（简化版 - 移除必填字段检查）
  * @param {Object} data - 故事数据
  * @param {boolean} isUpdate - 是否为更新操作
  * @returns {Object} 验证结果 { isValid, errors }
@@ -26,42 +26,34 @@ export function validateStoryData(data, isUpdate = false) {
     }
   }
 
-  // 标题验证
+  // 标题验证（改为可选）
   if (!isUpdate || data.title !== undefined) {
-    if (!data.title || !data.title.trim()) {
-      errors.title = '故事标题不能为空';
-    } else if (typeof data.title !== 'string') {
+    if (data.title && typeof data.title !== 'string') {
       errors.title = '标题必须是字符串';
-    } else if (data.title.length > 100) {
+    } else if (data.title && data.title.length > 100) {
       errors.title = '标题长度不能超过100个字符';
     }
   }
 
-  // 内容验证
+  // 内容验证（改为可选）
   if (!isUpdate || data.content !== undefined) {
-    if (!data.content || !data.content.trim()) {
-      errors.content = '故事内容不能为空';
-    } else if (typeof data.content !== 'string') {
+    if (data.content && typeof data.content !== 'string') {
       errors.content = '内容必须是字符串';
-    } else if (data.content.length < 10) {
-      errors.content = '故事内容长度不能少于10个字符';
-    } else if (data.content.length > 5000) {
+    } else if (data.content && data.content.length > 5000) {
       errors.content = '故事内容长度不能超过5000个字符';
     }
   }
 
-  // 上传者验证
+  // 上传者验证（改为可选）
   if (!isUpdate || data.author !== undefined) {
-    if (!data.author || !data.author.trim()) {
-      errors.author = '上传者不能为空';
-    } else if (typeof data.author !== 'string') {
+    if (data.author && typeof data.author !== 'string') {
       errors.author = '上传者必须是字符串';
-    } else if (data.author.length > 50) {
+    } else if (data.author && data.author.length > 50) {
       errors.author = '上传者名称长度不能超过50个字符';
     }
   }
 
-  // 地点验证（改为非必填）
+  // 地点验证（可选）
   if (!isUpdate || data.location !== undefined) {
     if (data.location && typeof data.location !== 'string') {
       errors.location = '地点必须是字符串';
@@ -70,7 +62,7 @@ export function validateStoryData(data, isUpdate = false) {
     }
   }
 
-  // 时间时期验证（改为非必填）
+  // 时间时期验证（可选）
   if (!isUpdate || data.date !== undefined) {
     if (data.date && typeof data.date !== 'string') {
       errors.date = '时间时期必须是字符串';
@@ -79,18 +71,16 @@ export function validateStoryData(data, isUpdate = false) {
     }
   }
 
-  // 阅读时间验证
+  // 阅读时间验证（改为可选）
   if (!isUpdate || data.read_time !== undefined) {
-    if (!data.read_time || !data.read_time.trim()) {
-      errors.read_time = '阅读时间不能为空';
-    } else if (typeof data.read_time !== 'string') {
+    if (data.read_time && typeof data.read_time !== 'string') {
       errors.read_time = '阅读时间必须是字符串';
-    } else if (!/^\d+分钟$/.test(data.read_time)) {
+    } else if (data.read_time && !/^\d+分钟$/.test(data.read_time)) {
       errors.read_time = '阅读时间格式不正确，应为"X分钟"';
     }
   }
 
-  // 标签验证（改为非必填）
+  // 标签验证（可选）
   if (!isUpdate || data.tags !== undefined) {
     if (data.tags && !Array.isArray(data.tags)) {
       errors.tags = '标签必须是数组';
@@ -162,119 +152,38 @@ export function validateStoryData(data, isUpdate = false) {
 }
 
 /**
- * 检查故事是否可以发布（简化版）
- * 只检查必填字段：title, content, author, read_time
+ * 检查故事是否可以发布（移除所有条件检查）
+ * 始终返回可以发布
  * @param {Object} data - 故事数据
- * @returns {Object} 检查结果 { canPublish, missingFields, errors }
+ * @returns {Object} 检查结果 { canPublish: true, missingFields: [], errors: {} }
  */
 export function checkStoryPublishability(data) {
-  const missingFields = [];
-  const errors = {};
-  
-  // 检查必填字段
-  const requiredFields = [
-    { name: 'title', label: '故事标题' },
-    { name: 'content', label: '故事内容' },
-    { name: 'author', label: '上传者' },
-    { name: 'read_time', label: '阅读时间' }
-  ];
-  
-  requiredFields.forEach(field => {
-    const value = data[field.name];
-    if (!value || !value.toString().trim()) {
-      missingFields.push(field.label);
-      errors[field.name] = `${field.label}不能为空`;
-    }
-  });
-  
-  // 检查内容长度
-  if (data.content && data.content.trim()) {
-    if (data.content.length < 10) {
-      errors.content = '故事内容长度不能少于10个字符';
-      if (!missingFields.includes('故事内容')) {
-        missingFields.push('故事内容');
-      }
-    }
-  }
-  
-  // 检查标题长度
-  if (data.title && data.title.trim()) {
-    if (data.title.length > 100) {
-      errors.title = '标题长度不能超过100个字符';
-    }
-  }
-  
-  // 检查上传者长度
-  if (data.author && data.author.trim()) {
-    if (data.author.length > 50) {
-      errors.author = '上传者名称长度不能超过50个字符';
-    }
-  }
-  
-  // 检查阅读时间格式
-  if (data.read_time && data.read_time.trim()) {
-    if (!/^\d+分钟$/.test(data.read_time)) {
-      errors.read_time = '阅读时间格式不正确，应为"X分钟"';
-    }
-  }
-  
   return {
-    canPublish: missingFields.length === 0 && Object.keys(errors).length === 0,
-    missingFields,
-    errors
+    canPublish: true,
+    missingFields: [],
+    errors: {}
   };
 }
 
 /**
- * 获取故事完整性状态（简化版）
- * 只考虑必填字段
+ * 获取故事完整性状态（移除完整性检查）
+ * 始终返回100%完成
  * @param {Object} data - 故事数据
- * @returns {Object} 完整性状态 { completeness, percentage, missingFields }
+ * @returns {Object} 完整性状态 { completeness: 100, percentage: 100, missingFields: [], canPublish: true }
  */
 export function getStoryCompleteness(data) {
-  const totalFields = 4; // 只计算必填字段：title, content, author, read_time
-  const completedFields = [];
-  const missingFields = [];
-  
-  // 检查各个必填字段
-  if (data.title && data.title.trim()) {
-    completedFields.push('title');
-  } else {
-    missingFields.push('故事标题');
-  }
-  
-  if (data.content && data.content.trim()) {
-    completedFields.push('content');
-  } else {
-    missingFields.push('故事内容');
-  }
-  
-  if (data.author && data.author.trim()) {
-    completedFields.push('author');
-  } else {
-    missingFields.push('上传者');
-  }
-  
-  if (data.read_time && data.read_time.trim()) {
-    completedFields.push('read_time');
-  } else {
-    missingFields.push('阅读时间');
-  }
-  
-  const percentage = Math.round((completedFields.length / totalFields) * 100);
-  
   return {
-    completeness: percentage,
-    percentage,
-    completedFields: completedFields.length,
-    totalFields,
-    missingFields,
-    canPublish: missingFields.length === 0
+    completeness: 100,
+    percentage: 100,
+    completedFields: 4,
+    totalFields: 4,
+    missingFields: [],
+    canPublish: true
   };
 }
 
 /**
- * 实时验证单个字段
+ * 实时验证单个字段（简化版）
  * @param {string} fieldName - 字段名
  * @param {any} value - 字段值
  * @returns {string|null} 错误信息，如果没有错误则返回null
@@ -282,40 +191,32 @@ export function getStoryCompleteness(data) {
 export function validateField(fieldName, value) {
   switch (fieldName) {
     case 'title':
-      if (!value || !value.trim()) return '标题不能为空';
-      if (value.length > 100) return '标题长度不能超过100个字符';
+      if (value && value.length > 100) return '标题长度不能超过100个字符';
       return null;
       
     case 'content':
-      if (!value || !value.trim()) return '内容不能为空';
-      if (value.length < 10) return '内容长度不能少于10个字符';
-      if (value.length > 5000) return '内容长度不能超过5000个字符';
+      if (value && value.length > 5000) return '内容长度不能超过5000个字符';
       return null;
       
     case 'author':
-      if (!value || !value.trim()) return '上传者不能为空';
-      if (value.length > 50) return '上传者名称长度不能超过50个字符';
+      if (value && value.length > 50) return '上传者名称长度不能超过50个字符';
       return null;
       
     case 'location':
-      // 地点改为非必填，只验证格式
       if (value && typeof value !== 'string') return '地点必须是字符串';
       if (value && value.length > 100) return '地点长度不能超过100个字符';
       return null;
       
     case 'date':
-      // 时间时期改为非必填，只验证格式
       if (value && typeof value !== 'string') return '时间时期必须是字符串';
       if (value && value.length > 50) return '时间时期长度不能超过50个字符';
       return null;
       
     case 'read_time':
-      if (!value || !value.trim()) return '阅读时间不能为空';
-      if (!/^\d+分钟$/.test(value)) return '阅读时间格式不正确，应为"X分钟"';
+      if (value && !/^\d+分钟$/.test(value)) return '阅读时间格式不正确，应为"X分钟"';
       return null;
       
     case 'tags':
-      // 标签改为非必填，只验证格式
       if (value && !Array.isArray(value)) return '标签必须是数组';
       if (value && value.length > 10) return '标签数量不能超过10个';
       return null;
@@ -396,7 +297,7 @@ export function sanitizeStoryData(data) {
     }
   });
   
-  // 清理标签（改为非必填）
+  // 清理标签
   if (sanitized.tags && Array.isArray(sanitized.tags)) {
     sanitized.tags = sanitized.tags
       .filter(tag => tag && tag.trim())

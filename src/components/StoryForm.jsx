@@ -31,20 +31,15 @@ export function StoryForm({
   onAddTag,
   onRemoveTag,
   fileInputRef,
-  triggerFileSelect,
-  completeness = {
-    percentage: 0,
-    canPublish: false,
-    missingFields: []
-  }
+  triggerFileSelect
 }) {
   return <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 shadow-2xl animate-fade-in">
       <div className="space-y-6">
         {/* 标题 */}
-        <ValidatedInput label="故事标题" required fieldName="title" value={storyData.title} onChange={e => onFieldChange('title', e.target.value)} onBlur={() => onFieldBlur('title')} error={validationErrors.title} touched={touchedFields.title} placeholder="请输入故事标题" />
+        <ValidatedInput label="故事标题" fieldName="title" value={storyData.title} onChange={e => onFieldChange('title', e.target.value)} onBlur={() => onFieldBlur('title')} error={validationErrors.title} touched={touchedFields.title} placeholder="请输入故事标题（可选）" />
 
         {/* 上传者 */}
-        <ValidatedInput label="上传者" required fieldName="author" value={storyData.author} onChange={e => onFieldChange('author', e.target.value)} onBlur={() => onFieldBlur('author')} error={validationErrors.author} touched={touchedFields.author} placeholder="请输入上传者名称" />
+        <ValidatedInput label="上传者" fieldName="author" value={storyData.author} onChange={e => onFieldChange('author', e.target.value)} onBlur={() => onFieldBlur('author')} error={validationErrors.author} touched={touchedFields.author} placeholder="请输入上传者名称（可选）" />
 
         {/* 地点 */}
         <ValidatedInput label="发生地点" fieldName="location" value={storyData.location} onChange={e => onFieldChange('location', e.target.value)} onBlur={() => onFieldBlur('location')} error={validationErrors.location} touched={touchedFields.location} placeholder="请输入故事发生地点（可选）" />
@@ -53,9 +48,9 @@ export function StoryForm({
         <ValidatedInput label="时间时期" fieldName="date" value={storyData.date} onChange={e => onFieldChange('date', e.target.value)} onBlur={() => onFieldBlur('date')} error={validationErrors.date} touched={touchedFields.date} placeholder="例如：抗日战争时期（可选）" />
 
         {/* 阅读时间 */}
-        <ValidatedInput label="阅读时间" fieldName="read_time" value={storyData.read_time} onChange={e => onFieldChange('read_time', e.target.value)} onBlur={() => onFieldBlur('read_time')} error={validationErrors.read_time} touched={touchedFields.read_time} placeholder="例如：5分钟阅读" />
+        <ValidatedInput label="阅读时间" fieldName="read_time" value={storyData.read_time} onChange={e => onFieldChange('read_time', e.target.value)} onBlur={() => onFieldBlur('read_time')} error={validationErrors.read_time} touched={touchedFields.read_time} placeholder="例如：5分钟阅读（可选）" />
 
-        {/* 标签 - 改为非强制选项 */}
+        {/* 标签 */}
         <ValidatedTagInput label="标签" fieldName="tags" value={storyData.tags} onChange={onTagsChange} onBlur={() => onFieldBlur('tags')} error={validationErrors.tags} touched={touchedFields.tags} placeholder="输入标签后按回车添加（可选）" maxTags={10} />
 
         {/* 图片上传 */}
@@ -100,7 +95,7 @@ export function StoryForm({
         </div>
 
         {/* 内容 */}
-        <ValidatedTextarea label="故事内容" required fieldName="content" value={storyData.content} onChange={e => onFieldChange('content', e.target.value)} onBlur={() => onFieldBlur('content')} error={validationErrors.content} touched={touchedFields.content} placeholder="请输入故事内容..." rows={10} showCharCount maxLength={5000} />
+        <ValidatedTextarea label="故事内容" fieldName="content" value={storyData.content} onChange={e => onFieldChange('content', e.target.value)} onBlur={() => onFieldBlur('content')} error={validationErrors.content} touched={touchedFields.content} placeholder="请输入故事内容（可选）..." rows={10} showCharCount maxLength={5000} />
 
         {/* 操作按钮 */}
         <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-700">
@@ -108,9 +103,9 @@ export function StoryForm({
             <BookOpen className="w-4 h-4 mr-2" />
             {isSaving ? '保存中...' : '保存草稿'}
           </Button>
-          <Button onClick={onPublish} disabled={isPublishing || !completeness.canPublish} className={`${completeness.canPublish ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25' : 'bg-slate-600 cursor-not-allowed'} transition-all duration-300 transform hover:scale-105`}>
+          <Button onClick={onPublish} disabled={isPublishing} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105">
             <Upload className="w-4 h-4 mr-2" />
-            {isPublishing ? '发布中...' : completeness.canPublish ? '发布' : '完善信息后可发布'}
+            {isPublishing ? '发布中...' : '发布'}
           </Button>
           <Button onClick={onPreview} disabled={isPreviewing} variant="outline" className="border-green-600 text-green-400 hover:bg-green-600/10 transition-all">
             <Tag className="w-4 h-4 mr-2" />

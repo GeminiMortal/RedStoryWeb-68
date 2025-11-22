@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 // @ts-ignore;
 import { Button, Input, Textarea, useToast } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Save, Upload, Tag, MapPin, Clock, User, BookOpen, Send, Image as ImageIcon, X, FileImage, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { ArrowLeft, Save, Upload, Tag, MapPin, Clock, User, BookOpen, Send, Image as ImageIcon, X, FileImage } from 'lucide-react';
 
 // @ts-ignore;
 import { Sidebar } from '@/components/Sidebar';
@@ -14,7 +14,7 @@ import { ErrorAlert, LoadingError } from '@/components/ErrorAlert';
 // @ts-ignore;
 import { ValidatedInput, ValidatedTextarea, ValidatedTagInput } from '@/components/FieldValidation';
 // @ts-ignore;
-import { validateStoryData, validateField, validateImageFile, calculateReadTime, sanitizeStoryData, checkStoryPublishability, getStoryCompleteness } from '@/lib/validation';
+import { validateStoryData, validateField, validateImageFile, calculateReadTime, sanitizeStoryData } from '@/lib/validation';
 export default function UploadPage(props) {
   const {
     $w
@@ -43,11 +43,6 @@ export default function UploadPage(props) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [completeness, setCompleteness] = useState({
-    percentage: 0,
-    canPublish: false,
-    missingFields: []
-  });
   const fileInputRef = useRef(null);
   const {
     toast
@@ -75,12 +70,6 @@ export default function UploadPage(props) {
       clearInterval(interval);
     };
   }, []);
-
-  // 实时更新完整性状态
-  useEffect(() => {
-    const completenessData = getStoryCompleteness(story);
-    setCompleteness(completenessData);
-  }, [story]);
 
   // 实时验证单个字段
   const validateFieldRealTime = (fieldName, value) => {
@@ -211,7 +200,7 @@ export default function UploadPage(props) {
     fileInputRef.current?.click();
   };
 
-  // 预验证数据
+  // 预验证数据（简化版）
   const preValidateData = data => {
     const sanitizedData = sanitizeStoryData(data);
     const validation = validateStoryData(sanitizedData, false);
@@ -220,24 +209,6 @@ export default function UploadPage(props) {
 
   // 保存草稿
   const handleSaveDraft = async () => {
-    // 标记所有字段为已触摸
-    const allFieldsTouched = Object.keys(story).reduce((acc, key) => {
-      acc[key] = true;
-      return acc;
-    }, {});
-    setTouchedFields(allFieldsTouched);
-
-    // 预验证
-    const validation = preValidateData(story);
-    setValidationErrors(validation.errors);
-    if (!validation.isValid) {
-      toast({
-        title: '验证失败',
-        description: '请检查输入内容',
-        variant: 'destructive'
-      });
-      return;
-    }
     try {
       setSaving(true);
       const tcb = await $w.cloud.getCloudInstance();
@@ -246,7 +217,7 @@ export default function UploadPage(props) {
       const draftData = {
         ...sanitizeStoryData(story),
         story_id: storyId,
-        read_time: calculateReadTime(story.content),
+        read_time: story.read_time || calculateReadTime(story.content),
         draftOwner: $w.auth.currentUser?.name || '匿名用户',
         lastSavedAt: Date.now(),
         createdAt: Date.now(),
@@ -275,37 +246,8 @@ export default function UploadPage(props) {
     }
   };
 
-  // 发布故事
+  // 发布故事（移除条件检查）
   const handlePublish = async () => {
-    // 检查发布条件
-    const publishCheck = checkStoryPublishability(story);
-    if (!publishCheck.canPublish) {
-      toast({
-        title: '无法发布',
-        description: `请完善以下必填信息：${publishCheck.missingFields.join('、')}`,
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // 标记所有字段为已触摸
-    const allFieldsTouched = Object.keys(story).reduce((acc, key) => {
-      acc[key] = true;
-      return acc;
-    }, {});
-    setTouchedFields(allFieldsTouched);
-
-    // 预验证
-    const validation = preValidateData(story);
-    setValidationErrors(validation.errors);
-    if (!validation.isValid) {
-      toast({
-        title: '验证失败',
-        description: '请检查输入内容',
-        variant: 'destructive'
-      });
-      return;
-    }
     try {
       setPublishing(true);
       const tcb = await $w.cloud.getCloudInstance();
@@ -317,7 +259,7 @@ export default function UploadPage(props) {
       const publishedData = {
         ...sanitizeStoryData(story),
         story_id: storyId,
-        read_time: calculateReadTime(story.content),
+        read_time: story.read_time || calculateReadTime(story.content),
         createdAt: now,
         updatedAt: now,
         status: 'published',
@@ -330,7 +272,7 @@ export default function UploadPage(props) {
       const draftData = {
         ...sanitizeStoryData(story),
         story_id: storyId,
-        read_time: calculateReadTime(story.content),
+        read_time: story.read_time || calculateReadTime(story.content),
         draftOwner: $w.auth.currentUser?.name || '匿名用户',
         lastSavedAt: now,
         createdAt: now,
@@ -451,45 +393,13 @@ export default function UploadPage(props) {
 
         {/* 主要内容区域 */}
         <div className="max-w-4xl mx-auto p-4 md:p-8 pb-24 md:pb-8">
-          {/* 完整性状态指示器 */}
-          <div className="mb-6 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4 shadow-lg">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-white flex items-center">
-                <Info className="w-5 h-5 mr-2 text-blue-400" />
-                故事完整性
-              </h3>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-slate-300">{completeness.percentage}%</span>
-                {completeness.canPublish ? <CheckCircle className="w-5 h-5 text-green-400" /> : <AlertCircle className="w-5 h-5 text-yellow-400" />}
-              </div>
-            </div>
-            
-            {/* 进度条 */}
-            <div className="w-full bg-slate-700 rounded-full h-2 mb-3">
-              <div className={`h-2 rounded-full transition-all duration-300 ${completeness.canPublish ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-blue-500 to-cyan-500'}`} style={{
-              width: `${completeness.percentage}%`
-            }}></div>
-            </div>
-            
-            {/* 状态文本 */}
-            <div className="text-sm">
-              {completeness.canPublish ? <p className="text-green-400 flex items-center">
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  故事信息完整，可以发布
-                </p> : <p className="text-yellow-400 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  还需要完善：{completeness.missingFields.join('、')}
-                </p>}
-            </div>
-          </div>
-
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 shadow-2xl animate-fade-in">
             <div className="space-y-6">
               {/* 标题 */}
-              <ValidatedInput label="故事标题" required fieldName="title" value={story.title} onChange={e => handleFieldChange('title', e.target.value)} onBlur={() => handleFieldBlur('title')} error={validationErrors.title} touched={touchedFields.title} placeholder="请输入故事标题" />
+              <ValidatedInput label="故事标题" fieldName="title" value={story.title} onChange={e => handleFieldChange('title', e.target.value)} onBlur={() => handleFieldBlur('title')} error={validationErrors.title} touched={touchedFields.title} placeholder="请输入故事标题（可选）" />
 
               {/* 上传者 */}
-              <ValidatedInput label="上传者" required fieldName="author" value={story.author} onChange={e => handleFieldChange('author', e.target.value)} onBlur={() => handleFieldBlur('author')} error={validationErrors.author} touched={touchedFields.author} placeholder="请输入上传者姓名" />
+              <ValidatedInput label="上传者" fieldName="author" value={story.author} onChange={e => handleFieldChange('author', e.target.value)} onBlur={() => handleFieldBlur('author')} error={validationErrors.author} touched={touchedFields.author} placeholder="请输入上传者姓名（可选）" />
 
               {/* 地点 */}
               <ValidatedInput label="发生地点" fieldName="location" value={story.location} onChange={e => handleFieldChange('location', e.target.value)} onBlur={() => handleFieldBlur('location')} error={validationErrors.location} touched={touchedFields.location} placeholder="请输入故事发生地点（可选）" />
@@ -498,9 +408,9 @@ export default function UploadPage(props) {
               <ValidatedInput label="时间时期" fieldName="date" value={story.date} onChange={e => handleFieldChange('date', e.target.value)} onBlur={() => handleFieldBlur('date')} error={validationErrors.date} touched={touchedFields.date} placeholder="例如：抗日战争时期（可选）" />
 
               {/* 阅读时间 */}
-              <ValidatedInput label="阅读时间" fieldName="read_time" value={story.read_time} onChange={e => handleFieldChange('read_time', e.target.value)} onBlur={() => handleFieldBlur('read_time')} error={validationErrors.read_time} touched={touchedFields.read_time} placeholder="例如：5分钟阅读" />
+              <ValidatedInput label="阅读时间" fieldName="read_time" value={story.read_time} onChange={e => handleFieldChange('read_time', e.target.value)} onBlur={() => handleFieldBlur('read_time')} error={validationErrors.read_time} touched={touchedFields.read_time} placeholder="例如：5分钟阅读（可选）" />
 
-              {/* 标签 - 改为非强制选项 */}
+              {/* 标签 */}
               <ValidatedTagInput label="标签" fieldName="tags" value={story.tags} onChange={handleTagsChange} onBlur={() => handleFieldBlur('tags')} error={validationErrors.tags} touched={touchedFields.tags} placeholder="输入标签后按回车添加（可选）" maxTags={10} />
 
               {/* 图片上传 */}
@@ -545,7 +455,7 @@ export default function UploadPage(props) {
               </div>
 
               {/* 内容 */}
-              <ValidatedTextarea label="故事内容" required fieldName="content" value={story.content} onChange={e => handleFieldChange('content', e.target.value)} onBlur={() => handleFieldBlur('content')} error={validationErrors.content} touched={touchedFields.content} placeholder="请输入故事内容..." rows={10} showCharCount maxLength={5000} />
+              <ValidatedTextarea label="故事内容" fieldName="content" value={story.content} onChange={e => handleFieldChange('content', e.target.value)} onBlur={() => handleFieldBlur('content')} error={validationErrors.content} touched={touchedFields.content} placeholder="请输入故事内容（可选）..." rows={10} showCharCount maxLength={5000} />
 
               {/* 操作按钮 */}
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-700">
@@ -553,9 +463,9 @@ export default function UploadPage(props) {
                   <Save className="w-4 h-4 mr-2" />
                   {saving ? '保存中...' : '保存草稿'}
                 </Button>
-                <Button onClick={handlePublish} disabled={publishing || !completeness.canPublish} className={`${completeness.canPublish ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25' : 'bg-slate-600 cursor-not-allowed'} transition-all duration-300 transform hover:scale-105`}>
+                <Button onClick={handlePublish} disabled={publishing} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105">
                   <Send className="w-4 h-4 mr-2" />
-                  {publishing ? '发布中...' : completeness.canPublish ? '发布' : '完善信息后可发布'}
+                  {publishing ? '发布中...' : '发布'}
                 </Button>
                 <Button onClick={goBack} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all">
                   取消

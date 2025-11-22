@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { useToast } from '@/components/ui';
 // @ts-ignore;
-import { BookOpen, AlertCircle, ArrowLeft, Save, Send, Eye, Loader2, Home, CheckCircle, Info } from 'lucide-react';
+import { BookOpen, AlertCircle, ArrowLeft, Save, Send, Eye, Loader2, Home } from 'lucide-react';
 
 // @ts-ignore;
 import { Sidebar } from '@/components/Sidebar';
@@ -14,7 +14,7 @@ import { ErrorAlert, LoadingError } from '@/components/ErrorAlert';
 // @ts-ignore;
 import { ValidatedInput, ValidatedTextarea, ValidatedTagInput } from '@/components/FieldValidation';
 // @ts-ignore;
-import { validateStoryData, validateField, calculateReadTime, sanitizeStoryData, checkStoryPublishability, getStoryCompleteness } from '@/lib/validation';
+import { validateStoryData, validateField, calculateReadTime, sanitizeStoryData } from '@/lib/validation';
 export default function EditPage(props) {
   const {
     $w
@@ -46,11 +46,6 @@ export default function EditPage(props) {
   const [storyId, setStoryId] = useState(null);
   const [draftId, setDraftId] = useState(null);
   const [editMode, setEditMode] = useState(false);
-  const [completeness, setCompleteness] = useState({
-    percentage: 0,
-    canPublish: false,
-    missingFields: []
-  });
   const {
     toast
   } = useToast();
@@ -92,12 +87,6 @@ export default function EditPage(props) {
       clearInterval(interval);
     };
   }, []);
-
-  // 实时更新完整性状态
-  useEffect(() => {
-    const completenessData = getStoryCompleteness(storyData);
-    setCompleteness(completenessData);
-  }, [storyData]);
 
   // 动态计算主内容区域的左边距
   const getMainContentClasses = () => {
@@ -213,7 +202,7 @@ export default function EditPage(props) {
     }
   };
 
-  // 预验证数据
+  // 预验证数据（简化版）
   const preValidateData = data => {
     const sanitizedData = sanitizeStoryData(data);
     const validation = validateStoryData(sanitizedData, false);
@@ -222,24 +211,6 @@ export default function EditPage(props) {
 
   // 保存草稿
   const handleSaveDraft = async () => {
-    // 标记所有字段为已触摸
-    const allFieldsTouched = Object.keys(storyData).reduce((acc, key) => {
-      acc[key] = true;
-      return acc;
-    }, {});
-    setTouchedFields(allFieldsTouched);
-
-    // 预验证
-    const validation = preValidateData(storyData);
-    setValidationErrors(validation.errors);
-    if (!validation.isValid) {
-      toast({
-        title: '验证失败',
-        description: '请检查输入内容',
-        variant: 'destructive'
-      });
-      return;
-    }
     try {
       setSaving(true);
       const tcb = await $w.cloud.getCloudInstance();
@@ -249,7 +220,7 @@ export default function EditPage(props) {
       const draftData = {
         ...sanitizeStoryData(storyData),
         story_id: storyId || currentDraftId,
-        read_time: calculateReadTime(storyData.content),
+        read_time: storyData.read_time || calculateReadTime(storyData.content),
         draftOwner: $w.auth.currentUser?.name || '匿名用户',
         lastSavedAt: now,
         createdAt: storyData.createdAt || now,
@@ -275,37 +246,8 @@ export default function EditPage(props) {
     }
   };
 
-  // 发布故事
+  // 发布故事（移除条件检查）
   const handlePublish = async () => {
-    // 检查发布条件
-    const publishCheck = checkStoryPublishability(storyData);
-    if (!publishCheck.canPublish) {
-      toast({
-        title: '无法发布',
-        description: `请完善以下必填信息：${publishCheck.missingFields.join('、')}`,
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // 标记所有字段为已触摸
-    const allFieldsTouched = Object.keys(storyData).reduce((acc, key) => {
-      acc[key] = true;
-      return acc;
-    }, {});
-    setTouchedFields(allFieldsTouched);
-
-    // 预验证
-    const validation = preValidateData(storyData);
-    setValidationErrors(validation.errors);
-    if (!validation.isValid) {
-      toast({
-        title: '验证失败',
-        description: '请检查输入内容',
-        variant: 'destructive'
-      });
-      return;
-    }
     try {
       setPublishing(true);
       const tcb = await $w.cloud.getCloudInstance();
@@ -317,7 +259,7 @@ export default function EditPage(props) {
       const publishedData = {
         ...sanitizeStoryData(storyData),
         story_id: currentStoryId,
-        read_time: calculateReadTime(storyData.content),
+        read_time: storyData.read_time || calculateReadTime(storyData.content),
         createdAt: storyData.createdAt || now,
         updatedAt: now,
         status: 'published',
@@ -330,7 +272,7 @@ export default function EditPage(props) {
       const draftData = {
         ...sanitizeStoryData(storyData),
         story_id: currentStoryId,
-        read_time: calculateReadTime(storyData.content),
+        read_time: storyData.read_time || calculateReadTime(storyData.content),
         draftOwner: $w.auth.currentUser?.name || '匿名用户',
         lastSavedAt: now,
         createdAt: storyData.createdAt || now,
@@ -369,14 +311,6 @@ export default function EditPage(props) {
 
   // 预览功能
   const handlePreview = () => {
-    if (!storyData.title || !storyData.content) {
-      toast({
-        title: '预览失败',
-        description: '请先填写标题和内容',
-        variant: 'destructive'
-      });
-      return;
-    }
     setPreviewing(true);
     // 模拟预览功能
     setTimeout(() => {
@@ -477,38 +411,6 @@ export default function EditPage(props) {
 
         {/* 主要内容区域 */}
         <div className="max-w-4xl mx-auto p-4 md:p-8 pb-24 md:pb-8">
-          {/* 完整性状态指示器 */}
-          <div className="mb-6 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4 shadow-lg">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-white flex items-center">
-                <Info className="w-5 h-5 mr-2 text-blue-400" />
-                故事完整性
-              </h3>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-slate-300">{completeness.percentage}%</span>
-                {completeness.canPublish ? <CheckCircle className="w-5 h-5 text-green-400" /> : <AlertCircle className="w-5 h-5 text-yellow-400" />}
-              </div>
-            </div>
-            
-            {/* 进度条 */}
-            <div className="w-full bg-slate-700 rounded-full h-2 mb-3">
-              <div className={`h-2 rounded-full transition-all duration-300 ${completeness.canPublish ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-blue-500 to-cyan-500'}`} style={{
-              width: `${completeness.percentage}%`
-            }}></div>
-            </div>
-            
-            {/* 状态文本 */}
-            <div className="text-sm">
-              {completeness.canPublish ? <p className="text-green-400 flex items-center">
-                  <CheckCircle className="w-4 h-4 mr-1" />
-                  故事信息完整，可以发布
-                </p> : <p className="text-yellow-400 flex items-center">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  还需要完善：{completeness.missingFields.join('、')}
-                </p>}
-            </div>
-          </div>
-
           {loading ? <div className="animate-pulse space-y-6">
               <div className="h-10 bg-slate-700 rounded w-3/4"></div>
               <div className="h-12 bg-slate-700 rounded"></div>
@@ -518,10 +420,10 @@ export default function EditPage(props) {
             </div> : <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 shadow-2xl animate-fade-in">
               <div className="space-y-6">
                 {/* 标题 */}
-                <ValidatedInput label="故事标题" required fieldName="title" value={storyData.title} onChange={e => handleFieldChange('title', e.target.value)} onBlur={() => handleFieldBlur('title')} error={validationErrors.title} touched={touchedFields.title} placeholder="请输入故事标题" />
+                <ValidatedInput label="故事标题" fieldName="title" value={storyData.title} onChange={e => handleFieldChange('title', e.target.value)} onBlur={() => handleFieldBlur('title')} error={validationErrors.title} touched={touchedFields.title} placeholder="请输入故事标题（可选）" />
 
                 {/* 上传者 */}
-                <ValidatedInput label="上传者" required fieldName="author" value={storyData.author} onChange={e => handleFieldChange('author', e.target.value)} onBlur={() => handleFieldBlur('author')} error={validationErrors.author} touched={touchedFields.author} placeholder="请输入上传者姓名" />
+                <ValidatedInput label="上传者" fieldName="author" value={storyData.author} onChange={e => handleFieldChange('author', e.target.value)} onBlur={() => handleFieldBlur('author')} error={validationErrors.author} touched={touchedFields.author} placeholder="请输入上传者姓名（可选）" />
 
                 {/* 地点 */}
                 <ValidatedInput label="发生地点" fieldName="location" value={storyData.location} onChange={e => handleFieldChange('location', e.target.value)} onBlur={() => handleFieldBlur('location')} error={validationErrors.location} touched={touchedFields.location} placeholder="请输入故事发生地点（可选）" />
@@ -530,16 +432,16 @@ export default function EditPage(props) {
                 <ValidatedInput label="时间时期" fieldName="date" value={storyData.date} onChange={e => handleFieldChange('date', e.target.value)} onBlur={() => handleFieldBlur('date')} error={validationErrors.date} touched={touchedFields.date} placeholder="例如：抗日战争时期（可选）" />
 
                 {/* 阅读时间 */}
-                <ValidatedInput label="阅读时间" fieldName="read_time" value={storyData.read_time} onChange={e => handleFieldChange('read_time', e.target.value)} onBlur={() => handleFieldBlur('read_time')} error={validationErrors.read_time} touched={touchedFields.read_time} placeholder="例如：5分钟阅读" />
+                <ValidatedInput label="阅读时间" fieldName="read_time" value={storyData.read_time} onChange={e => handleFieldChange('read_time', e.target.value)} onBlur={() => handleFieldBlur('read_time')} error={validationErrors.read_time} touched={touchedFields.read_time} placeholder="例如：5分钟阅读（可选）" />
 
-                {/* 标签 - 改为非强制选项 */}
+                {/* 标签 */}
                 <ValidatedTagInput label="标签" fieldName="tags" value={storyData.tags} onChange={handleTagsChange} onBlur={() => handleFieldBlur('tags')} error={validationErrors.tags} touched={touchedFields.tags} placeholder="输入标签后按回车添加（可选）" maxTags={10} />
 
                 {/* 图片URL */}
                 <ValidatedInput label="封面图片URL" fieldName="image" value={storyData.image} onChange={e => handleFieldChange('image', e.target.value)} onBlur={() => handleFieldBlur('image')} error={validationErrors.image} touched={touchedFields.image} placeholder="请输入图片URL" />
 
                 {/* 内容 */}
-                <ValidatedTextarea label="故事内容" required fieldName="content" value={storyData.content} onChange={e => handleFieldChange('content', e.target.value)} onBlur={() => handleFieldBlur('content')} error={validationErrors.content} touched={touchedFields.content} placeholder="请输入故事内容..." rows={12} showCharCount maxLength={5000} />
+                <ValidatedTextarea label="故事内容" fieldName="content" value={storyData.content} onChange={e => handleFieldChange('content', e.target.value)} onBlur={() => handleFieldBlur('content')} error={validationErrors.content} touched={touchedFields.content} placeholder="请输入故事内容（可选）..." rows={12} showCharCount maxLength={5000} />
 
                 {/* 操作按钮 */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-700">
@@ -547,9 +449,9 @@ export default function EditPage(props) {
                     {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                     {saving ? '保存中...' : '保存草稿'}
                   </button>
-                  <button onClick={handlePublish} disabled={publishing || !completeness.canPublish} className={`flex items-center justify-center px-6 py-3 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 button-press ${completeness.canPublish ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 disabled:from-red-800 disabled:to-orange-800' : 'bg-slate-600 hover:bg-slate-700 disabled:cursor-not-allowed'}`}>
+                  <button onClick={handlePublish} disabled={publishing} className="flex items-center justify-center px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 disabled:from-red-800 disabled:to-orange-800 disabled:cursor-not-allowed text-white rounded-xl shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105 button-press">
                     {publishing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
-                    {publishing ? '发布中...' : completeness.canPublish ? '发布' : '完善信息后可发布'}
+                    {publishing ? '发布中...' : '发布'}
                   </button>
                   <button onClick={handlePreview} disabled={previewing} className="flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-800 disabled:cursor-not-allowed text-white rounded-xl transition-all duration-300 transform hover:scale-105 button-press">
                     {previewing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Eye className="w-4 h-4 mr-2" />}
