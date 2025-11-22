@@ -11,12 +11,6 @@ import { cn } from '@/lib/utils';
 import { Sidebar } from '@/components/Sidebar';
 // @ts-ignore;
 import { MobileBottomNav } from '@/components/MobileBottomNav';
-// @ts-ignore;
-import { ErrorAlert, LoadingError } from '@/components/ErrorAlert';
-// @ts-ignore;
-import { dataCache } from '@/lib/cache';
-// @ts-ignore;
-import { offlineStorage } from '@/lib/offlineStorage';
 export default function DetailPage(props) {
   const {
     $w
@@ -29,10 +23,6 @@ export default function DetailPage(props) {
   const [likeCount, setLikeCount] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
   const [isPublished, setIsPublished] = useState(false);
-  const [cacheStatus, setCacheStatus] = useState({
-    hit: false,
-    source: 'network'
-  });
   const {
     toast
   } = useToast();
@@ -82,7 +72,7 @@ export default function DetailPage(props) {
     }
   };
 
-  // 优化的故事详情加载函数 - 带缓存和离线支持
+  // 优化的故事详情加载函数 - 只读取已发布的故事
   const loadPublishedStoryDetail = async (isRetry = false) => {
     if (!storyId) {
       setError('故事ID不存在');
@@ -94,44 +84,6 @@ export default function DetailPage(props) {
         setLoading(true);
         setError(null);
       }
-
-      // 尝试从缓存获取
-      if (!isRetry) {
-        const cachedStory = dataCache.getStoryDetail(storyId);
-        if (cachedStory) {
-          setStory(cachedStory);
-          setLikeCount(cachedStory.likes || 0);
-          setIsPublished(cachedStory.status === 'published');
-          setCacheStatus({
-            hit: true,
-            source: 'cache'
-          });
-          setLoading(false);
-
-          // 后台刷新数据
-          refreshStoryInBackground();
-          return;
-        }
-      }
-
-      // 尝试从离线存储获取
-      const offlineStory = await offlineStorage.getStory(storyId);
-      if (offlineStory) {
-        setStory(offlineStory);
-        setLikeCount(offlineStory.likes || 0);
-        setIsPublished(offlineStory.status === 'published');
-        setCacheStatus({
-          hit: true,
-          source: 'offline'
-        });
-        setLoading(false);
-
-        // 后台刷新数据
-        refreshStoryInBackground();
-        return;
-      }
-
-      // 从网络获取
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
 
@@ -159,16 +111,7 @@ export default function DetailPage(props) {
       setStory(storyData);
       setLikeCount(storyData.likes || 0);
       setIsPublished(storyData.status === 'published');
-      setCacheStatus({
-        hit: false,
-        source: 'network'
-      });
-
-      // 缓存数据
-      dataCache.setStoryDetail(storyId, storyData);
-
-      // 保存到离线存储
-      await offlineStorage.saveStory(storyData);
+      setError(null);
 
       // 更新阅读量（异步执行，不阻塞页面加载）
       updateViewCount(storyId, storyData.views || 0).catch(updateError => {
@@ -201,34 +144,6 @@ export default function DetailPage(props) {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  // 后台刷新故事数据
-  const refreshStoryInBackground = async () => {
-    try {
-      const tcb = await $w.cloud.getCloudInstance();
-      const db = tcb.database();
-      const result = await db.collection('red_story').where({
-        _id: storyId,
-        status: 'published'
-      }).get();
-      if (result && result.data && result.data.length > 0) {
-        const storyData = result.data[0];
-        setStory(storyData);
-        setLikeCount(storyData.likes || 0);
-        setIsPublished(storyData.status === 'published');
-        setCacheStatus({
-          hit: false,
-          source: 'network'
-        });
-
-        // 更新缓存
-        dataCache.setStoryDetail(storyId, storyData);
-        await offlineStorage.saveStory(storyData);
-      }
-    } catch (error) {
-      console.error('后台刷新故事数据失败:', error);
     }
   };
 
@@ -292,14 +207,6 @@ export default function DetailPage(props) {
         likes: newLikeCount,
         updatedAt: new Date()
       });
-
-      // 更新缓存
-      const updatedStory = {
-        ...story,
-        likes: newLikeCount
-      };
-      setStory(updatedStory);
-      dataCache.setStoryDetail(storyId, updatedStory);
       toast({
         title: newLikedState ? '点赞成功' : '取消点赞',
         description: newLikedState ? '感谢您的支持' : '已取消点赞'
@@ -464,14 +371,6 @@ export default function DetailPage(props) {
           <h2 className="text-2xl font-bold text-slate-400 mb-4">加载失败</h2>
           <p className="text-slate-500 mb-2">{error}</p>
           <p className="text-slate-600 text-sm mb-8">故事ID: {storyId}</p>
-          
-          {/* 缓存状态显示 */}
-          {cacheStatus.hit && <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-              <p className="text-blue-400 text-sm">
-                数据来源: {cacheStatus.source === 'cache' ? '缓存' : '离线存储'}
-              </p>
-            </div>}
-          
           <div className="space-x-4">
             <Button onClick={handleRetry} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
               <Loader2 className="w-4 h-4 mr-2" />
@@ -531,10 +430,6 @@ export default function DetailPage(props) {
                 {isPublished && <CheckCircle className="w-5 h-5 text-green-400" />}
               </div>
               <div className="flex items-center space-x-4">
-                {/* 缓存状态指示 */}
-                {cacheStatus.hit && <div className="text-xs text-slate-500">
-                    {cacheStatus.source === 'cache' ? '缓存' : '离线'}
-                  </div>}
                 {/* 故事ID显示（开发调试用，生产环境可移除） */}
                 <div className="text-xs text-slate-500 font-mono">
                   ID: {storyId?.substring(0, 8)}...

@@ -13,12 +13,6 @@ import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
 // @ts-ignore;
 import { StoryCarousel } from '@/components/StoryCarousel';
-// @ts-ignore;
-import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
-// @ts-ignore;
-import { dataCache } from '@/lib/cache';
-// @ts-ignore;
-import { offlineStorage } from '@/lib/offlineStorage';
 export default function HomePage(props) {
   const {
     $w
@@ -28,10 +22,6 @@ export default function HomePage(props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [featuredStory, setFeaturedStory] = useState(null);
   const [filterTag, setFilterTag] = useState('');
-  const [cacheStatus, setCacheStatus] = useState({
-    hit: false,
-    source: 'network'
-  });
   const navigateTo = $w.utils.navigateTo;
 
   // 获取所有标签
@@ -39,136 +29,32 @@ export default function HomePage(props) {
   useEffect(() => {
     loadStories();
   }, []);
-
-  // 加载故事列表（带缓存）
-  const loadStories = async (forceRefresh = false) => {
+  const loadStories = async () => {
     try {
       setLoading(true);
-
-      // 尝试从缓存获取
-      if (!forceRefresh) {
-        const cachedStories = dataCache.getStories();
-        if (cachedStories) {
-          setStories(cachedStories);
-          setCacheStatus({
-            hit: true,
-            source: 'cache'
-          });
-
-          // 设置特色故事
-          if (cachedStories.length > 0) {
-            setFeaturedStory(cachedStories[0]);
-          }
-
-          // 后台刷新数据
-          refreshStoriesInBackground();
-          return;
-        }
-      }
-
-      // 从网络获取
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
       const result = await db.collection('red_story').where({
         status: 'published'
       }).orderBy('createdAt', 'desc').limit(20).get();
       if (result && result.data) {
-        const storyData = result.data;
-        setStories(storyData);
-        setCacheStatus({
-          hit: false,
-          source: 'network'
-        });
-
-        // 缓存数据
-        dataCache.setStories(storyData);
-
-        // 保存到离线存储
-        for (const story of storyData) {
-          await offlineStorage.saveStory(story);
-        }
-
-        // 设置特色故事
-        if (storyData.length > 0) {
-          setFeaturedStory(storyData[0]);
+        setStories(result.data);
+        // 设置第一个故事为特色故事
+        if (result.data.length > 0) {
+          setFeaturedStory(result.data[0]);
         }
       }
     } catch (error) {
       console.error('加载故事失败:', error);
-
-      // 网络失败时尝试从离线存储获取
-      try {
-        const offlineStories = await offlineStorage.getAllStories();
-        if (offlineStories.length > 0) {
-          setStories(offlineStories);
-          setCacheStatus({
-            hit: true,
-            source: 'offline'
-          });
-          if (offlineStories.length > 0) {
-            setFeaturedStory(offlineStories[0]);
-          }
-
-          // 显示离线提示
-          // 这里可以添加toast提示
-        }
-      } catch (offlineError) {
-        console.error('离线数据获取失败:', offlineError);
-      }
     } finally {
       setLoading(false);
     }
   };
-
-  // 后台刷新数据
-  const refreshStoriesInBackground = async () => {
-    try {
-      const tcb = await $w.cloud.getCloudInstance();
-      const db = tcb.database();
-      const result = await db.collection('red_story').where({
-        status: 'published'
-      }).orderBy('createdAt', 'desc').limit(20).get();
-      if (result && result.data) {
-        const storyData = result.data;
-        setStories(storyData);
-        dataCache.setStories(storyData);
-        setCacheStatus({
-          hit: false,
-          source: 'network'
-        });
-
-        // 保存到离线存储
-        for (const story of storyData) {
-          await offlineStorage.saveStory(story);
-        }
-      }
-    } catch (error) {
-      console.error('后台刷新失败:', error);
-    }
-  };
-
-  // 搜索功能（带缓存）
-  const handleSearch = term => {
-    setSearchTerm(term);
-
-    // 缓存搜索结果
-    if (term.trim()) {
-      const cachedResults = dataCache.getSearchResults(term);
-      if (cachedResults) {
-        // 可以使用缓存的搜索结果
-        console.log('使用缓存的搜索结果');
-      }
-    }
-  };
-
-  // 过滤功能
   const filteredStories = stories.filter(story => {
     const matchesSearch = (story.title || '').toLowerCase().includes(searchTerm.toLowerCase()) || (story.content || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTag = !filterTag || (story.tags || []).includes(filterTag);
     return matchesSearch && matchesTag;
   });
-
-  // 格式化日期
   const formatDate = timestamp => {
     if (!timestamp) return '未知时间';
     return new Date(timestamp).toLocaleDateString('zh-CN', {
@@ -177,23 +63,15 @@ export default function HomePage(props) {
       day: 'numeric'
     });
   };
-
-  // 格式化阅读时间
   const formatReadTime = readTime => {
     if (!readTime) return '5分钟阅读';
     return readTime;
   };
-
-  // 同步完成回调
-  const handleSyncComplete = () => {
-    // 同步完成后刷新数据
-    loadStories(true);
-  };
   return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
       <Sidebar currentPage="index" navigateTo={navigateTo} />
 
-      {/* 主内容区域 - 优化过渡效果 */}
-      <main className="content-transition sidebar-transition md:ml-16 lg:ml-64 animate-fade-in">
+      {/* 主内容区域 - 优化响应式布局 */}
+      <main className="main-content-area transition-all duration-300 ease-in-out">
         {/* 桌面端头部 */}
         <header className="hidden md:block bg-slate-800/90 backdrop-blur-sm border-b border-slate-700 animate-slide-in">
           <div className="max-w-7xl mx-auto px-6 py-4">
@@ -202,12 +80,9 @@ export default function HomePage(props) {
                 红色故事
               </h1>
               <div className="flex items-center space-x-4">
-                {/* 同步状态指示器 */}
-                <SyncStatusIndicator onSyncClick={handleSyncComplete} />
-                
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                  <input type="text" placeholder="搜索故事..." value={searchTerm} onChange={e => handleSearch(e.target.value)} className="pl-10 pr-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300" />
+                  <input type="text" placeholder="搜索故事..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300" />
                 </div>
                 <Button onClick={() => navigateTo({
                 pageId: 'upload',
@@ -236,11 +111,6 @@ export default function HomePage(props) {
             }}>
                 传承红色基因，讲述革命故事，让历史在新时代焕发光芒
               </p>
-              
-              {/* 缓存状态指示 */}
-              {cacheStatus.hit && <div className="mt-4 text-sm text-slate-400">
-                  数据来源: {cacheStatus.source === 'cache' ? '缓存' : '离线存储'}
-                </div>}
             </div>
           </div>
         </header>
@@ -260,7 +130,7 @@ export default function HomePage(props) {
             <div className="flex flex-col md:flex-row gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <input type="text" placeholder="搜索故事标题或内容..." value={searchTerm} onChange={e => handleSearch(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300" />
+                <input type="text" placeholder="搜索故事标题或内容..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300" />
               </div>
               {allTags.length > 0 && <div className="relative">
                   <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
@@ -269,6 +139,7 @@ export default function HomePage(props) {
                     {allTags.map(tag => <option key={tag} value={tag}>{tag}</option>)}
                   </select>
                 </div>}
+              {/* 移除了搜索框边上的添加按钮 */}
             </div>
           </div>
         </div>
