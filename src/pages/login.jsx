@@ -1,27 +1,23 @@
 // @ts-ignore;
 import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, Input, useToast } from '@/components/ui';
+import { Button, Input } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, User, Lock, Eye, EyeOff, LogIn, Home, Loader2 } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, AlertCircle, BookOpen } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
-// @ts-ignore;
-import { LoginForm } from '@/components/LoginForm';
 export default function LoginPage(props) {
   const {
     $w
   } = props;
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     password: ''
   });
-  const {
-    toast
-  } = useToast();
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigateTo = $w.utils.navigateTo;
 
   // 处理表单输入变化
@@ -30,96 +26,50 @@ export default function LoginPage(props) {
       ...prev,
       [field]: value
     }));
+    // 清除错误信息
+    if (error) {
+      setError('');
+    }
   };
 
-  // 处理登录
-  const handleLogin = async () => {
-    if (!formData.username.trim() || !formData.password.trim()) {
-      toast({
-        title: '登录失败',
-        description: '用户名和密码不能为空',
-        variant: 'destructive'
-      });
+  // 登录处理
+  const handleLogin = async e => {
+    e.preventDefault();
+    if (!formData.username || !formData.password) {
+      setError('请输入用户名和密码');
       return;
     }
     try {
       setLoading(true);
+      setError('');
 
       // 模拟登录验证
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // 简单的登录验证逻辑（实际项目中应该调用后端API）
+      // 简单的验证逻辑（实际项目中应该调用后端API）
       if (formData.username === 'admin' && formData.password === 'admin123') {
-        // 登录成功，保存登录状态
-        const loginData = {
-          username: 'admin',
-          role: 'admin',
-          loginTime: Date.now(),
-          isAuthenticated: true
-        };
-        localStorage.setItem('adminLoginState', JSON.stringify(loginData));
-        toast({
-          title: '登录成功',
-          description: '欢迎回来，管理员！'
-        });
-
-        // 跳转到管理页面
+        // 登录成功，跳转到管理页面
         navigateTo({
           pageId: 'admin',
           params: {}
         });
-      } else if (formData.username === 'user' && formData.password === 'user123') {
-        // 登录成功，保存登录状态
-        const loginData = {
-          username: 'user',
-          role: 'user',
-          loginTime: Date.now(),
-          isAuthenticated: true
-        };
-        localStorage.setItem('userLoginState', JSON.stringify(loginData));
-        toast({
-          title: '登录成功',
-          description: '欢迎回来！'
-        });
-
-        // 跳转到首页
-        navigateTo({
-          pageId: 'index',
-          params: {}
-        });
       } else {
-        // 登录失败
-        toast({
-          title: '登录失败',
-          description: '用户名或密码错误',
-          variant: 'destructive'
-        });
+        setError('用户名或密码错误');
       }
     } catch (error) {
       console.error('登录失败:', error);
-      toast({
-        title: '登录失败',
-        description: '登录过程中出现错误，请重试',
-        variant: 'destructive'
-      });
+      setError('登录失败，请重试');
     } finally {
       setLoading(false);
     }
   };
 
-  // 返回主界面
-  const handleReturnToHome = () => {
+  // 返回首页
+  const handleGoHome = () => {
     navigateTo({
       pageId: 'index',
       params: {}
     });
-  };
-
-  // 处理键盘事件
-  const handleKeyPress = e => {
-    if (e.key === 'Enter') {
-      handleLogin();
-    }
   };
   return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-center p-4">
       {/* 背景装饰 */}
@@ -133,78 +83,80 @@ export default function LoginPage(props) {
       }}></div>
       </div>
 
-      {/* 返回主界面按钮 - 固定在左上角 */}
-      <div className="fixed top-4 left-4 z-50">
-        <Button onClick={handleReturnToHome} variant="outline" size="sm" className="bg-slate-800/80 backdrop-blur-sm border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
-          <Home className="w-4 h-4 mr-2" />
-          返回主界面
-        </Button>
-      </div>
-
       {/* 登录表单容器 */}
       <div className="relative w-full max-w-md">
-        {/* 登录卡片 */}
-        <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-slate-700/50 shadow-2xl p-8 animate-fade-in">
-          {/* 头部 */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-red-500 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <User className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-white mb-2">用户登录</h1>
-            <p className="text-slate-400 text-sm">请输入您的用户名和密码</p>
+        {/* Logo和标题区域 */}
+        <div className="text-center mb-8 animate-fade-in">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl mb-4 shadow-lg shadow-red-500/25">
+            <BookOpen className="w-8 h-8 text-white" />
           </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent mb-2">
+            红色故事
+          </h1>
+          <p className="text-slate-400 text-sm">
+            管理员登录
+          </p>
+        </div>
 
-          {/* 登录表单 */}
-          <div className="space-y-6">
+        {/* 登录表单 */}
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 shadow-2xl animate-slide-up">
+          <form onSubmit={handleLogin} className="space-y-6">
             {/* 用户名输入 */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-300">
                 用户名
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <Input type="text" value={formData.username} onChange={e => handleInputChange('username', e.target.value)} onKeyPress={handleKeyPress} placeholder="请输入用户名" className="pl-10 bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300" />
+                <Input type="text" value={formData.username} onChange={e => handleInputChange('username', e.target.value)} placeholder="请输入用户名" className="pl-10 bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300" disabled={loading} />
               </div>
             </div>
 
             {/* 密码输入 */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-300">
                 密码
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <Input type={showPassword ? 'text' : 'password'} value={formData.password} onChange={e => handleInputChange('password', e.target.value)} onKeyPress={handleKeyPress} placeholder="请输入密码" className="pl-10 pr-10 bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300" />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-300 transition-colors duration-200">
+                <Input type={showPassword ? 'text' : 'password'} value={formData.password} onChange={e => handleInputChange('password', e.target.value)} placeholder="请输入密码" className="pl-10 pr-10 bg-slate-700/50 border-slate-600 text-white placeholder-slate-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300" disabled={loading} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white transition-colors duration-200" disabled={loading}>
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {/* 登录按钮 */}
-            <Button onClick={handleLogin} disabled={loading} className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105 disabled:transform-none disabled:shadow-lg">
-              {loading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <LogIn className="w-5 h-5 mr-2" />}
-              {loading ? '登录中...' : '登录'}
-            </Button>
+            {/* 错误提示 */}
+            {error && <div className="flex items-center space-x-2 p-3 bg-red-900/20 border border-red-500/30 rounded-lg animate-fade-in">
+                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                <span className="text-red-400 text-sm">{error}</span>
+              </div>}
 
-            {/* 移除了密码提示信息 */}
+            {/* 登录按钮 */}
+            <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 disabled:from-red-800 disabled:to-orange-800 text-white font-medium py-3 rounded-xl shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105 button-press">
+              {loading ? <div className="flex items-center justify-center space-x-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <span>登录中...</span>
+                </div> : '登录'}
+            </Button>
+          </form>
+
+          {/* 底部操作 */}
+          <div className="mt-6 pt-6 border-t border-slate-700/50">
+            <Button onClick={handleGoHome} variant="outline" className="w-full border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300">
+              返回首页
+            </Button>
           </div>
         </div>
 
-        {/* 底部装饰 */}
-        <div className="text-center mt-6">
-          <p className="text-slate-500 text-sm">
-            红色故事平台 - 传承红色基因，讲述革命故事
+        {/* 提示信息 */}
+        <div className="mt-6 text-center animate-fade-in" style={{
+        animationDelay: '0.3s'
+      }}>
+          <p className="text-xs text-slate-500">
+            默认账号：admin / admin123
           </p>
         </div>
-      </div>
-
-      {/* 移动端底部返回按钮 */}
-      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 md:hidden">
-        <Button onClick={handleReturnToHome} variant="outline" size="sm" className="bg-slate-800/80 backdrop-blur-sm border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-300 shadow-lg">
-          <Home className="w-4 h-4 mr-2" />
-          返回主界面
-        </Button>
       </div>
     </div>;
 }
