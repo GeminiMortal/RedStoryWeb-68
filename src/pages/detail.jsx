@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 // @ts-ignore;
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge, useToast } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Calendar, User, MapPin, Clock, Eye, Heart, Share2, BookOpen, Tag, Loader2, Home, Edit3 } from 'lucide-react';
+import { ArrowLeft, Calendar, User, MapPin, Clock, Eye, Heart, Share2, BookOpen, Tag, Loader2, Home } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
@@ -207,6 +207,22 @@ export default function DetailPage(props) {
     const readTime = Math.ceil(wordCount / wordsPerMinute);
     return `${readTime}分钟阅读`;
   };
+
+  // 获取显示用的标题
+  const getDisplayTitle = () => {
+    if (!story || !story.title || story.title.trim() === '') {
+      return '无标题故事';
+    }
+    return story.title;
+  };
+
+  // 获取显示用的内容
+  const getDisplayContent = () => {
+    if (!story || !story.content || story.content.trim() === '') {
+      return '暂无故事内容';
+    }
+    return story.content;
+  };
   if (loading) {
     return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         <Sidebar currentPage="detail" navigateTo={navigateTo} />
@@ -260,17 +276,10 @@ export default function DetailPage(props) {
                   返回
                 </Button>
                 <h1 className="text-xl font-bold text-white truncate max-w-md">
-                  {story.title || '无标题'}
+                  {getDisplayTitle()}
                 </h1>
               </div>
-              <div className="flex items-center space-x-2">
-                <Button onClick={() => handleNavigate('edit', {
-                id: storyId
-              })} variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:bg-slate-700">
-                  <Edit3 className="w-4 h-4 mr-2" />
-                  编辑
-                </Button>
-              </div>
+              {/* 移除了编辑按钮 */}
             </div>
           </div>
         </header>
@@ -284,7 +293,7 @@ export default function DetailPage(props) {
               <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-slate-700/50">
                 <div className="text-center mb-8">
                   <h1 className="text-4xl font-bold text-white mb-4 leading-tight">
-                    {story.title || '无标题'}
+                    {getDisplayTitle()}
                   </h1>
                   <div className="flex flex-wrap justify-center gap-4 text-sm text-slate-400">
                     <span className="flex items-center bg-slate-700/50 px-3 py-1 rounded-full">
@@ -309,7 +318,7 @@ export default function DetailPage(props) {
                 {/* 故事封面图 */}
                 {story.image && <div className="mb-8">
                     <div className="aspect-video rounded-xl overflow-hidden shadow-xl">
-                      <img src={story.image} alt={story.title} className="w-full h-full object-cover" onError={e => {
+                      <img src={story.image} alt={getDisplayTitle()} className="w-full h-full object-cover" onError={e => {
                     e.target.style.display = 'none';
                   }} />
                     </div>
@@ -330,7 +339,7 @@ export default function DetailPage(props) {
               <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-slate-700/50">
                 <div className="prose prose-invert prose-lg max-w-none">
                   <div className="text-slate-300 leading-relaxed whitespace-pre-wrap text-lg">
-                    {story.content || '暂无内容'}
+                    {getDisplayContent()}
                   </div>
                 </div>
               </div>
@@ -427,17 +436,11 @@ export default function DetailPage(props) {
               <Card className="bg-slate-800/80 backdrop-blur-sm border-slate-700/50 rounded-2xl shadow-xl">
                 <CardHeader className="pb-4">
                   <CardTitle className="text-white flex items-center">
-                    <Edit3 className="w-5 h-5 mr-2 text-green-500" />
-                    相关操作
+                    <Home className="w-5 h-5 mr-2 text-green-500" />
+                    快速导航
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button onClick={() => handleNavigate('edit', {
-                  id: storyId
-                })} className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all duration-200">
-                    <Edit3 className="w-4 h-4 mr-2" />
-                    编辑故事
-                  </Button>
                   <Button onClick={() => handleNavigate('index')} variant="outline" className="w-full border-slate-600 text-slate-300 hover:bg-slate-700 transition-all duration-200">
                     <Home className="w-4 h-4 mr-2" />
                     返回首页
