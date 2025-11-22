@@ -14,6 +14,7 @@ export function StoryCarousel({
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [navigating, setNavigating] = useState(false);
 
   // 自动播放
   useEffect(() => {
@@ -36,6 +37,21 @@ export function StoryCarousel({
   const goToSlide = index => {
     setCurrentIndex(index);
     setIsAutoPlaying(false);
+  };
+
+  // 优化的导航函数
+  const handleNavigate = async (pageId, params = {}) => {
+    if (navigating) return;
+    try {
+      setNavigating(true);
+      // 添加短暂延迟以提供视觉反馈
+      await new Promise(resolve => setTimeout(resolve, 100));
+      onNavigate(pageId, params);
+    } catch (error) {
+      console.error('导航失败:', error);
+    } finally {
+      setNavigating(false);
+    }
   };
 
   // 格式化日期
@@ -104,9 +120,9 @@ export function StoryCarousel({
               <div className="flex gap-3 animate-fade-in" style={{
               animationDelay: '0.6s'
             }}>
-                <Button onClick={() => onNavigate('detail', {
+                <Button onClick={() => handleNavigate('detail', {
                 id: currentStory._id
-              })} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105 button-press">
+              })} disabled={navigating} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105 button-press">
                   <Eye className="w-4 h-4 mr-2" />
                   阅读故事
                 </Button>

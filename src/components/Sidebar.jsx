@@ -12,6 +12,7 @@ export function Sidebar({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [navigating, setNavigating] = useState(false);
 
   // 从 sessionStorage 读取侧边栏状态
   useEffect(() => {
@@ -65,19 +66,34 @@ export function Sidebar({
   const toggleMobile = () => {
     setIsMobileOpen(!isMobileOpen);
   };
-  const handleNavigation = pageId => {
-    navigateTo({
-      pageId,
-      params: {}
-    });
-    setIsMobileOpen(false);
+
+  // 优化的导航函数
+  const handleNavigation = async pageId => {
+    if (navigating) return;
+    try {
+      setNavigating(true);
+      // 添加短暂延迟以提供视觉反馈
+      await new Promise(resolve => setTimeout(resolve, 100));
+      navigateTo({
+        pageId,
+        params: {}
+      });
+      // 移动端导航后关闭侧边栏
+      if (!isDesktop) {
+        setIsMobileOpen(false);
+      }
+    } catch (error) {
+      console.error('导航失败:', error);
+    } finally {
+      setNavigating(false);
+    }
   };
 
   // 移动端遮罩层
   const MobileOverlay = () => <div className="fixed inset-0 bg-black/50 z-40 md:hidden animate-fade-in" onClick={toggleMobile} />;
   return <>
       {/* 移动端菜单按钮 - 仅在移动端显示 */}
-      <button onClick={toggleMobile} className={cn("fixed top-4 left-4 z-50 md:hidden", "bg-slate-800/95 backdrop-blur-md p-3 rounded-xl border border-slate-700/50", "shadow-lg hover:shadow-xl transition-all duration-300", "hover:bg-slate-700/90 mobile-touch-target", "animate-slide-in")}>
+      <button onClick={toggleMobile} disabled={navigating} className={cn("fixed top-4 left-4 z-50 md:hidden", "bg-slate-800/95 backdrop-blur-md p-3 rounded-xl border border-slate-700/50", "shadow-lg hover:shadow-xl transition-all duration-300", "hover:bg-slate-700/90 mobile-touch-target", "animate-slide-in", navigating && "opacity-50 cursor-not-allowed")}>
         <Menu className="w-5 h-5 text-white" />
       </button>
 
@@ -93,7 +109,7 @@ export function Sidebar({
             </h1> : <BookOpen className="w-6 h-6 text-red-500 animate-glow" />}
           
           {/* 移动端关闭按钮 */}
-          <button onClick={toggleMobile} className="md:hidden text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-700/50 transition-all duration-200 mobile-touch-target">
+          <button onClick={toggleMobile} disabled={navigating} className="md:hidden text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-700/50 transition-all duration-200 mobile-touch-target">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -107,7 +123,7 @@ export function Sidebar({
             return <li key={item.id} className="animate-slide-up" style={{
               animationDelay: `${index * 100}ms`
             }}>
-                  <button onClick={() => handleNavigation(item.pageId)} className={cn("w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300", "hover:scale-105 hover:shadow-lg button-press", "mobile-touch-target", isActive ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-md shadow-red-500/25" : "text-slate-300 hover:bg-slate-700/50 hover:text-white hover-lift", isCollapsed && isDesktop && "md:justify-center md:px-3")}>
+                  <button onClick={() => handleNavigation(item.pageId)} disabled={navigating} className={cn("w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300", "hover:scale-105 hover:shadow-lg button-press", "mobile-touch-target", isActive ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-md shadow-red-500/25" : "text-slate-300 hover:bg-slate-700/50 hover:text-white hover-lift", isCollapsed && isDesktop && "md:justify-center md:px-3", navigating && "opacity-50 cursor-not-allowed")}>
                     <Icon className={cn("w-5 h-5 flex-shrink-0 transition-transform duration-200", isActive && "animate-pulse")} />
                     {(!isCollapsed || !isDesktop) && <span className="animate-fade-in">{item.label}</span>}
                   </button>
@@ -124,7 +140,7 @@ export function Sidebar({
         </div>
 
         {/* 折叠按钮 - 仅桌面端显示 */}
-        {isDesktop && <button onClick={toggleSidebar} className={cn("absolute top-1/2 -right-3 transform -translate-y-1/2", "bg-slate-700 hover:from-red-500 hover:to-orange-500 text-white", "rounded-full p-2 shadow-lg border border-slate-600", "transition-all duration-300 hover:scale-110 hover:shadow-xl", "button-press animate-bounce-in")}>
+        {isDesktop && <button onClick={toggleSidebar} disabled={navigating} className={cn("absolute top-1/2 -right-3 transform -translate-y-1/2", "bg-slate-700 hover:from-red-500 hover:to-orange-500 text-white", "rounded-full p-2 shadow-lg border border-slate-600", "transition-all duration-300 hover:scale-110 hover:shadow-xl", "button-press animate-bounce-in", navigating && "opacity-50 cursor-not-allowed")}>
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>}
       </div>

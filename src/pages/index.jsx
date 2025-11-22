@@ -23,6 +23,7 @@ export default function HomePage(props) {
   const [featuredStory, setFeaturedStory] = useState(null);
   const [filterTag, setFilterTag] = useState('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [navigating, setNavigating] = useState(false);
   const navigateTo = $w.utils.navigateTo;
 
   // 获取所有标签
@@ -91,6 +92,24 @@ export default function HomePage(props) {
     return readTime;
   };
 
+  // 优化的导航函数
+  const handleNavigate = async (pageId, params = {}) => {
+    if (navigating) return;
+    try {
+      setNavigating(true);
+      // 添加短暂延迟以提供视觉反馈
+      await new Promise(resolve => setTimeout(resolve, 100));
+      navigateTo({
+        pageId,
+        params
+      });
+    } catch (error) {
+      console.error('导航失败:', error);
+    } finally {
+      setNavigating(false);
+    }
+  };
+
   // 动态计算主内容区域的左边距
   const getMainContentClasses = () => {
     const baseClasses = "content-transition sidebar-transition animate-fade-in";
@@ -119,10 +138,7 @@ export default function HomePage(props) {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                   <input type="text" placeholder="搜索故事..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 pr-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all duration-300" />
                 </div>
-                <Button onClick={() => navigateTo({
-                pageId: 'upload',
-                params: {}
-              })} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-0.5 button-press">
+                <Button onClick={() => handleNavigate('upload')} disabled={navigating} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105 hover:-translate-y-0.5 button-press">
                   <Plus className="w-4 h-4 mr-2" />
                   新建故事
                 </Button>
@@ -154,7 +170,7 @@ export default function HomePage(props) {
         {!loading && stories.length > 0 && <div className="animate-slide-in" style={{
         animationDelay: '0.3s'
       }}>
-            <StoryCarousel stories={stories} onNavigate={navigateTo} />
+            <StoryCarousel stories={stories} onNavigate={handleNavigate} />
           </div>}
 
         {/* 搜索和过滤区域 */}
@@ -174,7 +190,6 @@ export default function HomePage(props) {
                     {allTags.map(tag => <option key={tag} value={tag}>{tag}</option>)}
                   </select>
                 </div>}
-              {/* 移除了搜索框边上的添加按钮 */}
             </div>
           </div>
         </div>
@@ -189,10 +204,7 @@ export default function HomePage(props) {
               <p className="text-slate-500 mb-8 max-w-md mx-auto">
                 {searchTerm || filterTag ? '尝试调整搜索条件或标签' : '开始创建您的第一个红色故事，让历史在新时代焕发光芒'}
               </p>
-              {!searchTerm && !filterTag && <Button onClick={() => navigateTo({
-            pageId: 'upload',
-            params: {}
-          })} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105 button-press">
+              {!searchTerm && !filterTag && <Button onClick={() => handleNavigate('upload')} disabled={navigating} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105 button-press">
                   <Plus className="w-5 h-5 mr-2" />
                   创建第一个故事
                 </Button>}
@@ -250,12 +262,9 @@ export default function HomePage(props) {
                               {formatDate(story.createdAt)}
                             </span>
                           </div>
-                          <Button variant="ghost" size="sm" onClick={() => navigateTo({
-                      pageId: 'detail',
-                      params: {
-                        id: story._id
-                      }
-                    })} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 button-press">
+                          <Button variant="ghost" size="sm" onClick={() => handleNavigate('detail', {
+                      id: story._id
+                    })} disabled={navigating} className="text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 button-press">
                             <Eye className="w-4 h-4" />
                           </Button>
                         </div>
@@ -268,6 +277,6 @@ export default function HomePage(props) {
       </main>
 
       {/* 移动端底部导航 - 仅在移动端显示 */}
-      <MobileBottomNav currentPage="index" navigateTo={navigateTo} />
+      <MobileBottomNav currentPage="index" navigateTo={handleNavigate} />
     </div>;
 }

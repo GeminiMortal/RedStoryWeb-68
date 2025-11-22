@@ -15,6 +15,7 @@ export function StoryCard({
   onView,
   index = 0
 }) {
+  const [navigating, setNavigating] = useState(false);
   const formatDate = timestamp => {
     if (!timestamp) return '未知时间';
     return new Date(timestamp).toLocaleDateString('zh-CN', {
@@ -48,6 +49,21 @@ export function StoryCard({
     if (!content) return '暂无内容';
     return content.length > maxLength ? content.substring(0, maxLength) + '...' : content;
   };
+
+  // 优化的导航函数
+  const handleNavigate = async (action, ...args) => {
+    if (navigating) return;
+    try {
+      setNavigating(true);
+      // 添加短暂延迟以提供视觉反馈
+      await new Promise(resolve => setTimeout(resolve, 100));
+      action(...args);
+    } catch (error) {
+      console.error('操作失败:', error);
+    } finally {
+      setNavigating(false);
+    }
+  };
   return <div className={cn("group animate-fade-in card-hover", "bg-slate-800/50 backdrop-blur-sm border border-slate-700/50", "rounded-2xl overflow-hidden shadow-xl", "transition-all duration-300 hover:border-red-500/50", "hover:shadow-2xl hover:shadow-red-500/10", "mobile-card", "relative")} style={{
     animationDelay: `${index * 100}ms`
   }}>
@@ -66,13 +82,13 @@ export function StoryCard({
           {/* 悬停操作按钮 */}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <div className="flex space-x-2">
-              {type === 'published' && <button onClick={() => onView(story._id)} className="bg-white/20 backdrop-blur-sm text-white p-2 rounded-full hover:bg-white/30 transition-all duration-200 button-press">
+              {type === 'published' && <button onClick={() => handleNavigate(onView, story._id)} disabled={navigating} className="bg-white/20 backdrop-blur-sm text-white p-2 rounded-full hover:bg-white/30 transition-all duration-200 button-press">
                   <Eye className="w-4 h-4" />
                 </button>}
-              <button onClick={() => onEdit(story._id, type === 'draft')} className="bg-blue-500/20 backdrop-blur-sm text-blue-400 p-2 rounded-full hover:bg-blue-500/30 transition-all duration-200 button-press">
+              <button onClick={() => handleNavigate(onEdit, story._id, type === 'draft')} disabled={navigating} className="bg-blue-500/20 backdrop-blur-sm text-blue-400 p-2 rounded-full hover:bg-blue-500/30 transition-all duration-200 button-press">
                 <Edit className="w-4 h-4" />
               </button>
-              <button onClick={() => onDelete(story._id, type === 'draft')} className="bg-red-500/20 backdrop-blur-sm text-red-400 p-2 rounded-full hover:bg-red-500/30 transition-all duration-200 button-press">
+              <button onClick={() => handleNavigate(onDelete, story._id, type === 'draft')} disabled={navigating} className="bg-red-500/20 backdrop-blur-sm text-red-400 p-2 rounded-full hover:bg-red-500/30 transition-all duration-200 button-press">
                 <Trash2 className="w-4 h-4" />
               </button>
             </div>
@@ -133,15 +149,15 @@ export function StoryCard({
 
         {/* 操作按钮 */}
         <div className="flex gap-2">
-          {type === 'published' && <Button size="sm" variant="outline" onClick={() => onView(story._id)} className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-200 button-press flex-1">
+          {type === 'published' && <Button size="sm" variant="outline" onClick={() => handleNavigate(onView, story._id)} disabled={navigating} className="border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-all duration-200 button-press flex-1">
               <Eye className="w-3 h-3 mr-1" />
               查看
             </Button>}
-          <Button size="sm" onClick={() => onEdit(story._id, type === 'draft')} className="bg-blue-600 hover:bg-blue-700 transition-all duration-200 button-press flex-1">
+          <Button size="sm" onClick={() => handleNavigate(onEdit, story._id, type === 'draft')} disabled={navigating} className="bg-blue-600 hover:bg-blue-700 transition-all duration-200 button-press flex-1">
             <Edit className="w-3 h-3 mr-1" />
             编辑
           </Button>
-          <Button size="sm" variant="destructive" onClick={() => onDelete(story._id, type === 'draft')} className="bg-red-600 hover:bg-red-700 transition-all duration-200 button-press">
+          <Button size="sm" variant="destructive" onClick={() => handleNavigate(onDelete, story._id, type === 'draft')} disabled={navigating} className="bg-red-600 hover:bg-red-700 transition-all duration-200 button-press">
             <Trash2 className="w-3 h-3" />
           </Button>
         </div>
