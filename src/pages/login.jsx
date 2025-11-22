@@ -106,6 +106,14 @@ export default function LoginPage(props) {
     $w.utils.navigateBack();
   };
 
+  // 返回主界面
+  const goToHome = () => {
+    navigateTo({
+      pageId: 'index',
+      params: {}
+    });
+  };
+
   // 切换密码显示状态
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
@@ -169,18 +177,23 @@ export default function LoginPage(props) {
 
           <LoginForm formData={formData} onInputChange={handleInputChange} onSubmit={handleSubmit} showPassword={showPassword} onTogglePassword={togglePasswordVisibility} loading={loading} error={error} onClearError={clearError} />
 
+          {/* 分割线 */}
+          <div className="flex items-center my-6">
+            <div className="flex-1 border-t border-gray-600"></div>
+            <span className="px-4 text-sm text-gray-400">或者</span>
+            <div className="flex-1 border-t border-gray-600"></div>
+          </div>
+
           {/* 返回主界面按钮 */}
-          <div className="mt-6 pt-6 border-t border-gray-700">
-            <div className="text-center">
-              <p className="text-sm text-gray-400 mb-4">不是管理员？</p>
-              <Button onClick={() => navigateTo({
-              pageId: 'index',
-              params: {}
-            })} variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300">
-                <Home className="w-4 h-4 mr-2" />
-                返回主界面
-              </Button>
-            </div>
+          <div className="space-y-4">
+            <Button onClick={goToHome} variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-300 py-3">
+              <Home className="w-5 h-5 mr-3" />
+              返回主界面
+            </Button>
+            
+            <p className="text-xs text-gray-500 text-center">
+              点击上方按钮可直接返回主界面，无需登录
+            </p>
           </div>
 
           {/* 底部提示 */}
@@ -192,12 +205,9 @@ export default function LoginPage(props) {
           </div>
         </div>
 
-        {/* 底部返回首页 */}
+        {/* 额外的返回首页按钮 */}
         <div className="mt-6 text-center">
-          <Button onClick={() => navigateTo({
-          pageId: 'index',
-          params: {}
-        })} variant="ghost" className="text-gray-400 hover:text-white">
+          <Button onClick={goToHome} variant="ghost" className="text-gray-400 hover:text-white transition-all duration-200">
             <ArrowLeft className="w-4 h-4 mr-2" />
             返回首页
           </Button>
