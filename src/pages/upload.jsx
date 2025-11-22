@@ -131,12 +131,10 @@ export default function UploadPage(props) {
         description: '故事已发布并保存到草稿箱'
       });
 
-      // 跳转到详情页
+      // 跳转到首页，让用户可以看到刚刚发布的故事
       navigateTo({
-        pageId: 'detail',
-        params: {
-          id: storyId
-        }
+        pageId: 'index',
+        params: {}
       });
     } catch (err) {
       console.error('发布失败:', err);
