@@ -90,26 +90,20 @@ export function validateStoryData(data, isUpdate = false) {
     }
   }
 
-  // 标签验证
+  // 标签验证（改为非必填）
   if (!isUpdate || data.tags !== undefined) {
-    if (!Array.isArray(data.tags)) {
+    if (data.tags && !Array.isArray(data.tags)) {
       errors.tags = '标签必须是数组';
-    } else {
-      if (data.tags.length === 0) {
-        errors.tags = '至少需要一个标签';
-      } else if (data.tags.length > 10) {
-        errors.tags = '标签数量不能超过10个';
-      } else {
-        data.tags.forEach((tag, index) => {
-          if (!tag || !tag.trim()) {
-            errors[`tags[${index}]`] = '标签不能为空';
-          } else if (typeof tag !== 'string') {
-            errors[`tags[${index}]`] = '标签必须是字符串';
-          } else if (tag.length > 20) {
-            errors[`tags[${index}]`] = '标签长度不能超过20个字符';
-          }
-        });
-      }
+    } else if (data.tags && data.tags.length > 10) {
+      errors.tags = '标签数量不能超过10个';
+    } else if (data.tags) {
+      data.tags.forEach((tag, index) => {
+        if (tag && typeof tag !== 'string') {
+          errors[`tags[${index}]`] = '标签必须是字符串';
+        } else if (tag && tag.length > 20) {
+          errors[`tags[${index}]`] = '标签长度不能超过20个字符';
+        }
+      });
     }
   }
 
@@ -209,9 +203,9 @@ export function validateField(fieldName, value) {
       return null;
       
     case 'tags':
-      if (!Array.isArray(value)) return '标签必须是数组';
-      if (value.length === 0) return '至少需要一个标签';
-      if (value.length > 10) return '标签数量不能超过10个';
+      // 标签改为非必填，只验证格式
+      if (value && !Array.isArray(value)) return '标签必须是数组';
+      if (value && value.length > 10) return '标签数量不能超过10个';
       return null;
       
     case 'image':
@@ -290,7 +284,7 @@ export function sanitizeStoryData(data) {
     }
   });
   
-  // 清理标签
+  // 清理标签（改为非必填）
   if (sanitized.tags && Array.isArray(sanitized.tags)) {
     sanitized.tags = sanitized.tags
       .filter(tag => tag && tag.trim())

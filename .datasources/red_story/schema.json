@@ -72,13 +72,12 @@
         "name": "tags",
         "title": "标签",
         "type": "Array",
-        "required": true,
+        "required": false,
         "items": {
           "type": "String",
           "minLength": 1,
           "maxLength": 20
         },
-        "minItems": 1,
         "maxItems": 10
       },
       {

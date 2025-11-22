@@ -446,8 +446,8 @@ export default function UploadPage(props) {
               {/* 阅读时间 */}
               <ValidatedInput label="阅读时间" fieldName="read_time" value={story.read_time} onChange={e => handleFieldChange('read_time', e.target.value)} onBlur={() => handleFieldBlur('read_time')} error={validationErrors.read_time} touched={touchedFields.read_time} placeholder="例如：5分钟阅读" />
 
-              {/* 标签 */}
-              <ValidatedTagInput label="标签" required fieldName="tags" value={story.tags} onChange={handleTagsChange} onBlur={() => handleFieldBlur('tags')} error={validationErrors.tags} touched={touchedFields.tags} placeholder="输入标签后按回车添加" maxTags={10} />
+              {/* 标签 - 改为非强制选项 */}
+              <ValidatedTagInput label="标签" fieldName="tags" value={story.tags} onChange={handleTagsChange} onBlur={() => handleFieldBlur('tags')} error={validationErrors.tags} touched={touchedFields.tags} placeholder="输入标签后按回车添加（可选）" maxTags={10} />
 
               {/* 图片上传 */}
               <div>
