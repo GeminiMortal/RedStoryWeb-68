@@ -434,8 +434,8 @@ export default function UploadPage(props) {
               {/* 标题 */}
               <ValidatedInput label="故事标题" required fieldName="title" value={story.title} onChange={e => handleFieldChange('title', e.target.value)} onBlur={() => handleFieldBlur('title')} error={validationErrors.title} touched={touchedFields.title} placeholder="请输入故事标题" />
 
-              {/* 作者 */}
-              <ValidatedInput label="作者" required fieldName="author" value={story.author} onChange={e => handleFieldChange('author', e.target.value)} onBlur={() => handleFieldBlur('author')} error={validationErrors.author} touched={touchedFields.author} placeholder="请输入作者姓名" />
+              {/* 上传者 */}
+              <ValidatedInput label="上传者" required fieldName="author" value={story.author} onChange={e => handleFieldChange('author', e.target.value)} onBlur={() => handleFieldBlur('author')} error={validationErrors.author} touched={touchedFields.author} placeholder="请输入上传者姓名" />
 
               {/* 地点 */}
               <ValidatedInput label="发生地点" fieldName="location" value={story.location} onChange={e => handleFieldChange('location', e.target.value)} onBlur={() => handleFieldBlur('location')} error={validationErrors.location} touched={touchedFields.location} placeholder="请输入故事发生地点（可选）" />

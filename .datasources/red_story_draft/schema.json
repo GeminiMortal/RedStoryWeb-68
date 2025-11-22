@@ -55,7 +55,7 @@
       },
       {
         "name": "author",
-        "title": "作者",
+        "title": "上传者",
         "type": "String",
         "required": true,
         "minLength": 1,

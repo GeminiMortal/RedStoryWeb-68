@@ -50,14 +50,14 @@ export function validateStoryData(data, isUpdate = false) {
     }
   }
 
-  // 作者验证
+  // 上传者验证
   if (!isUpdate || data.author !== undefined) {
     if (!data.author || !data.author.trim()) {
-      errors.author = '作者不能为空';
+      errors.author = '上传者不能为空';
     } else if (typeof data.author !== 'string') {
-      errors.author = '作者必须是字符串';
+      errors.author = '上传者必须是字符串';
     } else if (data.author.length > 50) {
-      errors.author = '作者名称长度不能超过50个字符';
+      errors.author = '上传者名称长度不能超过50个字符';
     }
   }
 
@@ -187,8 +187,8 @@ export function validateField(fieldName, value) {
       return null;
       
     case 'author':
-      if (!value || !value.trim()) return '作者不能为空';
-      if (value.length > 50) return '作者名称长度不能超过50个字符';
+      if (!value || !value.trim()) return '上传者不能为空';
+      if (value.length > 50) return '上传者名称长度不能超过50个字符';
       return null;
       
     case 'location':

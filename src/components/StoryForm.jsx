@@ -38,8 +38,8 @@ export function StoryForm({
         {/* 标题 */}
         <ValidatedInput label="故事标题" required fieldName="title" value={storyData.title} onChange={e => onFieldChange('title', e.target.value)} onBlur={() => onFieldBlur('title')} error={validationErrors.title} touched={touchedFields.title} placeholder="请输入故事标题" />
 
-        {/* 作者 */}
-        <ValidatedInput label="作者" required fieldName="author" value={storyData.author} onChange={e => onFieldChange('author', e.target.value)} onBlur={() => onFieldBlur('author')} error={validationErrors.author} touched={touchedFields.author} placeholder="请输入作者名称" />
+        {/* 上传者 */}
+        <ValidatedInput label="上传者" required fieldName="author" value={storyData.author} onChange={e => onFieldChange('author', e.target.value)} onBlur={() => onFieldBlur('author')} error={validationErrors.author} touched={touchedFields.author} placeholder="请输入上传者名称" />
 
         {/* 地点 */}
         <ValidatedInput label="发生地点" fieldName="location" value={storyData.location} onChange={e => onFieldChange('location', e.target.value)} onBlur={() => onFieldBlur('location')} error={validationErrors.location} touched={touchedFields.location} placeholder="请输入故事发生地点（可选）" />
