@@ -470,10 +470,10 @@ export default function EditPage(props) {
                 <ValidatedInput label="作者" required fieldName="author" value={storyData.author} onChange={e => handleFieldChange('author', e.target.value)} onBlur={() => handleFieldBlur('author')} error={validationErrors.author} touched={touchedFields.author} placeholder="请输入作者姓名" />
 
                 {/* 地点 */}
-                <ValidatedInput label="发生地点" required fieldName="location" value={storyData.location} onChange={e => handleFieldChange('location', e.target.value)} onBlur={() => handleFieldBlur('location')} error={validationErrors.location} touched={touchedFields.location} placeholder="请输入故事发生地点" />
+                <ValidatedInput label="发生地点" fieldName="location" value={storyData.location} onChange={e => handleFieldChange('location', e.target.value)} onBlur={() => handleFieldBlur('location')} error={validationErrors.location} touched={touchedFields.location} placeholder="请输入故事发生地点（可选）" />
 
                 {/* 时间时期 */}
-                <ValidatedInput label="时间时期" required fieldName="date" value={storyData.date} onChange={e => handleFieldChange('date', e.target.value)} onBlur={() => handleFieldBlur('date')} error={validationErrors.date} touched={touchedFields.date} placeholder="例如：抗日战争时期" />
+                <ValidatedInput label="时间时期" fieldName="date" value={storyData.date} onChange={e => handleFieldChange('date', e.target.value)} onBlur={() => handleFieldBlur('date')} error={validationErrors.date} touched={touchedFields.date} placeholder="例如：抗日战争时期（可选）" />
 
                 {/* 阅读时间 */}
                 <ValidatedInput label="阅读时间" fieldName="read_time" value={storyData.read_time} onChange={e => handleFieldChange('read_time', e.target.value)} onBlur={() => handleFieldBlur('read_time')} error={validationErrors.read_time} touched={touchedFields.read_time} placeholder="例如：5分钟阅读" />

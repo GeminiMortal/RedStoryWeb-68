@@ -61,24 +61,20 @@ export function validateStoryData(data, isUpdate = false) {
     }
   }
 
-  // 地点验证
+  // 地点验证（改为非必填）
   if (!isUpdate || data.location !== undefined) {
-    if (!data.location || !data.location.trim()) {
-      errors.location = '发生地点不能为空';
-    } else if (typeof data.location !== 'string') {
+    if (data.location && typeof data.location !== 'string') {
       errors.location = '地点必须是字符串';
-    } else if (data.location.length > 100) {
+    } else if (data.location && data.location.length > 100) {
       errors.location = '地点长度不能超过100个字符';
     }
   }
 
-  // 时间时期验证
+  // 时间时期验证（改为非必填）
   if (!isUpdate || data.date !== undefined) {
-    if (!data.date || !data.date.trim()) {
-      errors.date = '时间时期不能为空';
-    } else if (typeof data.date !== 'string') {
+    if (data.date && typeof data.date !== 'string') {
       errors.date = '时间时期必须是字符串';
-    } else if (data.date.length > 50) {
+    } else if (data.date && data.date.length > 50) {
       errors.date = '时间时期长度不能超过50个字符';
     }
   }
@@ -196,13 +192,15 @@ export function validateField(fieldName, value) {
       return null;
       
     case 'location':
-      if (!value || !value.trim()) return '地点不能为空';
-      if (value.length > 100) return '地点长度不能超过100个字符';
+      // 地点改为非必填，只验证格式
+      if (value && typeof value !== 'string') return '地点必须是字符串';
+      if (value && value.length > 100) return '地点长度不能超过100个字符';
       return null;
       
     case 'date':
-      if (!value || !value.trim()) return '时间时期不能为空';
-      if (value.length > 50) return '时间时期长度不能超过50个字符';
+      // 时间时期改为非必填，只验证格式
+      if (value && typeof value !== 'string') return '时间时期必须是字符串';
+      if (value && value.length > 50) return '时间时期长度不能超过50个字符';
       return null;
       
     case 'read_time':
