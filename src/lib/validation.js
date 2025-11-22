@@ -162,7 +162,8 @@ export function validateStoryData(data, isUpdate = false) {
 }
 
 /**
- * 检查故事是否可以发布
+ * 检查故事是否可以发布（简化版）
+ * 只检查必填字段：title, content, author, read_time
  * @param {Object} data - 故事数据
  * @returns {Object} 检查结果 { canPublish, missingFields, errors }
  */
@@ -225,16 +226,17 @@ export function checkStoryPublishability(data) {
 }
 
 /**
- * 获取故事完整性状态
+ * 获取故事完整性状态（简化版）
+ * 只考虑必填字段
  * @param {Object} data - 故事数据
  * @returns {Object} 完整性状态 { completeness, percentage, missingFields }
  */
 export function getStoryCompleteness(data) {
-  const totalFields = 6; // 总字段数：title, content, author, read_time, location, date
+  const totalFields = 4; // 只计算必填字段：title, content, author, read_time
   const completedFields = [];
   const missingFields = [];
   
-  // 检查各个字段
+  // 检查各个必填字段
   if (data.title && data.title.trim()) {
     completedFields.push('title');
   } else {
@@ -257,15 +259,6 @@ export function getStoryCompleteness(data) {
     completedFields.push('read_time');
   } else {
     missingFields.push('阅读时间');
-  }
-  
-  // 地点和时间时期为可选字段
-  if (data.location && data.location.trim()) {
-    completedFields.push('location');
-  }
-  
-  if (data.date && data.date.trim()) {
-    completedFields.push('date');
   }
   
   const percentage = Math.round((completedFields.length / totalFields) * 100);

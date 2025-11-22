@@ -31,7 +31,12 @@ export function StoryForm({
   onAddTag,
   onRemoveTag,
   fileInputRef,
-  triggerFileSelect
+  triggerFileSelect,
+  completeness = {
+    percentage: 0,
+    canPublish: false,
+    missingFields: []
+  }
 }) {
   return <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 shadow-2xl animate-fade-in">
       <div className="space-y-6">
@@ -103,9 +108,9 @@ export function StoryForm({
             <BookOpen className="w-4 h-4 mr-2" />
             {isSaving ? '保存中...' : '保存草稿'}
           </Button>
-          <Button onClick={onPublish} disabled={isPublishing} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105">
+          <Button onClick={onPublish} disabled={isPublishing || !completeness.canPublish} className={`${completeness.canPublish ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25' : 'bg-slate-600 cursor-not-allowed'} transition-all duration-300 transform hover:scale-105`}>
             <Upload className="w-4 h-4 mr-2" />
-            {isPublishing ? '发布中...' : '发布'}
+            {isPublishing ? '发布中...' : completeness.canPublish ? '发布' : '完善信息后可发布'}
           </Button>
           <Button onClick={onPreview} disabled={isPreviewing} variant="outline" className="border-green-600 text-green-400 hover:bg-green-600/10 transition-all">
             <Tag className="w-4 h-4 mr-2" />
