@@ -1,55 +1,45 @@
 // @ts-ignore;
 import React from 'react';
-// @ts-ignore;
-import { Skeleton, Card } from '@/components/ui';
 
-// 统一的加载骨架屏组件
-export const LoadingSkeleton = ({
-  count = 3,
-  type = 'story'
-}) => {
-  if (type === 'story') {
-    return <div className="space-y-4">
-        {[...Array(count)].map((_, index) => <Card key={index} className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 p-6">
-            <div className="space-y-3">
-              <Skeleton className="h-6 w-1/3 bg-slate-700" />
-              <Skeleton className="h-4 w-2/3 bg-slate-700" />
-              <Skeleton className="h-4 w-1/2 bg-slate-700" />
-              <div className="flex items-center space-x-4">
-                <Skeleton className="h-3 w-20 bg-slate-700" />
-                <Skeleton className="h-3 w-16 bg-slate-700" />
-                <Skeleton className="h-3 w-12 bg-slate-700" />
-              </div>
+export function LoadingSkeleton({
+  type = 'card',
+  count = 3
+}) {
+  if (type === 'card') {
+    return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {Array.from({
+        length: count
+      }).map((_, i) => <div key={i} className="bg-gray-800 rounded-xl p-6 animate-pulse">
+            <div className="aspect-video bg-gray-700 rounded-lg mb-4 skeleton-loading"></div>
+            <div className="h-6 bg-gray-700 rounded w-3/4 mb-2 skeleton-loading"></div>
+            <div className="h-4 bg-gray-700 rounded w-full mb-2 skeleton-loading"></div>
+            <div className="h-4 bg-gray-700 rounded w-5/6 mb-4 skeleton-loading"></div>
+            <div className="flex gap-2">
+              <div className="h-8 bg-gray-700 rounded w-16 skeleton-loading"></div>
+              <div className="h-8 bg-gray-700 rounded w-16 skeleton-loading"></div>
             </div>
-          </Card>)}
+          </div>)}
       </div>;
   }
   if (type === 'detail') {
-    return <div className="space-y-4">
-        <Skeleton className="h-8 w-3/4 bg-slate-700" />
-        <Skeleton className="h-4 w-1/2 bg-slate-700" />
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-full bg-slate-700" />
-          <Skeleton className="h-4 w-full bg-slate-700" />
-          <Skeleton className="h-4 w-3/4 bg-slate-700" />
+    return <div className="bg-gray-800 rounded-xl overflow-hidden animate-pulse">
+        <div className="aspect-video bg-gray-700 skeleton-loading"></div>
+        <div className="p-6">
+          <div className="h-8 bg-gray-700 rounded w-3/4 mb-4 skeleton-loading"></div>
+          <div className="flex gap-4 mb-4">
+            <div className="h-4 bg-gray-700 rounded w-24 skeleton-loading"></div>
+            <div className="h-4 bg-gray-700 rounded w-32 skeleton-loading"></div>
+            <div className="h-4 bg-gray-700 rounded w-20 skeleton-loading"></div>
+          </div>
+          <div className="space-y-2">
+            <div className="h-4 bg-gray-700 rounded w-full skeleton-loading"></div>
+            <div className="h-4 bg-gray-700 rounded w-full skeleton-loading"></div>
+            <div className="h-4 bg-gray-700 rounded w-5/6 skeleton-loading"></div>
+          </div>
         </div>
       </div>;
   }
-  return <div className="space-y-4">
-      {[...Array(count)].map((_, index) => <div key={index} className="bg-slate-800/50 backdrop-blur-sm border-slate-700/50 rounded-xl p-6 animate-pulse">
-          <div className="h-6 bg-slate-700 rounded w-1/3 mb-4"></div>
-          <div className="h-4 bg-slate-700 rounded w-2/3 mb-2"></div>
-          <div className="h-4 bg-slate-700 rounded w-1/2"></div>
-        </div>)}
+  return <div className="flex justify-center items-center h-64">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
     </div>;
-};
-
-// 页面加载状态
-export const PageLoading = ({
-  message = '加载中...'
-}) => <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-    <div className="text-center">
-      <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-      <p className="text-slate-400">{message}</p>
-    </div>
-  </div>;
+}

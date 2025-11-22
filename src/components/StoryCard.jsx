@@ -3,95 +3,107 @@ import React from 'react';
 // @ts-ignore;
 import { Button, Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui';
 // @ts-ignore;
-import { Edit3, Trash2, Eye, Send, User, Calendar, Clock, CheckSquare, Square } from 'lucide-react';
+import { Edit, Trash2, Eye, Clock, Calendar, User } from 'lucide-react';
 // @ts-ignore;
 import { cn } from '@/lib/utils';
 
 export function StoryCard({
   story,
   type = 'published',
-  selected = false,
-  onSelect,
   onEdit,
-  onView,
-  onPublish,
   onDelete,
-  showCheckbox = false
+  onView,
+  index = 0
 }) {
   const formatDate = timestamp => {
     if (!timestamp) return '未知时间';
-    try {
-      return new Date(timestamp).toLocaleDateString('zh-CN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      return '日期格式错误';
+    return new Date(timestamp).toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+  };
+  const formatRelativeTime = timestamp => {
+    if (!timestamp) return '未知时间';
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diffMs = now - past;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) {
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      if (diffHours === 0) {
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        return `${diffMinutes}分钟前`;
+      }
+      return `${diffHours}小时前`;
+    } else if (diffDays === 1) {
+      return '昨天';
+    } else if (diffDays < 7) {
+      return `${diffDays}天前`;
+    } else {
+      return formatDate(timestamp);
     }
   };
-  const handleCardClick = e => {
-    if (showCheckbox && e.target.closest('.checkbox-area')) {
-      return;
-    }
-    if (type === 'published') {
-      onView(story._id, e);
-    }
+  const truncateContent = (content, maxLength = 100) => {
+    if (!content) return '暂无内容';
+    return content.length > maxLength ? content.substring(0, maxLength) + '...' : content;
   };
-  return <Card className={cn("bg-slate-800/50 backdrop-blur-sm border transition-all duration-300 cursor-pointer", selected ? "border-blue-500/50 bg-blue-500/5" : "border-slate-700/50", type === 'published' ? "hover:border-green-500/50" : "hover:border-blue-500/50")} onClick={handleCardClick}>
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between">
-          <div className={cn("flex items-start space-x-3 flex-1", showCheckbox && "space-x-3")}>
-            {showCheckbox && <div className="checkbox-area">
-                <Button onClick={() => onSelect(story._id)} variant="ghost" size="sm" className="mt-1 p-1">
-                  {selected ? <CheckSquare className="w-4 h-4 text-blue-400" /> : <Square className="w-4 h-4 text-slate-400" />}
-                </Button>
-              </div>}
+  return <div className="bg-gray-800/50 backdrop-blur-sm border-gray-700 hover:border-red-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-red-500/10 animate-fade-in card-hover" style={{
+    animationDelay: `${index * 100}ms`
+  }}>
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-start">
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-white mb-2">{story.title}</h3>
-              <p className="text-slate-400 text-sm mb-3 line-clamp-2">{story.content}</p>
-              <div className="flex items-center space-x-4 text-xs text-slate-500">
-                <span className="flex items-center">
-                  <User className="w-3 h-3 mr-1" />
-                  {story.author}
+              <CardTitle className="text-white text-lg line-clamp-1">
+                {story.title || (type === 'draft' ? '无标题草稿' : '无标题')}
+              </CardTitle>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-gray-400 mt-2">
+                <span className="flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  {story.author || story.draftOwner || '佚名'}
                 </span>
-                <span className="flex items-center">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  {formatDate(story.updatedAt)}
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  {formatDate(story.createdAt || story.lastSavedAt)}
                 </span>
-                {type === 'published' && <span className="flex items-center">
-                    <Eye className="w-3 h-3 mr-1" />
-                    {story.views}次阅读
+                {story.read_time && <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {story.read_time}
                   </span>}
+                <Badge variant="outline" className={cn("text-xs", type === 'published' ? "border-green-600 text-green-400" : "border-blue-600 text-blue-400")}>
+                  {type === 'published' ? '已发布' : '草稿'}
+                </Badge>
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2 ml-4">
-            {type === 'published' ? <>
-                <Button onClick={e => onView(story._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                  <Eye className="w-4 h-4" />
-                </Button>
-                <Button onClick={e => onEdit(story._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                  <Edit3 className="w-4 h-4" />
-                </Button>
-                <Button onClick={e => onDelete(story._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-red-400">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </> : <>
-                <Button onClick={e => onEdit(story._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                  <Edit3 className="w-4 h-4" />
-                </Button>
-                <Button onClick={e => onPublish(story._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-green-400">
-                  <Send className="w-4 h-4" />
-                </Button>
-                <Button onClick={e => onDelete(story._id, e)} variant="ghost" size="sm" className="text-slate-400 hover:text-red-400">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </>}
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-300 text-sm mb-4 line-clamp-2">
+            {truncateContent(story.content)}
+          </p>
+          
+          {story.tags && story.tags.length > 0 && <div className="flex flex-wrap gap-1 mb-4">
+              {story.tags.slice(0, 3).map((tag, index) => <span key={index} className={cn("px-2 py-1 text-xs rounded-full transition-colors", type === 'published' ? "bg-red-900/30 text-red-300 hover:bg-red-900/50" : "bg-blue-900/30 text-blue-300 hover:bg-blue-900/50")}>
+                  {tag}
+                </span>)}
+            </div>}
+
+          <div className="flex gap-2">
+            {type === 'published' && <Button size="sm" variant="outline" onClick={() => onView(story._id)} className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white transition-all button-press">
+                <Eye className="w-3 h-3 mr-1" />
+                查看
+              </Button>}
+            <Button size="sm" onClick={() => onEdit(story._id, type === 'draft')} className="bg-blue-600 hover:bg-blue-700 transition-all button-press">
+              <Edit className="w-3 h-3 mr-1" />
+              编辑
+            </Button>
+            <Button size="sm" variant="destructive" onClick={() => onDelete(story._id, type === 'draft')} className="bg-red-600 hover:bg-red-700 transition-all button-press">
+              <Trash2 className="w-3 h-3 mr-1" />
+              删除
+            </Button>
           </div>
-        </div>
-      </CardContent>
-    </Card>;
+        </CardContent>
+      </Card>
+    </div>;
 }

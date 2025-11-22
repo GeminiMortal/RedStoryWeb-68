@@ -1,14 +1,10 @@
 // @ts-ignore;
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 // @ts-ignore;
-import { Button, Card, CardContent, CardHeader, CardTitle, Textarea, Input, useToast } from '@/components/ui';
+import { Button, Input, Textarea, useToast } from '@/components/ui';
 // @ts-ignore;
-import { Upload, Save, Send, Image, Tag, User, ArrowLeft, Home } from 'lucide-react';
-// @ts-ignore;
-import { cn } from '@/lib/utils';
+import { ArrowLeft, Save, Upload, Tag, MapPin, Clock, User, BookOpen } from 'lucide-react';
 
-// @ts-ignore;
-import { LoadingSkeleton } from '@/components/LoadingSkeleton';
 // @ts-ignore;
 import { Sidebar } from '@/components/Sidebar';
 // @ts-ignore;
@@ -17,213 +13,212 @@ export default function UploadPage(props) {
   const {
     $w
   } = props;
-  const [formData, setFormData] = useState({
+  const [story, setStory] = useState({
     title: '',
     content: '',
     author: '',
-    category: '红色故事',
+    location: '',
+    read_time: '',
     tags: [],
     image: '',
-    date: '',
-    location: '',
-    read_time: ''
+    status: 'draft'
   });
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [sidebarState, setSidebarState] = useState({
-    isCollapsed: false,
-    isDesktop: true
-  });
+  const [tagInput, setTagInput] = useState('');
   const {
     toast
   } = useToast();
   const navigateTo = $w.utils.navigateTo;
-  const navigateBack = $w.utils.navigateBack;
-
-  // 统一的数据验证
-  const validateForm = () => {
-    if (!formData.title.trim()) {
-      toast({
-        title: '标题不能为空',
-        description: '请输入故事标题',
-        variant: 'destructive'
-      });
-      return false;
-    }
-    if (!formData.content.trim()) {
-      toast({
-        title: '内容不能为空',
-        description: '请输入故事内容',
-        variant: 'destructive'
-      });
-      return false;
-    }
-    return true;
-  };
-
-  // 统一的数据保存 - 保存为草稿
-  const saveToDraft = useCallback(async () => {
-    if (!validateForm()) return;
-    try {
-      setSaving(true);
-      const tcb = await $w.cloud.getCloudInstance();
-      const db = tcb.database();
-      const draftData = {
-        ...formData,
-        status: 'draft',
-        is_draft: true,
-        draft_version: 1,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      const result = await db.collection('red_story_draft').add(draftData);
-      toast({
-        title: '保存成功',
-        description: '草稿已保存到草稿箱'
-      });
-      navigateTo({
-        pageId: 'admin'
-      });
-    } catch (error) {
-      console.error('保存草稿失败:', error);
+  const handleSave = async () => {
+    if (!story.title.trim() || !story.content.trim()) {
       toast({
         title: '保存失败',
-        description: error.message || '无法保存草稿',
+        description: '标题和内容不能为空',
         variant: 'destructive'
       });
-    } finally {
-      setSaving(false);
+      return;
     }
-  }, [formData, toast, navigateTo]);
-
-  // 统一的数据发布 - 直接发布
-  const publishStory = useCallback(async () => {
-    if (!validateForm()) return;
     try {
-      setPublishing(true);
+      setLoading(true);
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
-      const storyData = {
-        ...formData,
-        status: 'published',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-      const result = await db.collection('red_story').add(storyData);
+      const storyId = `story_${Date.now()}`;
+      await db.collection('red_story_draft').doc(storyId).set({
+        ...story,
+        draftOwner: $w.auth.currentUser?.name || '匿名用户',
+        lastSavedAt: Date.now(),
+        createdAt: Date.now()
+      });
       toast({
-        title: '发布成功',
-        description: '故事已成功发布'
+        title: '保存成功',
+        description: '已保存到草稿箱'
       });
       navigateTo({
-        pageId: 'detail',
+        pageId: 'edit',
         params: {
-          id: result.id
+          id: storyId
         }
       });
-    } catch (error) {
-      console.error('发布失败:', error);
+    } catch (err) {
+      console.error('保存失败:', err);
       toast({
-        title: '发布失败',
-        description: error.message || '无法发布故事',
+        title: '保存失败',
+        description: err.message || '请稍后重试',
         variant: 'destructive'
       });
     } finally {
-      setPublishing(false);
+      setLoading(false);
     }
-  }, [formData, toast, navigateTo]);
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
   };
-  const handleSubmit = e => {
-    e.preventDefault();
+  const handleAddTag = () => {
+    if (tagInput.trim() && !story.tags.includes(tagInput.trim())) {
+      setStory({
+        ...story,
+        tags: [...story.tags, tagInput.trim()]
+      });
+      setTagInput('');
+    }
   };
-  return <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <Sidebar currentPage="upload" navigateTo={navigateTo} onStateChange={setSidebarState} />
+  const handleRemoveTag = tagToRemove => {
+    setStory({
+      ...story,
+      tags: story.tags.filter(tag => tag !== tagToRemove)
+    });
+  };
+  const goBack = () => {
+    navigateTo({
+      pageId: 'index',
+      params: {}
+    });
+  };
+  return <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+      <Sidebar currentPage="upload" navigateTo={navigateTo} />
       
-      <main className={cn("transition-all duration-300 ease-in-out", sidebarState.isDesktop ? sidebarState.isCollapsed ? "md:ml-16" : "md:ml-64" : "ml-0")}>
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-6">
-            <Button onClick={navigateBack} variant="ghost" className="text-slate-400 hover:text-white">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              返回
-            </Button>
-            <h1 className="text-2xl font-bold text-white">创作新故事</h1>
+      {/* 移动端返回栏 */}
+      <div className="md:hidden bg-gray-800/90 backdrop-blur-sm border-b border-gray-700 px-4 py-3 flex items-center">
+        <button onClick={goBack} className="flex items-center text-gray-300 hover:text-white">
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          返回
+        </button>
+      </div>
+
+      <div className="flex-1 transition-all duration-300 ease-in-out">
+        <header className="hidden md:block bg-gray-800/90 backdrop-blur-sm border-b border-gray-700">
+          <div className="max-w-4xl mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-white">创建新故事</h1>
+            </div>
           </div>
+        </header>
 
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white">故事信息</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">故事标题</label>
-                  <Input type="text" placeholder="请输入故事标题" value={formData.title} onChange={e => handleInputChange('title', e.target.value)} className="bg-slate-700 border-slate-600 text-white placeholder-slate-400" />
-                </div>
+        <main className="max-w-4xl mx-auto p-4 md:p-8 pb-24 md:pb-8">
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700 p-6 shadow-2xl animate-fade-in">
+            <div className="space-y-6">
+              {/* 标题 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <BookOpen className="w-4 h-4 inline mr-1" />
+                  标题 *
+                </label>
+                <Input value={story.title} onChange={e => setStory({
+                ...story,
+                title: e.target.value
+              })} placeholder="请输入故事标题" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">作者</label>
-                  <Input type="text" placeholder="请输入作者姓名" value={formData.author} onChange={e => handleInputChange('author', e.target.value)} className="bg-slate-700 border-slate-600 text-white placeholder-slate-400" />
-                </div>
+              {/* 作者 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <User className="w-4 h-4 inline mr-1" />
+                  作者
+                </label>
+                <Input value={story.author} onChange={e => setStory({
+                ...story,
+                author: e.target.value
+              })} placeholder="请输入作者姓名" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">故事内容</label>
-                  <Textarea placeholder="请输入故事内容..." value={formData.content} onChange={e => handleInputChange('content', e.target.value)} rows={10} className="bg-slate-700 border-slate-600 text-white placeholder-slate-400" />
-                </div>
+              {/* 地点 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <MapPin className="w-4 h-4 inline mr-1" />
+                  故事地点
+                </label>
+                <Input value={story.location} onChange={e => setStory({
+                ...story,
+                location: e.target.value
+              })} placeholder="请输入故事发生地点" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">故事分类</label>
-                    <select value={formData.category} onChange={e => handleInputChange('category', e.target.value)} className="w-full px-3 py-2 bg-slate-700 border-slate-600 text-white rounded-md">
-                      <option value="红色故事">红色故事</option>
-                      <option value="英雄事迹">英雄事迹</option>
-                      <option value="革命历史">革命历史</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">发生时间</label>
-                    <Input type="text" placeholder="如：1949年" value={formData.date} onChange={e => handleInputChange('date', e.target.value)} className="bg-slate-700 border-slate-600 text-white placeholder-slate-400" />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">发生地点</label>
-                    <Input type="text" placeholder="如：延安" value={formData.location} onChange={e => handleInputChange('location', e.target.value)} className="bg-slate-700 border-slate-600 text-white placeholder-slate-400" />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">预计阅读时间</label>
-                    <Input type="text" placeholder="如：5分钟" value={formData.read_time} onChange={e => handleInputChange('read_time', e.target.value)} className="bg-slate-700 border-slate-600 text-white placeholder-slate-400" />
-                  </div>
-                </div>
+              {/* 阅读时间 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <Clock className="w-4 h-4 inline mr-1" />
+                  阅读时间
+                </label>
+                <Input value={story.read_time} onChange={e => setStory({
+                ...story,
+                read_time: e.target.value
+              })} placeholder="例如：5分钟阅读" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">图片链接</label>
-                  <Input type="url" placeholder="请输入图片URL" value={formData.image} onChange={e => handleInputChange('image', e.target.value)} className="bg-slate-700 border-slate-600 text-white placeholder-slate-400" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">标签（用逗号分隔）</label>
-                  <Input type="text" placeholder="如：长征,英雄,抗战" value={formData.tags.join(',')} onChange={e => handleInputChange('tags', e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag))} className="bg-slate-700 border-slate-600 text-white placeholder-slate-400" />
-                </div>
-
-                <div className="flex items-center space-x-4">
-                  <Button type="button" onClick={saveToDraft} disabled={saving || publishing} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
-                    {saving ? '保存中...' : '保存草稿'}
+              {/* 标签 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <Tag className="w-4 h-4 inline mr-1" />
+                  标签
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <Input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleAddTag()} placeholder="添加标签" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+                  <Button onClick={handleAddTag} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 transition-all">
+                    添加
                   </Button>
-                  <Button type="button" onClick={publishStory} disabled={saving || publishing} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600">
-                    {publishing ? '发布中...' : '立即发布'}
-                  </Button>
                 </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      </main>
+                <div className="flex flex-wrap gap-2">
+                  {story.tags.map((tag, index) => <span key={index} className="px-3 py-1 bg-red-900/30 text-red-300 text-sm rounded-full border border-red-800/50 animate-fade-in">
+                      {tag}
+                      <button onClick={() => handleRemoveTag(tag)} className="ml-2 text-red-400 hover:text-red-300">
+                        ×
+                      </button>
+                    </span>)}
+                </div>
+              </div>
+
+              {/* 图片URL */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <Upload className="w-4 h-4 inline mr-1" />
+                  图片URL
+                </label>
+                <Input value={story.image} onChange={e => setStory({
+                ...story,
+                image: e.target.value
+              })} placeholder="请输入图片URL" className="bg-gray-700/50 border-gray-600 text-white focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+              </div>
+
+              {/* 内容 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">故事内容 *</label>
+                <Textarea value={story.content} onChange={e => setStory({
+                ...story,
+                content: e.target.value
+              })} placeholder="请输入故事内容..." rows={10} className="bg-gray-700/50 border-gray-600 text-white resize-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all" />
+              </div>
+
+              {/* 操作按钮 */}
+              <div className="flex gap-3 pt-4 border-t border-gray-700">
+                <Button onClick={handleSave} disabled={loading} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-red-500/25 transition-all duration-300">
+                  <Save className="w-4 h-4 mr-2" />
+                  {loading ? '保存中...' : '保存草稿'}
+                </Button>
+                <Button onClick={goBack} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white transition-all">
+                  取消
+                </Button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
 
       <MobileBottomNav currentPage="upload" navigateTo={navigateTo} />
     </div>;
