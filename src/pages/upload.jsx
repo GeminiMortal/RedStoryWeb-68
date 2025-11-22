@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 // @ts-ignore;
 import { Button, Input, Textarea, useToast } from '@/components/ui';
 // @ts-ignore;
-import { ArrowLeft, Save, Upload, Tag, MapPin, Clock, User, BookOpen } from 'lucide-react';
+import { ArrowLeft, Save, Upload, Tag, MapPin, Clock, User, BookOpen, Send } from 'lucide-react';
 
 // @ts-ignore;
 import { Sidebar } from '@/components/Sidebar';
@@ -24,12 +24,25 @@ export default function UploadPage(props) {
     status: 'draft'
   });
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [tagInput, setTagInput] = useState('');
   const {
     toast
   } = useToast();
   const navigateTo = $w.utils.navigateTo;
-  const handleSave = async () => {
+
+  // 计算阅读时间
+  const calculateReadTime = content => {
+    if (!content) return '5分钟阅读';
+    const chineseChars = (content.match(/[\u4e00-\u9fa5]/g) || []).length;
+    const englishWords = (content.match(/[a-zA-Z]+/g) || []).length;
+    const readTime = Math.max(1, Math.ceil(chineseChars / 500 + englishWords / 200));
+    return `${readTime}分钟阅读`;
+  };
+
+  // 保存草稿（只存储草稿数据库）
+  const handleSaveDraft = async () => {
     if (!story.title.trim() || !story.content.trim()) {
       toast({
         title: '保存失败',
@@ -39,16 +52,19 @@ export default function UploadPage(props) {
       return;
     }
     try {
-      setLoading(true);
+      setSaving(true);
       const tcb = await $w.cloud.getCloudInstance();
       const db = tcb.database();
       const storyId = `story_${Date.now()}`;
-      await db.collection('red_story_draft').doc(storyId).set({
+      const draftData = {
         ...story,
+        read_time: calculateReadTime(story.content),
         draftOwner: $w.auth.currentUser?.name || '匿名用户',
         lastSavedAt: Date.now(),
-        createdAt: Date.now()
-      });
+        createdAt: Date.now(),
+        status: 'draft'
+      };
+      await db.collection('red_story_draft').doc(storyId).set(draftData);
       toast({
         title: '保存成功',
         description: '已保存到草稿箱'
@@ -67,7 +83,70 @@ export default function UploadPage(props) {
         variant: 'destructive'
       });
     } finally {
-      setLoading(false);
+      setSaving(false);
+    }
+  };
+
+  // 发布故事（同时存储发布和草稿数据库）
+  const handlePublish = async () => {
+    if (!story.title.trim() || !story.content.trim()) {
+      toast({
+        title: '发布失败',
+        description: '标题和内容不能为空',
+        variant: 'destructive'
+      });
+      return;
+    }
+    try {
+      setPublishing(true);
+      const tcb = await $w.cloud.getCloudInstance();
+      const db = tcb.database();
+      const now = new Date();
+      const storyId = `story_${Date.now()}`;
+
+      // 准备发布数据
+      const publishedData = {
+        ...story,
+        read_time: calculateReadTime(story.content),
+        createdAt: now,
+        updatedAt: now,
+        status: 'published',
+        views: 0
+      };
+
+      // 准备草稿数据
+      const draftData = {
+        ...story,
+        read_time: calculateReadTime(story.content),
+        draftOwner: $w.auth.currentUser?.name || '匿名用户',
+        lastSavedAt: now,
+        createdAt: now,
+        status: 'draft'
+      };
+
+      // 同时存储到发布和草稿数据库
+      const [publishedResult, draftResult] = await Promise.all([db.collection('red_story').doc(storyId).set(publishedData), db.collection('red_story_draft').doc(storyId).set(draftData)]);
+      toast({
+        title: '发布成功',
+        description: '故事已发布并保存到草稿箱'
+      });
+
+      // 跳转到详情页
+      navigateTo({
+        pageId: 'detail',
+        params: {
+          id: storyId
+        }
+      });
+    } catch (err) {
+      console.error('发布失败:', err);
+      toast({
+        title: '发布失败',
+        description: err.message || '请稍后重试',
+        variant: 'destructive'
+      });
+    } finally {
+      setPublishing(false);
     }
   };
   const handleAddTag = () => {
@@ -206,10 +285,14 @@ export default function UploadPage(props) {
               </div>
 
               {/* 操作按钮 */}
-              <div className="flex gap-3 pt-4 border-t border-gray-700">
-                <Button onClick={handleSave} disabled={loading} className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-red-500/25 transition-all duration-300">
+              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-700">
+                <Button onClick={handleSaveDraft} disabled={saving} variant="outline" className="border-blue-600 text-blue-400 hover:bg-blue-600/10 transition-all">
                   <Save className="w-4 h-4 mr-2" />
-                  {loading ? '保存中...' : '保存草稿'}
+                  {saving ? '保存中...' : '保存草稿'}
+                </Button>
+                <Button onClick={handlePublish} disabled={publishing} className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg hover:shadow-red-500/25 transition-all duration-300 transform hover:scale-105">
+                  <Send className="w-4 h-4 mr-2" />
+                  {publishing ? '发布中...' : '发布'}
                 </Button>
                 <Button onClick={goBack} variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white transition-all">
                   取消
